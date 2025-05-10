@@ -1,0 +1,43 @@
+2025-05-07 12:07:02,826 - engineio.client - ERROR - requests package is not installed -- cannot send HTTP requests!-_connect_polling
+2025-05-07 12:07:57,734 - engineio.client - ERROR - requests package is not installed -- cannot send HTTP requests!-_connect_polling
+2025-05-07 14:20:16,692 - engineio.client - ERROR - requests package is not installed -- cannot send HTTP requests!-_connect_polling
+2025-05-07 14:21:05,969 - engineio.client - ERROR - requests package is not installed -- cannot send HTTP requests!-_connect_polling
+2025-05-07 14:21:50,329 - engineio.client - ERROR - requests package is not installed -- cannot send HTTP requests!-_connect_polling
+2025-05-07 14:28:27,768 - engineio.client - ERROR - requests package is not installed -- cannot send HTTP requests!-_connect_polling
+2025-05-07 14:30:48,744 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 15:05:26,903 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 15:06:37,516 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 15:07:39,576 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 15:08:30,272 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 15:18:20,411 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 15:19:23,176 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 15:20:37,342 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 15:21:35,028 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 15:43:02,302 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 15:45:36,802 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 15:46:49,203 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 15:59:32,420 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 16:10:58,461 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 16:19:20,845 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 16:33:48,578 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 16:45:00,452 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 16:49:50,673 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 16:50:36,128 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 16:50:43,824 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 16:53:02,515 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 16:58:35,649 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 16:59:37,581 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 17:02:15,473 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 17:05:50,057 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 17:07:44,518 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 17:10:44,791 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 17:12:17,122 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 17:15:35,177 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 17:20:59,863 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-07 17:50:08,383 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-10 17:00:58,578 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-10 17:02:07,947 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-10 17:02:09,497 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-10 17:02:10,774 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-10 17:05:01,466 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket
+2025-05-10 17:58:26,228 - engineio.client - ERROR - websocket-client package not installed, only polling transport is available-_connect_websocket

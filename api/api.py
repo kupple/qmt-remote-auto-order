@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+'''
+Description: 业务层API,供前端JS调用
+usage: 在Javascript中调用window.pywebview.api.<methodname>(<parameters>)
+'''
+
+from api.system import System
+from api.sql import Database
+from api.common import Common
+from api.remote import Remote
+from api.qmt import QMT
+import sqlite3
+import os
+from io import BytesIO
+from datetime import datetime
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
+
+
+
+class API():
+    def __init__(self):
+        self.db = Database()
+        self.common = Common()
+        self.remote = Remote()
+        self.qmt = QMT()
+
+    def setWindow(self, window):
+        '''获取窗口实例'''
+        System.window = window
+
+    def getSettingConfig(self):
+        return self.db.get_setting_config()
+
+    def saveConfig(self, data):
+        self.db.save_config(data.pythonPath, data.mini_qmt_path, data.client_id)
+    
+    def isProcessExist(self):
+        return self.common.is_process_exist()
+    
+    def connectWs(self,server_url):
+        self.remote.connect_ws(server_url)
+        
+    def disconnect(self):
+        self.remote.disconnect()
+        
+    def testConnect(self,server_url):
+        self.remote.testConnect(server_url)
+        
+    def getTaskList(self):
+        return self.db.get_task_list()
+    
+    def createTask(self,data):
+        return self.db.create_task(data)
+    
+    def runTask(self,data):
+        return self.db.run_task(data)
+    
+    def deleteTask(self,data):
+        return self.db.delete_task(data)
+    
+    
+    
