@@ -1,11 +1,13 @@
 <template>
-  <div class="home-container">
+  <div class="p-home-container">
     <router-view />
+    <Terminal class="p-terminal"/>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
+import  Terminal  from '@/components/terminal/index.vue'
 const serverAddress = ref('http://127.0.0.1:5000')
 import { useRemoteStore } from '@/store/remote.js'
 
@@ -27,7 +29,18 @@ const testConnectAction = () => {
 </script>
 
 <style scoped lang="less">
-
+.p-home-container{
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  .p-terminal{
+    flex: 1;
+    min-height: 140px;
+    max-height: 140px;
+    width: 100%;
+  }
+}
 
 
 </style>

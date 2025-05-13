@@ -38,9 +38,8 @@ defineOptions({
     background: #f2f2f2;
 
     .main{
-      padding: 10px;
+      padding: 0px;
       background: #f2f2f2;
-      border-radius: 7px;
       overflow: hidden;
       position: absolute;
       bottom: 0px;

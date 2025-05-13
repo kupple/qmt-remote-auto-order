@@ -33,9 +33,6 @@ import { ElMessage } from 'element-plus'
 const formRef = ref(null);
 
 const rules = {
-  pythonPath: [
-    { required: true, message: '请输入Python执行路径', trigger: 'blur' },
-  ],
   qmtPath: [
     { required: true, message: '请输入QMT路径', trigger: 'blur' },
   ],
@@ -45,10 +42,8 @@ const rules = {
 };
 
 const params = reactive({
-  pythonPath: "",
   qmtPath:"",
   clientId:"",
-  isInitQMT:false
 });
 
 const connectAction = async() => {
@@ -56,15 +51,16 @@ const connectAction = async() => {
   
   try {
     await formRef.value.validate();
-    await SaveSetting({
-      pythonPath: params.pythonPath,
-      qmtPath: params.qmtPath,
+    await window.pywebview.api.saveConfig({
+      mini_qmt_path: params.qmtPath,
+      client_id: params.clientId,
     });
     ElMessage({
       message: '保存成功',
       type: 'success',
     });
   } catch (error) {
+    console.log(error)
     ElMessage({
       message: '请填写完整的表单信息',
       type: 'error',
@@ -81,10 +77,9 @@ const connectAction = async() => {
 // 获取配置文件
 const getSetting = async()=>{
   window.pywebview.api.getSettingConfig().then((res) => {
+    params.qmtPath = res.mini_qmt_path
+    params.clientId = res.client_id
   });
-//  const setting = await LoadSetting()
-//  params.qmtPath = setting.mini_qmt_path
-//  params.pythonPath = setting.python_path
 }
 
 

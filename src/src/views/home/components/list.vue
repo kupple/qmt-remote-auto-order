@@ -10,26 +10,21 @@
     </el-form-item>
     <div class="bottom-container">
       <div class="list-container">
-        <ListModal ref="listModalRef" />
+        <ListModal ref="listModalRef" @getTaskList="getTaskList" />
         <div class="bottom-container">
           <div class="bottom-container-left">
             <el-button type="primary" size="small" style="float: right; margin-bottom: 5px" @click="openModal">新建任务</el-button>
             <el-table class="table-container" :data="taskList" style="width: 100%">
               <el-table-column prop="name" label="任务名称" />
-              <!-- <el-table-column prop="order_count_type" label="下单类型">
-            <template #default="scope">
-              <span v-if="scope.row.order_count_type === 1">跟随策略下单数量</span>
-              <span v-else>实际按比例数量下单</span>
-            </template>
-          </el-table-column> -->
+              <el-table-column prop="code" label="任务编号"> </el-table-column>
               <el-table-column prop="allocation_amount" label="分配金额" />
               <el-table-column label="操作" width="120">
                 <template #default="scope">
                   <div style="display: flex; align-items: center">
-                    <el-button link v-if="scope.row.is_open === 0" type="primary" size="small" @click="handleEdit({ id: scope.row.id, is_open: 1 })">开始</el-button>
-                    <el-button link v-else type="danger" size="small" @click="handleEdit({ id: scope.row.id, is_open: 0 })">停止</el-button>
+                    <el-button link v-if="scope.row.is_open === 0" type="primary" @click="handleEdit({ id: scope.row.id, is_open: 1 })">开始</el-button>
+                    <el-button link v-else type="danger" @click="handleEdit({ id: scope.row.id, is_open: 0 })">停止</el-button>
                     <el-divider direction="vertical" />
-                    <el-button link type="primary" size="small" @click="goToDetail(scope.row)">详情</el-button>
+                    <el-button link type="primary" @click="goToDetail(scope.row)">详情</el-button>
                   </div>
                 </template>
               </el-table-column>
@@ -63,6 +58,10 @@ const route = useRoute()
 const remoteStoreDic = computed(() => {
   return useRemoteStore()
 })
+
+const getTaskLists = async () => {
+  await getTaskList()
+}
 
 const connectAction = () => {
   window.pywebview.api.connectWs(serverAddress.value).then((res) => {
@@ -101,6 +100,7 @@ const openModal = () => {
 }
 
 const getTaskList = async () => {
+  console.log("lkasdjasljd;a")
   const res = await window.pywebview.api.getTaskList()
   useCommonStore().setTaskList(res)
 }
@@ -109,13 +109,23 @@ const goToDetail = (row) => {
   router.push(`/home/detail?id=${row.id}`)
 }
 
+const getRemoteState = async () => {
+  const res = await window.pywebview.api.getRemoteState()
+  useRemoteStore().setRemoteStore({
+    state: res.state == true ? 1 : 0,
+    unique_id: res.unique_id
+  })
+}
+
 onMounted(async () => {
+  await getRemoteState()
   await getTaskList()
 })
 </script>
 
 <style scoped lang="less">
 .home-container {
+  padding: 10px;
   height: 100%;
   padding-bottom: 10px;
   display: flex;
@@ -133,8 +143,8 @@ onMounted(async () => {
   margin-bottom: 10px;
 }
 
-.el-form-item{
-    margin-bottom: 0px;
+.el-form-item {
+  margin-bottom: 0px;
 }
 
 .bottom-container {

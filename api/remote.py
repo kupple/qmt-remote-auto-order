@@ -40,11 +40,12 @@ def get_system_unique_id():
 
 
 class Remote:
-    def __init__(self):
+    is_connected = False
+    unique_id = None
+    server_url = None
+    def __init__(self,qmt):
         self.sio = socketio.Client()
-        self.client_id = None
-        self.server_url = None
-
+        self.qmt = qmt
 
     def setup_events(self):
         @self.sio.on('connect')
@@ -58,14 +59,16 @@ class Remote:
                 "data":None,
                 "unique_id":unique_id
             })
-
+            Remote.is_connected = True
+            
         @self.sio.on('message')
         def on_message(data):
             if isinstance(data, dict) and 'status' in data:
                 if data['status'] == 'success':
-                    self.client_id = data['client_id']
+                    Remote.unique_id = data['client_id']
             else:
                 print(f'Received message: {data}')
+                self.qmt.manage_qmt_trader(data)
                 System.system_py2js(self,'remoteCallBack',  {
                     "state": 1,
                     "message": "",
@@ -79,6 +82,7 @@ class Remote:
                 "state": 0,
                 "message": "Disconnected from server",
             })
+            Remote.is_connected = False
     
     def disconnect(self):
         if self.sio.connected:
@@ -87,14 +91,16 @@ class Remote:
                 "state": 0,
                 "message": "Disconnected from server",
             })
+            Remote.is_connected = False
         else:
             print('Client is not connected.')
-            
-    def testConnect(self,server_url):
-        url = f"{server_url}/send_message"
+        
+    def testConnect(self):
+        url = f"{Remote.server_url}/send_message"
+        unique_id = get_system_unique_id()
         payload = json.dumps({
             "message": "Hello, specific client!",
-            "client_id": get_system_unique_id()
+            "client_id": unique_id
         })
         headers = {
             'Content-Type': 'application/json'
@@ -110,10 +116,17 @@ class Remote:
     
     
     def connect_ws(self,server_url):
-        self.server_url = server_url
-        self.setup_events()
-        self.sio.connect(self.server_url)
-        self.sio.wait()
+        Remote.server_url = server_url
+        try:
+            self.setup_events()
+            self.sio.connect(Remote.server_url)
+            self.sio.wait()
+        except Exception as e:
+            print(f"Error connecting to server: {e}")
+            System.system_py2js(self,'remoteCallBack',  {
+                "state": 0,
+                "message": "服务端访问失败",
+            })
 
 
         

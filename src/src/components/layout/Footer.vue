@@ -11,6 +11,12 @@
         <el-icon color="red" ><CircleCloseFilled /></el-icon>
       </div>
     </div>
+    <div class="date-time-cell">
+      <!-- 时间显示 -->
+      <div class="time-cell">
+        <span class="time">{{ time }}</span>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -19,6 +25,7 @@ import { onMounted, reactive, ref, computed } from "vue";
 import { useCommonStore } from '@/store/common.js'
 import { CircleCheckFilled,CircleCloseFilled } from '@element-plus/icons-vue'
 
+const time = ref('')
 defineOptions({
   name: 'LayoutFooter'
 })
@@ -31,6 +38,9 @@ onMounted(async () => {
     const res =  await window.pywebview.api.isProcessExist()
     useCommonStore().changeIsQMTProcessExit(res)
   }, 2000);
+  setInterval(async () => {
+    time.value = new Date().toLocaleString()
+  }, 1000);
 });
 </script>
 
@@ -38,6 +48,7 @@ onMounted(async () => {
 .footer-container{
   display: flex;
   align-items: center;
+  justify-content: space-between;
   height: 100%;
   .xuntou-khd{
       display: flex;
@@ -59,6 +70,17 @@ onMounted(async () => {
         margin-top: -2px;
         font-weight: bold;
       }
+    }
+  }
+  .date-time-cell{
+    display: flex;
+    align-items: center;
+    .time-cell{
+      display: flex;
+      color: #fff;
+      font-size: 16px;
+      margin-right: 4px;
+      font-weight: bold;
     }
   }
 }

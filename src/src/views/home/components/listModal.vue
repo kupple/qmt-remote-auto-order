@@ -2,7 +2,7 @@
   <el-dialog v-model="dialogVisible" title="新建任务" width="60vw" center>
     <el-form :model="form" label-width="120px">
       <el-form-item label="任务名称">
-        <el-input v-model="form.name" placeholder="请输入任务名称" />
+        <el-input style="width: 50%" v-model="form.name" placeholder="请输入任务名称" />
       </el-form-item>
       <el-form-item label="下单类型">
         <el-radio-group v-model="form.orderCountType">
@@ -19,7 +19,7 @@
         </el-form-item>
       </div>
       <el-form-item v-else label="实际分配金额">
-        <el-input v-model="form.allocationAmount" placeholder="请输入账号分配金额" type="number" :min="0" @input="handleAllocationAmountInput" />
+        <el-input style="width: 50%" v-model="form.allocationAmount" placeholder="请输入账号分配金额" type="number" :min="0" @input="handleAllocationAmountInput" />
       </el-form-item>
       <el-form-item>
         <el-button type="primary" @click="handleSubmit">保存</el-button>
@@ -34,7 +34,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useCommonStore } from '@/store/common.js'
 
 const taskList = computed(() => useCommonStore().taskList)
-
+const emit = defineEmits(['getTaskList'])
 const dialogVisible = ref(false)
 const form = ref({
   name: '',
@@ -61,8 +61,8 @@ const showModal = () => {
   dialogVisible.value = true
 }
 const handleSubmit = async () => {
-  const res = await window.pywebview.api.createTask(form.value)
-  useCommonStore().setTaskList([...taskList.value, form.value])
+  await window.pywebview.api.createTask(form.value)
+  emit('getTaskList')
   dialogVisible.value = false
 }
 
