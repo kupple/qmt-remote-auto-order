@@ -88,6 +88,7 @@ class QMT:
         # 获取配置
         config = Database().get_setting_config()
         self.qmt_trader = qmt_trader(config['mini_qmt_path'], config['account'],  config['is_slippage'], 0.01)
+        
         # 连接QMT 传递回调
         self.qmt_trader.connect(self.callback)
     

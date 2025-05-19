@@ -1,0 +1,12 @@
+pywebview==4.4.1
+pyinstaller==6.2.0
+tinyaes==1.0.4
+alembic==1.10.2
+pandas
+numpy
+apscheduler
+websockets
+requests
+pyperclip
+cryptography
+PyJWT
