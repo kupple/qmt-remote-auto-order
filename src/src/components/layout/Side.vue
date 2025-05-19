@@ -30,7 +30,7 @@ const router = useRouter(); // 使用useRouter函数创建router实例
 const route = useRoute()
 const activeMenu = ref('Home')
 const menuRoutes = computed(() => {
-  return routes.filter(route => route.name)
+  return routes.filter(route => route.show != false)
 })
 const handleSelect = (key) => {
   router.push({ name: key })

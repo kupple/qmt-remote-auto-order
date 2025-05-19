@@ -30,7 +30,8 @@ def generate_random_letters():
 
 db_file = 'main.db'
 class Database:
-    task_list = []  
+    task_list = []
+    setting_config = None
     def __init__(self):
         self._init_database()
 
@@ -47,19 +48,21 @@ class Database:
                     python_path TEXT,
                     mini_qmt_path TEXT,
                     client_id TEXT,
-                    server_url TEXT
+                    salt TEXT,
+                    server_url TEXT,
+                    run_model_type INTEGER DEFAULT 0
                 )
             """)
             
             # 插入默认设置
-            cursor.execute("INSERT INTO setting (python_path, mini_qmt_path, client_id, server_url) VALUES ('', '', '', 'http://127.0.0.1:5000')")    
+            cursor.execute("INSERT INTO setting (python_path, mini_qmt_path, client_id, salt, server_url, run_model_type) VALUES ('', '', '', '', 'ws://193.112.151.98:8080/ws', 0)")    
             # 创建任务列表表
             cursor.execute(
             """
                 CREATE TABLE IF NOT EXISTS tasklist (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT,
-                    code TEXT,
+                    strategy_code TEXT,
                     order_count_type INTEGER,
                     strategy_amount INTEGER,
                     allocation_amount INTEGER,
@@ -76,17 +79,23 @@ class Database:
             """
                 CREATE TABLE IF NOT EXISTS orders (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    code TEXT,
-                    amount INTEGER,
-                    price INTEGER,
-                    direction TEXT,
+                    security_code TEXT,
                     fix_result_order_id TEXT,
-                    order_type TEXT,
-                    price_type TEXT,
+                    style TEXT,
+                    run_params TEXT,
+                    pindex TEXT,
+                    platform TEXT,
+                    task_id INTEGER,
+                    is_buy INTEGER DEFAULT 0,
+                    amount  INTEGER,
+                    strategy_code TEXT,
+                    add_time TEXT,
+                    price FLOAT,
+                    avg_cost FLOAT,
+                    commission FLOAT,
                     create_time TEXT DEFAULT CURRENT_TIMESTAMP,
                     update_time TEXT DEFAULT CURRENT_TIMESTAMP,
-                    task_id INTEGER,
-                    transaction_status INTEGER DEFAULT 0,
+                    transaction_status INTEGER DEFAULT 0, 
                     FOREIGN KEY (task_id) REFERENCES tasklist(id)
                 )
             """)
@@ -102,11 +111,11 @@ class Database:
 
         rows = cursor.execute("SELECT * FROM setting LIMIT 1").fetchall()
         data = dict(rows[0]) if rows else {}
-        
+        Database.setting_config = data
         conn.close()
         return data
 
-    def save_config(self,  mini_qmt_path=None, client_id=None, server_url=None):
+    def save_config(self, mini_qmt_path=None, client_id=None, server_url=None, salt=None, run_model_type=None):
         """保存配置"""
         conn = sqlite3.connect(db_file)
         cursor = conn.cursor()
@@ -126,6 +135,14 @@ class Database:
         if server_url is not None:
             update_fields.append("server_url = ?")
             params.append(server_url)
+
+        if salt is not None:
+            update_fields.append("salt = ?")
+            params.append(salt)
+
+        if run_model_type is not None:
+            update_fields.append("run_model_type = ?")
+            params.append(run_model_type)
             
         if update_fields:
             query = f"UPDATE setting SET {', '.join(update_fields)}"
@@ -134,23 +151,6 @@ class Database:
         conn.commit()
         conn.close()
         
-    def find_python_directory():
-        try:
-            if platform.system() == "Windows":
-                # Windows 系统使用 where 命令
-                cmd = ["where", "python"]
-            else:
-                # 类 Unix 系统使用 which 命令
-                cmd = ["which", "python"]
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-            python_path = result.stdout.strip()
-            # 提取目录部分
-            python_dir = os.path.dirname(python_path)
-            python_dir = os.path.join(python_dir, "python")
-            return python_dir
-        except subprocess.CalledProcessError as e:
-            raise Exception(f"查找 Python 可执行文件时出错: {e}")
-    
     def get_task_list(self):
         """获取任务列表"""
         conn = sqlite3.connect(db_file)
@@ -169,8 +169,15 @@ class Database:
         """创建任务"""
         conn = sqlite3.connect(db_file)
         cursor = conn.cursor()
-        code = generate_random_letters()
-        cursor.execute("INSERT INTO tasklist (name, code, order_count_type, strategy_amount, allocation_amount) VALUES (?, ?, ?, ?, ?)", (data['name'], code, data['orderCountType'], data['strategyAmount'], data['allocationAmount']))
+        if data['strategy_code'] == '':
+            strategy_code = generate_random_letters()
+        else:
+            strategy_code = data['strategy_code']
+            
+        if 'id' not in data or  data['id'] is None:
+            cursor.execute("INSERT INTO tasklist (name, strategy_code, order_count_type, strategy_amount, allocation_amount) VALUES (?, ?, ?, ?, ?)", (data['name'], strategy_code, data['orderCountType'], data['strategyAmount'], data['allocationAmount']))
+        else:
+            cursor.execute("UPDATE tasklist SET name = ?, strategy_code = ?, order_count_type = ?, strategy_amount = ?, allocation_amount = ? WHERE id = ?", (data['name'], strategy_code, data['orderCountType'], data['strategyAmount'], data['allocationAmount'], data['id']))
         conn.commit()
         conn.close()
         return True
@@ -214,3 +221,57 @@ class Database:
         data = dict(rows[0]) if rows else {}
         conn.close()
         return data
+
+    def save_order(self,data):
+        """保存订单"""
+        conn = sqlite3.connect(db_file)
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO orders (security_code, style, price, amount, avg_cost, commission, is_buy, add_time, pindex, platform, run_params, fix_result_order_id, strategy_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (data['security_code'], data['style'], data['price'], data['amount'], data['avg_cost'], data['commission'], data['is_buy'], data['add_time'], data['pindex'], data['platform'], data['run_params'], data['fix_result_order_id'], data['strategy_code']))
+        conn.commit()
+        conn.close()
+    
+    def get_order_list(self,data):
+        print(data)
+        """获取订单列表"""
+        conn = sqlite3.connect(db_file)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        start_current_date = datetime.now().strftime("%Y-%m-%d") + ' 00:00:00'
+        end_current_date = datetime.now().strftime("%Y-%m-%d") + ' 23:59:59'
+        if 'date' in data and data['date'] is not None:
+            start_current_date = data['date'] + ' 00:00:00'
+            end_current_date = data['date'] + ' 23:59:59'
+        page = data['page']
+        pageSize = data['pageSize']
+        
+        conditions = []
+        params = []
+        
+        if 'security_code' in data and data['security_code']:
+            conditions.append("security_code LIKE ?")
+            params.append(f"%{data['security_code']}%")
+            
+        if 'run_params' in data and data['run_params']:
+            conditions.append("run_params = ?")
+            params.append(data['run_params'])
+            
+        conditions.append("create_time >= ?")
+        conditions.append("create_time < ?")
+        params.extend([start_current_date, end_current_date])
+        
+        where_clause = " AND ".join(conditions)
+        
+        print(where_clause)
+        
+        query = f"SELECT * FROM orders WHERE {where_clause} order by create_time desc limit ? offset ?"
+        params.extend([pageSize, (page - 1) * pageSize])
+        rows = cursor.execute(query, params).fetchall()
+        count_query = f"SELECT COUNT(*) FROM orders WHERE {where_clause}"
+        total = cursor.execute(count_query, params[:-2]).fetchall()[0][0]
+        data = [dict(row) for row in rows]
+        conn.close()
+        return {
+            'data': data,
+            'total': total
+        }

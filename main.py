@@ -55,7 +55,7 @@ def WebViewApp(ifCef=False):
     height = screens.height
     # 程序窗口大小
     initWidth = int(width * 2 / 3)
-    initHeight = int(height * 3.2 / 5)
+    initHeight = int(height * 3.6 / 5)
     minWidth = int(initWidth / 2)
     minHeight = int(initHeight / 2)
     
@@ -66,7 +66,7 @@ def WebViewApp(ifCef=False):
         js_api=api,
         width=initWidth,
         height=initHeight,
-        min_size=(minWidth, 740)
+        min_size=(minWidth, 900)
     )
 
     # 获取窗口实例

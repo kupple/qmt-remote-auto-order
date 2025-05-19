@@ -1,72 +1,37 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import socketio
+import asyncio
+import websockets
 import platform
 import subprocess
 from api.system import System
 import requests
 import json
-
-def get_system_unique_id():
-    system = platform.system()
-    if system == "Windows":
-        try:
-            import wmi
-            c = wmi.WMI()
-            for system in c.Win32_ComputerSystemProduct():
-                return system.UUID
-        except Exception as e:
-            print(f"Error getting UUID on Windows: {e}")
-    elif system == "Linux":
-        try:
-            with open('/etc/machine-id', 'r') as f:
-                return f.read().strip()
-        except FileNotFoundError:
-            print("File /etc/machine-id not found.")
-        except Exception as e:
-            print(f"Error getting machine ID on Linux: {e}")
-    elif system == "Darwin":  # macOS
-        try:
-            command = "ioreg -d2 -c IOPlatformExpertDevice | awk -F\\\" '/IOPlatformUUID/{print $(NF-1)}'"
-            result = subprocess.run(command, shell=True, capture_output=True, text=True)
-            if result.returncode == 0:
-                return result.stdout.strip()
-            else:
-                print(f"Error getting UUID on macOS: {result.stderr}")
-        except Exception as e:
-            print(f"Error getting UUID on macOS: {e}")
-    return None
-
+import time
+from .tools.sysConfig import get_system_unique_id
 
 class Remote:
     is_connected = False
     unique_id = None
     server_url = None
+    RECONNECT_INTERVAL = 5  # seconds
+    
     def __init__(self,qmt):
-        self.sio = socketio.Client()
+        self.stop_event = asyncio.Event()
+        self.loop = asyncio.new_event_loop()
         self.qmt = qmt
+        self.ws = None
+        self.reconnect_count = 0
+        self.should_reconnect = True
+        asyncio.set_event_loop(self.loop)  # 设置当前线程的事件循环
 
-    def setup_events(self):
-        @self.sio.on('connect')
-        def on_connect():
-            print('Connected to server')
-            unique_id = get_system_unique_id()
-            self.sio.emit('join_with_mac', unique_id)
-            System.system_py2js(self,'remoteCallBack',  {
-                "state": 1,
-                "message": "Connected to server",
-                "data":None,
-                "unique_id":unique_id
-            })
-            Remote.is_connected = True
-            
-        @self.sio.on('message')
-        def on_message(data):
-            if isinstance(data, dict) and 'status' in data:
-                if data['status'] == 'success':
-                    Remote.unique_id = data['client_id']
-            else:
+
+    async def handle_messages(self):
+        try:
+            while True:
+                message = await self.ws.recv()
+                data = json.loads(message)
                 print(f'Received message: {data}')
                 self.qmt.manage_qmt_trader(data)
                 System.system_py2js(self,'remoteCallBack',  {
@@ -75,25 +40,45 @@ class Remote:
                     "data":data,
                 })
 
-        @self.sio.on('disconnect')
-        def on_disconnect():
-            print('Disconnected from server')
+        except websockets.exceptions.ConnectionClosed:
+            print('Connection closed')
             System.system_py2js(self,'remoteCallBack',  {
                 "state": 0,
                 "message": "Disconnected from server",
             })
             Remote.is_connected = False
-    
-    def disconnect(self):
-        if self.sio.connected:
-            self.sio.disconnect()
+            if self.should_reconnect:
+                await self.reconnect()
+
+    async def reconnect(self):
+        self.reconnect_count += 1
+        print(f'Attempting to reconnect... (Attempt {self.reconnect_count})')
+        System.system_py2js(self,'remoteCallBack',  {
+            "state": 0,
+            "message": f"正在尝试重连... (第{self.reconnect_count}次)",
+        })
+        
+        await asyncio.sleep(self.RECONNECT_INTERVAL)
+        await self.connect_ws(Remote.server_url)
+
+    async def disconnect(self):
+        self.should_reconnect = False
+        try:
+            if self.ws:
+                await self.ws.close()
+                self.ws = None
+                System.system_py2js(self,'remoteCallBack',  {
+                    "state": 0,
+                    "message": "Disconnected from server",
+                })
+                Remote.is_connected = False
+        except Exception as e:
+            print(f'Error during disconnect: {e}')
             System.system_py2js(self,'remoteCallBack',  {
                 "state": 0,
-                "message": "Disconnected from server",
+                "message": "Error disconnecting from server",
             })
             Remote.is_connected = False
-        else:
-            print('Client is not connected.')
         
     def testConnect(self):
         url = f"{Remote.server_url}/send_message"
@@ -112,21 +97,47 @@ class Remote:
                 "type": 'test',
                 "message": "测试-通信正常",
             })
-        
     
-    
-    def connect_ws(self,server_url):
+    async def connect_ws(self,server_url):
         Remote.server_url = server_url
         try:
-            self.setup_events()
-            self.sio.connect(Remote.server_url)
-            self.sio.wait()
+            TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjIjoiT21Uc0tkIiwidSI6IkYzMEMyQzM5LUFEQzMtNUEyNC1BRDEzLTc1MEJFNDQ1MjczQyJ9.5Y0OblUKGRQQRBWZImq-lFLsZmGck0SVRTNozcgRcQU"
+            self.ws = await websockets.connect(server_url, additional_headers={"Authorization": f"Bearer {TOKEN}"})
+
+            System.system_py2js(self,'remoteCallBack',  {
+                "state": 1,
+                "message": "Connected to server",
+                "data":None
+            })
+            Remote.is_connected = True
+            self.reconnect_count = 0  # Reset reconnect count on successful connection
+            
+            # Start message handling
+            await self.handle_messages()
         except Exception as e:
             print(f"Error connecting to server: {e}")
             System.system_py2js(self,'remoteCallBack',  {
                 "state": 0,
                 "message": "服务端访问失败",
             })
+            if self.should_reconnect:
+                await self.reconnect()
 
+    def connect(self, server_url):
+        self.should_reconnect = True
+        self.reconnect_count = 0
+        self.stop_event.clear()
+        self.loop.run_until_complete(self.connect_ws(server_url))
+
+    def close_ws(self):
+        self.should_reconnect = False
+        self.stop_event.set()
+        try:
+            future = asyncio.run_coroutine_threadsafe(self.disconnect(), self.loop)
+            future.result()  # Wait for the disconnect to complete
+        except Exception as e:
+            print(f'Error during close_ws: {e}')
+        finally:
+            self.stop_event.clear()
 
         

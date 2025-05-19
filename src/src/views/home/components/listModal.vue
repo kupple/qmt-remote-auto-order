@@ -1,8 +1,11 @@
 <template>
-  <el-dialog v-model="dialogVisible" title="新建任务" width="60vw" center>
+  <el-dialog v-model="dialogVisible" :title="editDic ? '编辑任务' : '新建任务'" width="60vw" center>
     <el-form :model="form" label-width="120px">
-      <el-form-item label="任务名称">
+      <el-form-item label="任务名称" required>
         <el-input style="width: 50%" v-model="form.name" placeholder="请输入任务名称" />
+      </el-form-item>
+      <el-form-item label="任务编号" >
+        <el-input style="width: 50%" v-model="form.strategy_code" placeholder="请输入任务编号" maxlength="6" />
       </el-form-item>
       <el-form-item label="下单类型">
         <el-radio-group v-model="form.orderCountType">
@@ -30,18 +33,20 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, reactive } from 'vue'
 import { useCommonStore } from '@/store/common.js'
-
+import { createTask } from '@/api/comm_tube'
 const taskList = computed(() => useCommonStore().taskList)
 const emit = defineEmits(['getTaskList'])
 const dialogVisible = ref(false)
-const form = ref({
+const form = reactive({
   name: '',
+  strategy_code: '',
   orderCountType: 1,
   strategyAmount: 0,
   allocationAmount: 0
 })
+const editDic = ref({})
 
 const handleStrategyAmountInput = (value) => {
   const num = Number(value)
@@ -57,11 +62,28 @@ const handleAllocationAmountInput = (value) => {
   }
 }
 
-const showModal = () => {
+const showModal = (dic) => {
   dialogVisible.value = true
+  if (dic) {
+    editDic.value = dic
+    form.name = dic.name
+    form.strategy_code = dic.strategy_code
+    form.orderCountType = dic.order_count_type
+    form.strategyAmount = dic.strategy_amount
+    form.allocationAmount = dic.allocation_amount
+  } else {
+    editDic.value = null
+  }
 }
 const handleSubmit = async () => {
-  await window.pywebview.api.createTask(form.value)
+  await createTask({
+    id: editDic.value?.id || undefined,
+    name: form.name,
+    strategy_code: form.strategy_code,
+    orderCountType: form.orderCountType,
+    strategyAmount: form.strategyAmount,
+    allocationAmount: form.allocationAmount
+  })
   emit('getTaskList')
   dialogVisible.value = false
 }

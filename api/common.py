@@ -1,20 +1,14 @@
-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 '''
 Description: 数据库操作相关的API
 '''
-
-import sqlite3
-import os
-import platform
 import subprocess
-import pyperclip
-from api.sql import Remote
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from cryptography.hazmat.primitives import serialization, hashes
-from cryptography.hazmat.backends import default_backend
+from api.sql import Database
+import json
+import re
+from api.tools.sysConfig import get_system_unique_id
+from api.tools.tokenManager import generate_token,verify_token
 
 class Common:
 
@@ -51,29 +45,110 @@ class Common:
             return False
         except Exception:
             return False
-    def copy_request_code(self,data):
-        server_url = Remote.server_url
+
+    
+    def transition_code(self,data,taskDic):
+        # server_url = Database.setting_config["server_url"]
+        server_url = "http://193.112.151.98:8080"
         try:
-            copyText = f"""        
-        url = "{server_url}/send_message"
-        unique_id = get_system_unique_id()
-        payload = json.dumps({
-            "message": "Hello, specific client!",
-            "client_id": unique_id
-        })
-        headers = {
-            'Content-Type': 'application/json'
-        }
-        response = requests.request("POST", url, headers=headers, data=payload)
-        if response.status_code == 200:
-            System.system_py2js(self,'remoteCallBack',  {
-                "state": 2,
-                "type": 'test',
-                "message": "测试-通信正常",
-            })
-        """
-            pyperclip.copy(copyText)
-            return True
-        except Exception as e:
-            print(f"复制失败: {e}")
-            return False
+                unique_id = get_system_unique_id()
+                plaintext = {
+                    "c": taskDic["strategy_code"],
+                    "u": unique_id            
+                }
+                # 服务端的盐
+                # 加密
+                token = generate_token(plaintext)
+                print(verify_token(token))
+                
+                if 'import requests' not in data:
+                    # 在文件开头添加 import 语句
+                    data = 'import requests\n' + data
+                if 'import json' not in data:
+                    # 在文件开头添加 import 语句
+                    data = 'import json\n' + data
+                    
+                pattern = r'def\s+initialize\s*\(\s*(\w+)\s*\)\s*:'
+                match = re.search(pattern, data)
+            
+                param_name = ''
+                if match:
+                    # 获取参数名
+                    param_name = match.group(1)
+                    
+                # 构建要插入的代码行
+                insert_line = f"    g.run_params = {param_name}.run_params.type"
+                
+                # 找到函数定义行的位置
+                def_line_pos = data.find(match.group(0)) + len(match.group(0))
+                
+                # 在函数定义后插入新行
+                data = data[:def_line_pos] + '\n' + insert_line + data[def_line_pos:]
+                
+                data = data + '\n'
+                data = data + F"""
+def qmt_auto_orders(method_name, *args, **kwargs):
+    # 获取系统方法
+    method_map = {{
+        'order_target': order_target,
+        'order_value': order_value,
+        'order': order,
+        'order_target_value': order_target_value,
+    }}
+    
+    if method_name not in method_map:
+        raise ValueError(f"不支持的方法名: {{method_name}}")
+    
+    # 提取参数并调用系统方法
+    security, value_or_amount = args[0], args[1]
+    system_method = method_map[method_name]
+    
+    style = kwargs.get('style',None)
+    side = kwargs.get('side', 'long')
+    pindex = kwargs.get('pindex', 0)
+    close_today = kwargs.get('close_today', False)
+    
+    orderInfo = system_method(security, value_or_amount,
+                        style=style,
+                        side=side,
+                        pindex=pindex,
+                        close_today=close_today)
+    if orderInfo == None:
+        return None
+    jsonDic = json.dumps({{
+        'method': method_name,
+        'run_params': g.run_params,
+        'params': {{
+            'security':security,
+            'value':value_or_amount,
+            'style':style,
+            'price':orderInfo.price,
+            'amount':orderInfo.amount,
+            'avg_cost':orderInfo.avg_cost,
+            'commission':orderInfo.commission,
+            'is_buy':orderInfo.is_buy,
+            'add_time':orderInfo.add_time.strftime("%Y-%m-%d %H:%M:%S"),
+            'pindex':pindex,
+        }}
+    }})
+    url = "{server_url}/send_message"
+    response = requests.request('POST', url, headers=
+    {{
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer {token}'
+    }}, data= jsonDic)
+    return orderInfo
+    """ 
+
+                # 匹配方法名和括号内的参数
+                pattern = r'\b(order_target|order_value|order_target_value|order)\(([^)]*)\)'
+                
+                # 使用正则替换，将原方法名作为第一个参数传入 qmt_auto_orders
+                data = re.sub(pattern, r'qmt_auto_orders("\1", \2)', data)
+                return data
+        except:
+            return "转译错误"
+        
+        
+
+
