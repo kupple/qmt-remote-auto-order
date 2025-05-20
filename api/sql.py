@@ -87,19 +87,67 @@ class Database:
                     platform TEXT,
                     task_id INTEGER,
                     is_buy INTEGER DEFAULT 0,
-                    amount  INTEGER,
                     strategy_code TEXT,
                     add_time TEXT,
+                    volume  INTEGER,
                     price FLOAT,
                     avg_cost FLOAT,
+                    status_msg TEXT,
                     commission FLOAT,
+                    status  INTEGER DEFAULT 0,
                     create_time TEXT DEFAULT CURRENT_TIMESTAMP,
                     update_time TEXT DEFAULT CURRENT_TIMESTAMP,
                     transaction_status INTEGER DEFAULT 0, 
                     FOREIGN KEY (task_id) REFERENCES tasklist(id)
                 )
             """)
+            cursor.execute(
+            """
+                CREATE TABLE IF NOT EXISTS entrusts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    traded_amount  FLOAT,
+                    traded_price FLOAT,
+                    stock_code TEXT,
+                    traded_volume FLOAT,
+                    traded_time INTEGER,
+                    traded_id TEXT,
+                    status_msg TEXT,
+                    orders_id INTEGER,
+                    order_type INTEGER,
+                    price_type  INTEGER,
+                    order_id  INTEGER,
+                    order_status INTEGER,
+                    order_sysid TEXT,
+                    status  INTEGER DEFAULT 0,
+                    offset_flag  INTEGER,
+                    create_time TEXT DEFAULT CURRENT_TIMESTAMP,
+                    update_time TEXT DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (orders_id) REFERENCES orders(id)
+                )
+            """)
             
+            cursor.execute(
+            """
+                CREATE TABLE IF NOT EXISTS trades (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    order_id INTEGER,
+                    order_sysid TEXT,
+                    order_time INTEGER,
+                    order_volume INTEGER,
+                    price_type  INTEGER,
+                    price FLOAT,
+                    traded_volume FLOAT,
+                    traded_price  FLOAT,
+                    order_status INTEGER,
+                    status_msg  TEXT,
+                    offset_flag INTEGER,
+                    orders_id INTEGER,
+                    status  INTEGER DEFAULT 0,
+                    create_time TEXT DEFAULT CURRENT_TIMESTAMP,
+                    update_time TEXT DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (orders_id) REFERENCES orders(id)
+                )
+            """)
             conn.commit()
             conn.close()
     @staticmethod
@@ -226,12 +274,14 @@ class Database:
         """保存订单"""
         conn = sqlite3.connect(db_file)
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO orders (security_code, style, price, amount, avg_cost, commission, is_buy, add_time, pindex, platform, run_params, fix_result_order_id, strategy_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (data['security_code'], data['style'], data['price'], data['amount'], data['avg_cost'], data['commission'], data['is_buy'], data['add_time'], data['pindex'], data['platform'], data['run_params'], data['fix_result_order_id'], data['strategy_code']))
+        cursor.execute("INSERT INTO orders (security_code, style, price, volume, avg_cost, commission, is_buy, add_time, pindex, platform, run_params, fix_result_order_id, strategy_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (data['security_code'], data['style'], data['price'], data['amount'], data['avg_cost'], data['commission'], data['is_buy'], data['add_time'], data['pindex'], data['platform'], data['run_params'], data['fix_result_order_id'], data['strategy_code']))
+        last_id = cursor.lastrowid
         conn.commit()
         conn.close()
+        return last_id
+    
     
     def get_order_list(self,data):
-        print(data)
         """获取订单列表"""
         conn = sqlite3.connect(db_file)
         conn.row_factory = sqlite3.Row
@@ -275,3 +325,177 @@ class Database:
             'data': data,
             'total': total
         }
+
+    def update_order(self, order_id, **kwargs):
+        """更新订单信息
+        
+        Args:
+            order_id (int): 订单ID
+            **kwargs: 要更新的字段和值，例如 security_code='000001', amount=100
+            
+        Returns:
+            bool: 更新是否成功
+        """
+        if not kwargs:
+            return False
+            
+        conn = sqlite3.connect(db_file)
+        cursor = conn.cursor()
+        
+        # 构建动态的UPDATE语句
+        update_fields = []
+        params = []
+        
+        # 可更新的字段列表
+        allowed_fields = [
+            'security_code', 'fix_result_order_id', 'style', 'run_params',
+            'pindex', 'platform', 'is_buy', 'amount', 'strategy_code',
+            'add_time', 'price', 'avg_cost', 'commission', 'status',
+            'transaction_status'
+        ]
+        
+        for field, value in kwargs.items():
+            if field in allowed_fields:
+                update_fields.append(f"{field} = ?")
+                params.append(value)
+        
+        if not update_fields:
+            conn.close()
+            return False
+            
+        # 添加更新时间
+        update_fields.append("update_time = ?")
+        params.append(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        
+        # 添加ID参数
+        params.append(order_id)
+        
+        query = f"UPDATE orders SET {', '.join(update_fields)} WHERE id = ?"
+        cursor.execute(query, params)
+        
+        conn.commit()
+        conn.close()
+        return True
+
+    def save_entrust(self, data, sub_data=None):
+        """保存委托记录
+        
+        Args:
+            data (object): 包含要插入的字段和值的对象，例如 EntrustData 对象
+            sub_data (dict, optional): 包含要插入的额外字段和值的字典对象
+            
+        Returns:
+            int: 新插入记录的ID，如果插入失败则返回None
+        """
+        if not data:
+            return None
+            
+        conn = sqlite3.connect(db_file)
+        cursor = conn.cursor()
+        
+        # 可插入的字段列表
+        allowed_fields = [
+            'traded_amount', 'traded_price', 'traded_volume', 'traded_time',
+            'traded_id', 'status_msg', 'orders_id', 'order_id', 'order_sysid',
+            'status','order_type','price_type','order_status','stock_code','offset_flag'
+        ]
+        
+        # 构建动态的INSERT语句
+        fields = []
+        placeholders = []
+        values = []
+        
+        # 处理主数据对象
+        for field in allowed_fields:
+            if hasattr(data, field):
+                value = getattr(data, field)
+                fields.append(field)
+                placeholders.append('?')
+                values.append(value)
+        
+        # 处理子数据
+        if sub_data and isinstance(sub_data, dict):
+            for field, value in sub_data.items():
+                if field in allowed_fields:
+                    fields.append(field)
+                    placeholders.append('?')
+                    values.append(value)
+        
+        if not fields:
+            conn.close()
+            return None
+            
+        # 添加创建时间
+        fields.append('create_time')
+        placeholders.append('?')
+        values.append(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        
+        query = f"INSERT INTO entrusts ({', '.join(fields)}) VALUES ({', '.join(placeholders)})"
+        cursor.execute(query, values)
+        
+        last_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return last_id
+
+    def save_trade(self, data, sub_data=None):
+        """保存成交记录
+        
+        Args:
+            data (object): 包含要插入的字段和值的对象，例如 TradeData 对象
+            sub_data (dict, optional): 包含要插入的额外字段和值的字典对象
+            
+        Returns:
+            int: 新插入记录的ID，如果插入失败则返回None
+        """
+        if not data:
+            return None
+            
+        conn = sqlite3.connect(db_file)
+        cursor = conn.cursor()
+        
+        # 可插入的字段列表
+        allowed_fields = [
+            'order_id', 'order_sysid', 'order_time', 'order_volume',
+            'price_type', 'price', 'traded_volume', 'traded_price',
+            'order_status', 'status_msg', 'offset_flag', 'orders_id',
+            'status'
+        ]
+        
+        # 构建动态的INSERT语句
+        fields = []
+        placeholders = []
+        values = []
+        
+        # 处理主数据对象
+        for field in allowed_fields:
+            if hasattr(data, field):
+                value = getattr(data, field)
+                fields.append(field)
+                placeholders.append('?')
+                values.append(value)
+        
+        # 处理子数据
+        if sub_data and isinstance(sub_data, dict):
+            for field, value in sub_data.items():
+                if field in allowed_fields:
+                    fields.append(field)
+                    placeholders.append('?')
+                    values.append(value)
+        
+        if not fields:
+            conn.close()
+            return None
+            
+        # 添加创建时间
+        fields.append('create_time')
+        placeholders.append('?')
+        values.append(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        
+        query = f"INSERT INTO trades ({', '.join(fields)}) VALUES ({', '.join(placeholders)})"
+        cursor.execute(query, values)
+        
+        last_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return last_id

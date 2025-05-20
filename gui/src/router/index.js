@@ -8,6 +8,7 @@ export const routes = [
     path: '/',
     name: 'Loading',
     component: () => import('../views/loading/index.vue'),
+    show: false,
     meta: {
       title: '自动远程下单',
       show: false,
@@ -97,7 +98,7 @@ export const routes = [
         component: () => import('../views/setting/components/local.vue'),
         meta: {
           title: '自建服务器模式',
-          showBack: false
+          showBack: tru
         }
       },
       {
@@ -128,7 +129,7 @@ const router = createRouter({
 })
 
 // 需要登录才能访问的路由
-const authRoutes = ['/setting/user-detail', '/home', '/order', '/transition']
+const authRoutes = ['/setting/user-detail', '/home', '/order', '/transition','/home/list']
 
 router.beforeEach(async (to, from, next) => {
   console.log(to)

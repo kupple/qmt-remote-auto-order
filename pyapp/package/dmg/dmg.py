@@ -1,11 +1,11 @@
 
-filename = 'PPX-V5.2.2_macOS'
-volume_name = 'PPX-V5.2.2_macOS.dmg'
+filename = 'qmt_auto_order-V0.0.1_macOS'
+volume_name = 'qmt_auto_order-V0.0.1_macOS.dmg'
 format = 'UDBZ'
-files = ['/Users/zhao/Desktop/git/qmt-remote-auto-order/pyapp/../build/PPX.app', '/Users/zhao/Desktop/git/qmt-remote-auto-order/pyapp/package/dmg/潘高的小站.webloc']
+files = ['/Users/zhao/Desktop/git/qmt-remote-auto-order/pyapp/../build/qmt_auto_order.app', '/Users/zhao/Desktop/git/qmt-remote-auto-order/pyapp/package/dmg/潘高的小站.webloc']
 symlinks = {'Applications': '/Applications'}
 icon_locations = {
-    'PPX.app': (160, 120),
+    'qmt_auto_order.app': (160, 120),
     'Applications': (430, 120),
     '潘高的小站.webloc': (450, 243)
 }

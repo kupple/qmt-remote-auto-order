@@ -19,10 +19,10 @@ PyInstaller.config.CONF['workpath'] = cachePath
 icoPath = os.path.join('..', 'icon', 'logo.icns')
 
 # 项目名称
-appName = 'PPX'
+appName = 'qmt_auto_order'
 
 # 版本号
-version = 'V5.2.2'
+version = 'V0.0.1'
 
 
 a = Analysis(['../../main.py'],
