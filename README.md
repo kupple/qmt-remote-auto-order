@@ -4,7 +4,9 @@
 ```
 # QMT Remote Auto Order
 
-![Logo](gui/src/assets/images/logo.png)
+<img style="background:#000" src="gui/src/assets/images/logo.png" width="200" height="200" alt="Logo">
+
+
 
 ## 项目简介
 
