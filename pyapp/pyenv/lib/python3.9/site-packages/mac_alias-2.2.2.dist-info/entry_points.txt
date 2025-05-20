@@ -1,0 +1,2 @@
+[console_scripts]
+mac_alias = mac_alias.__main__:main

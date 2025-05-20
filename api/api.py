@@ -10,17 +10,11 @@ from api.sql import Database
 from api.common import Common
 from api.remote import Remote
 from api.qmt import QMT
-import sqlite3
-import os
-from io import BytesIO
 import threading
-from datetime import datetime
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from api.system import System
 
 
-
-
-class API():
+class API(System):
     def __init__(self):
         # 创建一个qmt对象
         self.sql = Database()
@@ -30,7 +24,7 @@ class API():
 
     def setWindow(self, window):
         '''获取窗口实例'''
-        System.window = window
+        System._window = window
 
     def getSettingConfig(self):
         return Database().get_setting_config()

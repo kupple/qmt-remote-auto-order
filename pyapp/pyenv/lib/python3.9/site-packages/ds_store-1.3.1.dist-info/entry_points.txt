@@ -1,0 +1,2 @@
+[console_scripts]
+ds_store = ds_store.__main__:main
