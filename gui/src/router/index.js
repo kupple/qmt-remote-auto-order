@@ -1,8 +1,19 @@
 import { getSettingConfig } from '@/api/comm_tube'
 import { fetchUserInfo } from '@/api/user'
 import { clearAuth, getToken, getUserInfo, setUserInfo } from '@/utils/auth'
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
+
 export const routes = [
+  {
+    path: '/',
+    name: 'Loading',
+    component: () => import('../views/loading/index.vue'),
+    meta: {
+      title: '自动远程下单',
+      show: false,
+      showBack: false
+    }
+  },
   {
     path: '/home',
     name: 'Home',
@@ -112,7 +123,7 @@ export const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(),
   routes
 })
 
@@ -120,28 +131,33 @@ const router = createRouter({
 const authRoutes = ['/setting/user-detail', '/home', '/order', '/transition']
 
 router.beforeEach(async (to, from, next) => {
-  next()
-  return
+  console.log(to)
   try {
+    // 如果是访问根路径，直接显示 loading 页面
+    if (to.path === '/') {
+      next()
+      return
+    }
+
     const token = getToken()
     const userInfo = getUserInfo()
     const settingConfig = await getSettingConfig()
     const runModelType = settingConfig.run_model_type
+
+   
+
     if ((runModelType === 0 || !runModelType) && to.path !== '/setting/login' && to.path !== '/setting/local') {
       next('/setting/login')
-      console.log('111111111')
       return
     }
     if (to.path === '/setting/login' && runModelType === 1) {
       next('/setting/local')
-      console.log('222222222')
       return
     }
 
     // 如果需要登录但未登录
     if (runModelType !== 1 && authRoutes.includes(to.path) && !token) {
       next('/setting/login')
-      console.log('333333333')
       return
     }
 
@@ -158,7 +174,6 @@ router.beforeEach(async (to, from, next) => {
         // 如果当前在登录页，自动跳转到用户明细页
         if (to.path === '/setting/login') {
           next('/user/detail')
-          console.log('555555555')
           return
         }
       } catch (error) {
@@ -166,15 +181,13 @@ router.beforeEach(async (to, from, next) => {
         // 如果获取用户信息失败，清除 token 并跳转到登录页
         clearAuth()
         next('/setting/login')
-        console.log('666666666')
         return
       }
     }
-    console.log('777777777')
     next()
   } catch (error) {
     console.error('路由导航失败:', error)
-    next('/setting/login')
+    // next('/setting/login')
   }
 })
 

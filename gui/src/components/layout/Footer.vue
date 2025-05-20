@@ -49,13 +49,13 @@ defineOptions({
 const isQMTProcessExit = computed(() => useCommonStore().isQMTProcessExit)
 const isWSConnectedState = computed(() => useRemoteStore().connectState)
 onMounted(async () => {
-  // setInterval(async () => {
-  //   const res = await isProcessExist()
-  //   useCommonStore().changeIsQMTProcessExit(res)
-  // }, 2000)
-  // setInterval(async () => {
-  //   time.value = new Date().toLocaleString()
-  // }, 1000)
+  setInterval(async () => {
+    const res = await isProcessExist()
+    useCommonStore().changeIsQMTProcessExit(res)
+  }, 2000)
+  setInterval(async () => {
+    time.value = new Date().toLocaleString()
+  }, 1000)
 })
 </script>
 

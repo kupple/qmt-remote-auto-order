@@ -38,8 +38,8 @@ export const testConnect = (params) => {
   return window.pywebview.api.testConnect(params)
 }
 
-export const isProcessExist = (params) => {
-  return window.pywebview.api.isProcessExist(params)
+export const isProcessExist = () => {
+  return window.pywebview.api.isProcessExist()
 }
 export const copyRequestCode = (params) => {
   return window.pywebview.api.copyRequestCode(params)
