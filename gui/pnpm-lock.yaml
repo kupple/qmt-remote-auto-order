@@ -300,11 +300,11 @@ packages:
   /@types/lodash-es@4.17.12:
     resolution: {integrity: sha512-0NgftHUcV4v34VhXm8QBSftKVXtbkBG3ViCjs6+eJ5a6y6Mi/jiFGPc1sC7QK+9BFhWrURE3EOggmWaSxL9OzQ==}
     dependencies:
-      '@types/lodash': 4.17.16
+      '@types/lodash': 4.17.17
     dev: false
 
-  /@types/lodash@4.17.16:
-    resolution: {integrity: sha512-HX7Em5NYQAXKW+1T+FiuG27NGwzJfCX3s1GjOa7ujxZa52kjJLOr4FUxT+giF6Tgxv1e+/czV/iTtBw27WTU9g==}
+  /@types/lodash@4.17.17:
+    resolution: {integrity: sha512-RRVJ+J3J+WmyOTqnz3PiBLA501eKwXl2noseKOrNo/6+XEHjTAxO4xHvxQB6QuNm+s4WRbn6rSiap8+EA+ykFQ==}
     dev: false
 
   /@types/web-bluetooth@0.0.16:
@@ -485,7 +485,7 @@ packages:
       '@element-plus/icons-vue': 2.3.1(vue@3.5.14)
       '@floating-ui/dom': 1.7.0
       '@popperjs/core': /@sxzz/popperjs-es@2.11.7
-      '@types/lodash': 4.17.16
+      '@types/lodash': 4.17.17
       '@types/lodash-es': 4.17.12
       '@vueuse/core': 9.13.0(vue@3.5.14)
       async-validator: 4.2.5

@@ -3,12 +3,12 @@
     <div class="code-login-box">
       <el-form ref="registerFormRef" :model="registerForm" :rules="rules" label-position="top">
         <el-form-item label="邮箱" prop="email">
-          <el-input v-model="registerForm.email" placeholder="请输入邮箱" prefix-icon="Message" />
+          <el-input v-model="registerForm.email" placeholder="请输入邮箱" :prefix-icon="Message" />
         </el-form-item>
 
         <el-form-item label="验证码" prop="verificationCode">
           <div class="verification-code-container">
-            <el-input v-model="registerForm.verificationCode" placeholder="请输入验证码" prefix-icon="Key" maxlength="6" />
+            <el-input v-model="registerForm.verificationCode" placeholder="请输入验证码" :prefix-icon="Key" maxlength="6" />
             <el-button type="primary" :disabled="!canSendCode || countdown > 0" @click="handleSendCode" class="send-code-btn">
               {{ countdown > 0 ? `${countdown}秒后重试` : '发送验证码' }}
             </el-button>
@@ -16,11 +16,11 @@
         </el-form-item>
 
         <el-form-item label="密码" prop="password">
-          <el-input v-model="registerForm.password" type="password" placeholder="请输入密码" prefix-icon="Lock" show-password />
+          <el-input v-model="registerForm.password" type="password" placeholder="请输入密码" :prefix-icon="Lock" show-password />
         </el-form-item>
 
         <el-form-item label="确认密码" prop="confirmPassword">
-          <el-input v-model="registerForm.confirmPassword" type="password" placeholder="请再次输入密码" prefix-icon="Lock" show-password />
+          <el-input v-model="registerForm.confirmPassword" type="password" placeholder="请再次输入密码" :prefix-icon="Lock" show-password />
         </el-form-item>
 
         <el-form-item>
@@ -39,7 +39,7 @@ import { ref, reactive, computed, onUnmounted } from 'vue'
 import { Message, Lock, Key } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
-import { sendVerificationCode, register } from '@/api/user'
+import { sendVerificationCode, resetPassword } from '@/api/user'
 
 const router = useRouter()
 const registerFormRef = ref(null)
@@ -75,7 +75,7 @@ const handleSendCode = async () => {
   }
 
   try {
-    await sendVerificationCode(registerForm.email)
+    await sendVerificationCode(registerForm.email, 'reset_password')
     ElMessage.success('验证码已发送')
     startCountdown()
   } catch (error) {
@@ -88,16 +88,15 @@ const validatePass = (rule, value, callback) => {
   if (value === '') {
     callback(new Error('请输入密码'))
   } else {
-    const hasUpperCase = /[A-Z]/.test(value)
+    const hasLetter = /[a-zA-Z]/.test(value)
     const hasNumber = /[0-9]/.test(value)
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(value)
 
-    if (!hasUpperCase) {
-      callback(new Error('密码必须包含至少一个大写字母'))
+    if (!hasLetter) {
+      callback(new Error('密码必须包含至少一个字母'))
     } else if (!hasNumber) {
       callback(new Error('密码必须包含至少一个数字'))
-    } else if (!hasSpecialChar) {
-      callback(new Error('密码必须包含至少一个特殊字符'))
+    } else if (value.length < 6) {
+      callback(new Error('密码长度不能少于6位'))
     } else {
       if (registerForm.confirmPassword !== '') {
         registerFormRef.value?.validateField('confirmPassword')
@@ -148,7 +147,7 @@ const handleRegister = async () => {
     loading.value = true
 
     const { email, verificationCode, password } = registerForm
-    await register({
+    await resetPassword({
       email,
       verification_code: verificationCode,
       password

@@ -1,6 +1,6 @@
+import { clearAuth, getToken, getUserInfo, setUserInfo } from '@/api/auth'
 import { getSettingConfig } from '@/api/comm_tube'
 import { fetchUserInfo } from '@/api/user'
-import { clearAuth, getToken, getUserInfo, setUserInfo } from '@/utils/auth'
 import { createRouter, createWebHashHistory } from 'vue-router'
 
 export const routes = [
@@ -98,7 +98,7 @@ export const routes = [
         component: () => import('../views/setting/components/local.vue'),
         meta: {
           title: '自建服务器模式',
-          showBack: tru
+          showBack: true
         }
       },
       {
@@ -132,7 +132,6 @@ const router = createRouter({
 const authRoutes = ['/setting/user-detail', '/home', '/order', '/transition','/home/list']
 
 router.beforeEach(async (to, from, next) => {
-  console.log(to)
   try {
     // 如果是访问根路径，直接显示 loading 页面
     if (to.path === '/') {
@@ -140,14 +139,14 @@ router.beforeEach(async (to, from, next) => {
       return
     }
 
-    const token = getToken()
-    const userInfo = getUserInfo()
+    const token = await getToken()
+    const userInfo = await getUserInfo()
     const settingConfig = await getSettingConfig()
     const runModelType = settingConfig.run_model_type
 
    
 
-    if ((runModelType === 0 || !runModelType) && to.path !== '/setting/login' && to.path !== '/setting/local') {
+    if ((runModelType === 0 || !runModelType) && to.path !== '/setting/login' && to.path !== '/setting/local' && authRoutes.includes(to.path)) {
       next('/setting/login')
       return
     }
@@ -162,7 +161,7 @@ router.beforeEach(async (to, from, next) => {
       return
     }
 
-    if (runModelType !== 1 && to.path === '/setting/login' && userInfo && token) {
+    if (runModelType == 2 && to.path === '/setting/login' && userInfo && token) {
       next('/setting/user-detail')
       return
     }
@@ -188,7 +187,6 @@ router.beforeEach(async (to, from, next) => {
     next()
   } catch (error) {
     console.error('路由导航失败:', error)
-    // next('/setting/login')
   }
 })
 

@@ -9,8 +9,14 @@
       </el-form-item>
       <el-form-item label="下单类型">
         <el-radio-group v-model="form.orderCountType">
-          <el-radio :label="1">跟随策略下单数量</el-radio>
-          <el-radio :label="2">策略实际按比例数量下单</el-radio>
+          <el-radio :label="1">跟随策略</el-radio>
+          <el-tooltip
+            effect="dark"
+            content="即将开放"
+            placement="top"
+          >
+            <el-radio disabled :label="2">多账号策略</el-radio>
+          </el-tooltip>
         </el-radio-group>
       </el-form-item>
       <div v-if="form.orderCountType === 2" class="amount-container" style="display: flex; justify-content: space-between">
@@ -21,9 +27,9 @@
           <el-input v-model="form.allocationAmount" placeholder="请输入账号分配金额" type="number" :min="0" @input="handleAllocationAmountInput" />
         </el-form-item>
       </div>
-      <el-form-item v-else label="实际分配金额">
+      <!-- <el-form-item v-else label="实际分配金额">
         <el-input style="width: 50%" v-model="form.allocationAmount" placeholder="请输入账号分配金额" type="number" :min="0" @input="handleAllocationAmountInput" />
-      </el-form-item>
+      </el-form-item> -->
       <el-form-item>
         <el-button type="primary" @click="handleSubmit">保存</el-button>
         <el-button @click="dialogVisible = false">取消</el-button>

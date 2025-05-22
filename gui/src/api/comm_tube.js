@@ -31,9 +31,18 @@ export const transitionCode = (params,taskDic) => {
 export const connectWs = (params) => {
   return window.pywebview.api.connectWs(params)
 }
+
+export const connectQMT = async(params) => {
+  const isAccSubSuccess = await window.pywebview.api.connectQMT(params)
+  await useCommonStore().changeIsAccSubSuccess(isAccSubSuccess)
+  return isAccSubSuccess
+}
+
 export const disconnect = () => {
   return window.pywebview.api.disconnect()
 }
+
+
 export const testConnect = (params) => {
   return window.pywebview.api.testConnect(params)
 }
@@ -56,3 +65,10 @@ export const getRemoteState = () => {
 export const deleteTask = (params) => {
   return window.pywebview.api.deleteTask(params)
 }
+
+export const testQMTConnect = (path) => {
+  return window.pywebview.api.testQMTConnect(path)
+}
+
+
+// export const 

@@ -69,9 +69,10 @@ const getDataSourceList = async () => {
     page: pageInfo.page,
     pageSize: pageInfo.pageSize
   })
+  console.log(res.data)
   dataSource.value = res.data.map((item) => ({
     ...item,
-    create_time: dayjs(item.create_time).format('YYYY-MM-DD HH:mm:ss'),
+    create_time: dayjs(item.created_at).format('YYYY-MM-DD HH:mm:ss'),
     run_params: item.run_params === 'simple_backtest' ? '简单回测' : item.run_params === 'full_backtest' ? '全量回测' : '模拟交易'
   }))
   pageInfo.total = res.total

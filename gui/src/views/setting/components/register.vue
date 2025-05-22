@@ -88,16 +88,15 @@ const validatePass = (rule, value, callback) => {
   if (value === '') {
     callback(new Error('请输入密码'))
   } else {
-    const hasUpperCase = /[A-Z]/.test(value)
+    const hasLetter = /[a-zA-Z]/.test(value)
     const hasNumber = /[0-9]/.test(value)
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(value)
 
-    if (!hasUpperCase) {
-      callback(new Error('密码必须包含至少一个大写字母'))
+    if (!hasLetter) {
+      callback(new Error('密码必须包含至少一个字母'))
     } else if (!hasNumber) {
       callback(new Error('密码必须包含至少一个数字'))
-    } else if (!hasSpecialChar) {
-      callback(new Error('密码必须包含至少一个特殊字符'))
+    } else if (value.length < 6) {
+      callback(new Error('密码长度不能少于6位'))
     } else {
       if (registerForm.confirmPassword !== '') {
         registerFormRef.value?.validateField('confirmPassword')

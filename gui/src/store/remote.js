@@ -1,4 +1,5 @@
 // frontend/src/store/user.js
+import dayjs from 'dayjs'
 import {
     defineStore
 } from 'pinia'
@@ -32,13 +33,14 @@ export const useRemoteStore = defineStore('remote', {
                 }else if(params.data.run_params=="sim_trade"){
                     st = `接收到来自模拟的信号单: `
                 }
-                st += `任务编号为${params.data.strategy_id} 股票为${params.data.params.security} 数量为${params.data.params.value} 方向为${params.data.params.side}`
+                st += `任务编号为${params.data.strategy_id} 股票为${params.data.params.security} 数量为${params.data.params.amount} 方向为${params.data.params.is_buy ? '买入':'卖出'}`
                 params.message = st
-                console.log(st)
             }else{
                 this.clientId = params.unique_id
             }
             // console.log(params.message)
+            params.message = dayjs().format("MM-DD HH:mm:ss") + "-" + params.message
+            console.log(params.message)
             this.messagesArr.push(params)
         }
     }

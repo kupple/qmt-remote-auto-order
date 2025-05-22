@@ -3,6 +3,8 @@
 import os as _OS_
 import time as _TIME_
 import traceback as _TRACEBACK_
+import platform
+
 
 from . import xtbson as _BSON_
 
@@ -267,8 +269,9 @@ def create_array(shape, dtype_tuple, capsule, size):
     obj._base = capsule
     return np.ndarray(shape = shape, dtype = np.dtype(dtype_tuple), buffer = obj)
 
-from .xtdatacenter import register_create_nparray as __register_create_nparray
-__register_create_nparray(create_array)
+if platform.system() == 'Windows':
+    from .xtdatacenter import register_create_nparray as __register_create_nparray
+    __register_create_nparray(create_array)
 
 
 def _BSON_call_common(interface, func, param):

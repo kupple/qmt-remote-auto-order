@@ -1,8 +1,11 @@
 #coding:utf-8
 
 import os as _OS_
+import platform
 
-from . import datacenter as __dc
+if platform.system() == 'Windows':
+    from . import datacenter as __dc
+
 
 __all__ = [
     'set_token',

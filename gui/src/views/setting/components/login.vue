@@ -30,7 +30,7 @@ import { Message, Lock, Connection } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { login } from '@/api/user'
-import { setToken, setUserInfo } from '@/utils/auth'
+import { setToken, setUserInfo } from '@/api/auth'
 import { saveConfig, connectWs } from '@/api/comm_tube'
 const router = useRouter()
 const loginFormRef = ref(null)
@@ -38,7 +38,7 @@ const loading = ref(false)
 
 const loginForm = reactive({
   email: 'rtys788@icloud.com',
-  password: '123456'
+  password: 'a123456'
 })
 
 const rules = {
@@ -53,7 +53,7 @@ const rules = {
 }
 
 const handleForgetCodeAction = () => {
-  router.push('/setting/forget-code')
+  router.push('/setting/code-login')
 }
 
 const handleOwnRemoteService = async () => {
@@ -63,21 +63,21 @@ const handleOwnRemoteService = async () => {
   router.push({ name: 'SettingLocal' })
 }
 
-const handleLogin = async () => {
+const handleLogin =  async() => {
   if (!loginFormRef.value) return
 
   try {
-    await loginFormRef.value.validate()
+    loginFormRef.value.validate()
     loading.value = true
 
     await saveConfig({
       run_model_type: 2
     })
 
-    const res = await login(loginForm)
+    const res =  await login(loginForm)
     // 保存 token
-    setToken(res.data.token)
-    setUserInfo(res.data.user)
+    await setToken(res.data.token)
+    await setUserInfo(res.data.user)
     // 连接websocket
     await connectWs(res.data.user.server_url)
     ElMessage.success('登录成功')

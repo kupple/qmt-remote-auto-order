@@ -4,7 +4,7 @@
 ```
 # QMT Remote Auto Order
 
-<img style="background:#000" src="gui/src/assets/images/logo.png" width="200" height="200" alt="Logo">
+<img  src="gui/src/assets/images/logo.png" width="200" height="200" alt="Logo">
 
 
 

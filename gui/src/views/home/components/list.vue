@@ -1,10 +1,9 @@
 <template>
   <div class="home-container">
-    <ListModal ref="listModalRef" @getTaskList="getTaskListAction" />
     <div class="bottom-container">
       <div class="bottom-container-left">
         <el-button type="primary" style="float: right; margin-bottom: 5px" @click="openModal">新建任务</el-button>
-        <el-table class="table-container" :data="taskList" style="width: 100%">
+        <el-table class="table-container" :data="taskList">
           <el-table-column prop="name" label="任务名称" />
           <el-table-column prop="strategy_code" label="任务编号"> </el-table-column>
           <el-table-column prop="allocation_amount" label="分配金额" />
@@ -30,14 +29,15 @@
         </el-form>
       </div>
     </div>
+    <ListModal ref="listModalRef" @getTaskList="getTaskListAction" />
   </div>
 </template>
 
 <script setup>
 import ListModal from './listModal.vue'
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useCommonStore } from '@/store/common.js'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter, useRoute } from 'vue-router'
 import { getSettingConfig, runTask, getTaskList } from '@/api/comm_tube'
 const serverAddress = ref('http://127.0.0.1:5000')
@@ -64,6 +64,20 @@ const form = ref({
 
 // 开始任务
 const handleEdit = async (row) => {
+  if (row.is_open === 0) {
+    // 停止操作需要确认
+    try {
+      await ElMessageBox.confirm('确定要停止该任务吗？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      })
+    } catch (e) {
+      // 用户点击取消
+      return
+    }
+  }
+  
   const res = await runTask(row)
   if (res) {
     ElMessage.success('操作成功')
@@ -97,8 +111,9 @@ onMounted(async () => {
 .home-container {
   padding: 10px;
   padding-bottom: 10px;
-  display: flex;
-  flex-direction: column;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .bottom-container {
@@ -107,19 +122,26 @@ onMounted(async () => {
   gap: 10px;
   margin-top: 5px;
   height: 100%;
+  min-width: 0;
   .table-container {
-    flex: 3;
+    width: 100%;
+    :deep(.el-table) {
+      width: 100% !important;
+    }
   }
   .bottom-container-left {
     flex: 3;
     background: #fff;
     padding: 10px;
+    min-width: 0;
+    overflow: hidden;
   }
   .bottom-container-right {
     display: flex;
     flex: 1;
     padding: 10px;
     background: #fff;
+    min-width: 200px;
   }
 }
 </style>

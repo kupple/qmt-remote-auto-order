@@ -26,6 +26,17 @@
         <el-icon color="red"><CircleCloseFilled /></el-icon>
       </div>
     </div>
+    <div class="ws-state">
+      <span class="label-tips">资金账号订阅:</span>
+      <div v-if="isAccSubSuccess" class="footer-cell">
+        <div class="tips">成功</div>
+        <el-icon color="green"><CircleCheckFilled /></el-icon>
+      </div>
+      <div v-else class="footer-cell">
+        <div class="tips">失败</div>
+        <el-icon color="red"><CircleCloseFilled /></el-icon>
+      </div>
+    </div>
     <div class="date-time-cell">
       <!-- 时间显示 -->
       <div class="time-cell">
@@ -48,6 +59,9 @@ defineOptions({
 
 const isQMTProcessExit = computed(() => useCommonStore().isQMTProcessExit)
 const isWSConnectedState = computed(() => useRemoteStore().connectState)
+// 是否订阅账号成功
+const isAccSubSuccess = computed(() => useCommonStore().isAccSubSuccess)
+
 onMounted(async () => {
   setInterval(async () => {
     const res = await isProcessExist()

@@ -2,7 +2,7 @@
   <div class="setting-container">
     <div v-if="isWSConnectedState === 1" class="tips-view">远程服务连接正常</div>
     <div class="setting-form">
-      <el-form label-width="auto" :model="params" :rules="rules" ref="formRef">
+      <el-form :disabled="isWSConnectedState === 1" label-width="auto" :model="params" :rules="rules" ref="formRef">
         <el-form-item required label="远程服务器地址" prop="server_url">
           <el-input v-model="params.server_url" placeholder="请输入远程服务器地址" />
           <el-tooltip effect="dark" content="仅支持ws/wss协议格式如: ws://192.112.151.12:8080/ws" placement="top">
@@ -11,12 +11,16 @@
         </el-form-item>
         <el-form-item label="QMT路径" prop="qmtPath" required>
           <el-input v-model="params.qmtPath" placeholder="请输入QMT安装路径" required />
+          <el-button type="primary" @click="connectionAction" style="margin-left: 10px">连接/获取资金账号</el-button>
           <el-tooltip effect="dark" content="示例: D:\长城策略交易系统\userdata_mini" placement="top">
             <el-icon style="margin-left: 10px; color: #999; font-size: 18px"><QuestionFilled /></el-icon>
           </el-tooltip>
         </el-form-item>
         <el-form-item label="客户编号" prop="clientId" required>
-          <el-input v-model="params.clientId" placeholder="请输入客户编号ID" required />
+          <el-select v-if="passStatus !== 2" :disabled="passStatus === 0" v-model="params.clientId" placeholder="请选择客户编号ID" required>
+            <el-option v-for="item in accountArr" :key="item" :label="item" :value="item" />
+          </el-select>
+          <el-input v-else v-model="params.clientId" placeholder="请输入客户编号ID" required />
           <el-tooltip effect="dark" content="示例: 121600018888" placement="top">
             <el-icon style="margin-left: 10px; color: #999; font-size: 18px"><QuestionFilled /></el-icon>
           </el-tooltip>
@@ -27,7 +31,18 @@
             <el-icon style="margin-left: 10px; color: #999; font-size: 18px"><QuestionFilled /></el-icon>
           </el-tooltip>
         </el-form-item>
+
+        <el-form-item label="qmt客户端是否打开" required>
+          <div v-if="isQMTProcessExit == true" class="footer-cell">
+            <el-tag type="success">mini迅投客户端已打开</el-tag>
+          </div>
+          <div v-else class="footer-cell">
+            <el-tag type="danger">mini迅投客户端暂未打开</el-tag>
+          </div>
+        </el-form-item>
       </el-form>
+
+      <!-- <el-divider /> -->
       <el-button v-if="isWSConnectedState === 0" class="save-btn" @click="saveAction" type="primary">确定 / 连接</el-button>
       <el-button v-else-if="isWSConnectedState === 2" class="save-btn" type="primary" disabled>正在连接</el-button>
       <el-button v-else class="save-btn" @click="disconnectAction" type="danger">断开连接</el-button>
@@ -44,6 +59,11 @@ import { useRoute, useRouter } from 'vue-router'
 const router = useRouter()
 import { getSettingConfig, saveConfig, connectWs, disconnect, getRemoteState } from '@/api/comm_tube'
 import { QuestionFilled } from '@element-plus/icons-vue'
+import { useCommonStore } from '@/store/common.js'
+import { CircleCheckFilled, CircleCloseFilled } from '@element-plus/icons-vue'
+import { testQMTConnect } from '@/api/comm_tube'
+
+const isQMTProcessExit = computed(() => useCommonStore().isQMTProcessExit)
 
 const formRef = ref(null)
 
@@ -52,6 +72,33 @@ const remoteStoreDic = computed(() => {
 })
 
 const isWSConnectedState = computed(() => useRemoteStore().connectState)
+
+const connectionAction = () => {
+  testQMTConnect(params.qmtPath).then((res) => {
+    if (res.is_connect) {
+      if (res.account_arr.length == 0) {
+        ElMessage({
+          message: '获取的资金数量为0 请重新登录MiniQMT客户端',
+          type: 'error'
+        })
+        passStatus.value = 2
+        return
+      }
+      accountArr.value = res.account_arr
+      ElMessage({
+        message: '连接成功请选择资金编号',
+        type: 'success'
+      })
+      passStatus.value = 1
+    } else {
+      ElMessage({
+        message: '请检查QMT路径是否正确',
+        type: 'error'
+      })
+      passStatus.value = 0
+    }
+  })
+}
 
 const getRemoteStateAction = async () => {
   const res = await getRemoteState()
@@ -68,6 +115,10 @@ const rules = {
   salt: [{ required: true, message: '请输入加密盐', trigger: 'blur' }]
 }
 
+const accountArr = ref([])
+
+const passStatus = ref(0)
+
 const params = reactive({
   qmtPath: '',
   clientId: '',
@@ -80,6 +131,13 @@ const saveAction = async () => {
 
   try {
     await formRef.value.validate()
+    if (isQMTProcessExit.value == false) {
+      ElMessage({
+        message: '请手动打开miniqmt',
+        type: 'error'
+      })
+      return
+    }
     await saveConfig({
       mini_qmt_path: params.qmtPath,
       client_id: params.clientId,
@@ -92,6 +150,7 @@ const saveAction = async () => {
       type: 'success'
     })
     useRemoteStore().changeConnectState(2)
+    await connectQMT({ mini_qmt_path: params.qmtPath, client_id: params.clientId })
     await connectWs(params.server_url)
   } catch (error) {
     ElMessage({
@@ -161,7 +220,7 @@ onMounted(async () => {
 .setting-form {
   display: flex;
   flex-direction: column;
-  width: 40vw;
+  width: 50vw;
   background: #fff;
   border-radius: 10px;
   padding: 20px;
@@ -176,6 +235,9 @@ onMounted(async () => {
   flex-wrap: nowrap !important;
 }
 .el-input {
+  flex: 1;
+}
+.el-select {
   flex: 1;
 }
 .save-btn {

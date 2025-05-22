@@ -6,25 +6,43 @@
       </div>
       <div class="loading-text">正在加载中...</div>
       <el-icon class="loading-icon" :size="40">
-        <Loading style="color:#fff"/>
+        <Loading style="color: #fff" />
       </el-icon>
     </div>
   </div>
 </template>
 
-<script setup >
+<script setup>
 import { Loading } from '@element-plus/icons-vue'
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-
+import { connectWs, getSettingConfig, connectQMT } from '@/api/comm_tube'
+import { getToken, getUserInfo } from '@/api/auth'
 const router = useRouter()
 
 onMounted(() => {
-  setTimeout(async() => {
+  setTimeout(async () => {
+    const config = await getSettingConfig()
+    if (config.mini_qmt_path && config.client_id) {
+      console.log("zkxcjzkx;c")
+      connectQMT({ mini_qmt_path: config.mini_qmt_path, client_id: config.client_id })
+    }
+    if (config.run_model_type === 1) {
+      if (config.salt && config.server_url && config.client_id && config.mini_qmt_path) {
+        connectWs(config.server_url)
+      }
+    } else if (config.run_model_type === 2) {
+      const userInfo = await getUserInfo()
+      const token = await getToken()
+      if (userInfo && token && config.server_url) {
+        connectWs(config.server_url)
+      }
+    }
     router.push('/home/list')
   }, 1000)
 })
 </script>
+c
 
 <style scoped>
 .loading-container {

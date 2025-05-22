@@ -4,16 +4,21 @@
 Description: 数据库操作相关的API
 '''
 import subprocess
-from api.sql import Database
+import sys
+from api.db.orm import ORM
 import json
 import re
-from api.tools.sysConfig import get_system_unique_id
+from api.tools.sysConfig import get_system_unique_id,ws_to_http
 from api.tools.tokenManager import generate_token,verify_token
 
 class Common:
-
+    def __init__(self,orm) -> None:
+        self.orm = orm
+        
     def is_process_exist(self):
         app_name = "XtMiniQmt.exe"
+        if sys.platform.startswith('darwin'):
+            return True
         try:
             # 创建STARTUPINFO对象并设置隐藏窗口标志
             startupinfo = subprocess.STARTUPINFO()
@@ -48,45 +53,58 @@ class Common:
 
     
     def transition_code(self,data,taskDic):
-        # server_url = Database.setting_config["server_url"]
-        server_url = "http://193.112.151.98:8080"
+        # server_url = ORM().get_setting_config()["server_url"]
+        config =  self.orm.get_setting_config()
+        run_model_type = config['run_model_type']
+        server_url = ws_to_http(config['server_url'])
+        
         try:
+            unique_id = None
+            token = None
+            if run_model_type == 2:
+                userInfo = self.orm.getStorageVar('qmt_user_info')
+                token = self.orm.getStorageVar('qmt_token')
+                data_dict = json.loads(userInfo)
+                unique_id = str(data_dict['id'])
+                plaintext = {
+                    "c": taskDic["strategy_code"],
+                    "u": unique_id            
+                }
+                token = token
+            else:
                 unique_id = get_system_unique_id()
                 plaintext = {
                     "c": taskDic["strategy_code"],
                     "u": unique_id            
                 }
-                # 服务端的盐
-                # 加密
-                token = generate_token(plaintext)
-                print(verify_token(token))
-                
-                if 'import requests' not in data:
-                    # 在文件开头添加 import 语句
-                    data = 'import requests\n' + data
-                if 'import json' not in data:
-                    # 在文件开头添加 import 语句
-                    data = 'import json\n' + data
-                    
-                pattern = r'def\s+initialize\s*\(\s*(\w+)\s*\)\s*:'
-                match = re.search(pattern, data)
+                token = generate_token(plaintext,config['salt'])
             
-                param_name = ''
-                if match:
-                    # 获取参数名
-                    param_name = match.group(1)
-                    
-                # 构建要插入的代码行
-                insert_line = f"    g.run_params = {param_name}.run_params.type"
+            if 'import requests' not in data:
+                # 在文件开头添加 import 语句
+                data = 'import requests\n' + data
+            if 'import json' not in data:
+                # 在文件开头添加 import 语句
+                data = 'import json\n' + data
                 
-                # 找到函数定义行的位置
-                def_line_pos = data.find(match.group(0)) + len(match.group(0))
+            pattern = r'def\s+initialize\s*\(\s*(\w+)\s*\)\s*:'
+            match = re.search(pattern, data)
+        
+            param_name = ''
+            if match:
+                # 获取参数名
+                param_name = match.group(1)
                 
-                # 在函数定义后插入新行
-                data = data[:def_line_pos] + '\n' + insert_line + data[def_line_pos:]
-                
-                data = data + '\n'
-                data = data + F"""
+            # 构建要插入的代码行
+            insert_line = f"    g.run_params = {param_name}.run_params.type"
+            
+            # 找到函数定义行的位置
+            def_line_pos = data.find(match.group(0)) + len(match.group(0))
+            
+            # 在函数定义后插入新行
+            data = data[:def_line_pos] + '\n' + insert_line + data[def_line_pos:]
+            
+            data = data + '\n'
+            data = data + F"""
 def qmt_auto_orders(method_name, *args, **kwargs):
     # 获取系统方法
     method_map = {{
@@ -139,14 +157,14 @@ def qmt_auto_orders(method_name, *args, **kwargs):
     }}, data= jsonDic)
     return orderInfo
     """ 
-
-                # 匹配方法名和括号内的参数
-                pattern = r'\b(order_target|order_value|order_target_value|order)\(([^)]*)\)'
-                
-                # 使用正则替换，将原方法名作为第一个参数传入 qmt_auto_orders
-                data = re.sub(pattern, r'qmt_auto_orders("\1", \2)', data)
-                return data
-        except:
+            # 匹配方法名和括号内的参数
+            pattern = r'\b(order_target|order_value|order_target_value|order)\(([^)]*)\)'
+            
+            # 使用正则替换，将原方法名作为第一个参数传入 qmt_auto_orders
+            data = re.sub(pattern, r'qmt_auto_orders("\1", \2)', data)
+            return data
+        except Exception as e:
+            print(e)
             return "转译错误"
         
         

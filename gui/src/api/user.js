@@ -1,8 +1,8 @@
 import { get, post } from '@/utils/api'
 
 // 发送验证码
-export function sendVerificationCode(email) {
-  return post('/api/v1/verification/send', { email })
+export function sendVerificationCode(email,purpose) {
+  return post('/api/v1/verification/send', { email,purpose })
 }
 
 // 用户注册
@@ -23,4 +23,8 @@ export function fetchUserInfo() {
 // 更新用户信息
 export function updateUserInfo(data) {
   return put(`/api/v1/users`, data)
+}
+
+export function resetPassword(data){
+  return post('/api/v1/users/reset-password', data)
 }

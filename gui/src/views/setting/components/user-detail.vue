@@ -27,7 +27,7 @@
 <script setup>
 import { ref, onMounted, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getUserInfo, clearAuth } from '@/utils/auth'
+import { getUserInfo, clearAuth } from '@/api/auth'
 import { useRouter } from 'vue-router'
 import { SwitchButton } from '@element-plus/icons-vue'
 import editConfigModal from './editConfigModal.vue'
@@ -41,12 +41,14 @@ const params = reactive({
 })
 
 const editConfigAction = () => {
+  
   editConfigModalRef.value.showModal()
 }
 
 onMounted(async () => {
-  await getSetting()
-  userInfo.value = getUserInfo()
+  const setting = await getSetting()
+  const tmpuserInfo = await getUserInfo()
+  userInfo.value = tmpuserInfo
 })
 
 const formatDate = (dateString) => {
@@ -65,6 +67,7 @@ const formatDate = (dateString) => {
 // 获取配置文件
 const getSetting = async () => {
   const res = await getSettingConfig()
+  console.log(res)
   params.qmtPath = res.mini_qmt_path
   params.clientId = res.client_id
 }

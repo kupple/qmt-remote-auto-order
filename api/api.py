@@ -6,7 +6,7 @@ usage: 在Javascript中调用window.pywebview.api.<methodname>(<parameters>)
 '''
 
 from api.system import System
-from api.sql import Database
+from api.db.orm import ORM
 from api.common import Common
 from api.remote import Remote
 from api.qmt import QMT
@@ -17,64 +17,74 @@ from api.system import System
 class API(System):
     def __init__(self):
         # 创建一个qmt对象
-        self.sql = Database()
-        self.common = Common()
-        self.qmt = QMT(self.sql)
-        self.remote = Remote(self.qmt)
+        self.orm = ORM()
+        self.common = Common(self.orm)
+        self.qmt = QMT(self.orm)
+        self.remote = Remote(self.qmt,self.orm)
+        self.thread1 = None
+        self.daily_timer = None  # 用于存储定时器对象
+        self.schedule_daily_task()
+        
 
     def setWindow(self, window):
         '''获取窗口实例'''
         System._window = window
 
+    def storage_get(self, key):
+        '''获取存储变量'''
+        return self.orm.getStorageVar(key)
+
+    def storage_set(self, key, val):
+        '''设置存储变量'''
+        self.orm.setStorageVar(key, val)
+
     def getSettingConfig(self):
-        return Database().get_setting_config()
+        return self.orm.get_setting_config()
 
     def saveConfig(self, data):
-        self.sql.save_config(
-            mini_qmt_path=data.get('mini_qmt_path'),
-            client_id=data.get('client_id'),
-            server_url=data.get('server_url'),
-            salt=data.get('salt'),
-            run_model_type=data.get('run_model_type')
-        )
+        self.orm.save_config(data)
     
     def isProcessExist(self):
         return self.common.is_process_exist()
     
     def connectWs(self,server_url):
-        self.sql.save_config(server_url=server_url)
-        print(server_url)
-        thread1 = threading.Thread(target=self.remote.connect, args=(server_url,))
-        thread1.start()
-        # self.remote.connect(server_url)
-        
+        self.orm.save_config({"server_url":server_url})
+        self.thread1 = threading.Thread(target=self.remote.connect, args=(server_url,))
+        self.thread1.start()
+    
     def disconnect(self):
         self.remote.close_ws()
+        if self.thread1 and self.thread1.is_alive():
+            self.thread1.join(timeout=1)  # Wait up to 1 second for thread to finish
+        
+    def connectQMT(self,params):
+        return self.qmt.connectQMT(params)
+        
         
     def testConnect(self,server_url):
         self.remote.testConnect(server_url)
         
     def getTaskList(self):
-        return self.sql.get_task_list()
+        return self.orm.get_task_list()
     
     def createTask(self,data):
-        return self.sql.create_task(data)
+        return self.orm.create_task(data)
     
     def runTask(self,data):
-        return self.sql.run_task(data)
+        return self.orm.run_task(data)
     
     def deleteTask(self,data):
-        return self.sql.delete_task(data)
+        return self.orm.delete_task(data)
     
     def getRemoteState(self):
         return {"state":self.remote.is_connected,
                 "unique_id":self.remote.unique_id,
                 }
     def getTaskDetail(self,data):
-        return self.sql.get_task_detail(data)
+        return self.orm.get_task_detail(data)
     
     def getWsConfig(self):
-        config = self.sql.get_setting_config()
+        config = self.orm.get_setting_config()
         return {
             "server_url":config['server_url'],
             "unique_id":self.remote.unique_id,
@@ -86,4 +96,58 @@ class API(System):
         return self.common.transition_code(data,taskDic)
     
     def getOrderList(self,data):
-        return self.sql.get_order_list(data)
+        return self.orm.get_order_list(data)
+    
+    def testQMTConnect(self,path):
+        return self.qmt.test_connect(path)
+
+    # 开启国债逆回购
+    def schedule_daily_task(self, hour=12, minute=42):
+        """
+        设置每天定时执行的任务
+        :param hour: 小时（24小时制），默认21（晚上9点）
+        :param minute: 分钟，默认0
+        """
+        import datetime
+        import time
+
+        def calculate_delay():
+            now = datetime.datetime.now()
+            target_time = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+            
+            # 如果目标时间已经过了，就设置为明天
+            if now >= target_time:
+                target_time = target_time + datetime.timedelta(days=1)
+            
+            # 计算延迟秒数
+            delay = (target_time - now).total_seconds()
+            return delay
+
+        def schedule_next():
+            # 直接在这里执行任务
+            # TODO: 在这里添加需要执行的具体任务代码
+            print("zkxjckzxcjkzx;ckzz")
+            # 重新调度下一次执行
+            if self.daily_timer is not None:  # 只有在定时器未被取消的情况下才继续调度
+                delay = calculate_delay()
+                self.daily_timer = threading.Timer(delay, schedule_next)
+                self.daily_timer.start()
+
+        # 取消现有的定时器（如果存在）
+        self.cancel_daily_task()
+        
+        # 启动新的定时器
+        delay = calculate_delay()
+        self.daily_timer = threading.Timer(delay, schedule_next)
+        self.daily_timer.start()
+        return True
+
+    def cancel_daily_task(self):
+        """
+        取消定时任务
+        """
+        if self.daily_timer is not None:
+            self.daily_timer.cancel()
+            self.daily_timer = None
+            return True
+        return False

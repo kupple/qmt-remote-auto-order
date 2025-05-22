@@ -24,9 +24,9 @@ const showTerminal = computed(() => {
 })
 
 const connectAction = () => {
-  connectWs(serverAddress.value).then((res) => {
-    console.log(res)
-  })
+  // connectWs(serverAddress.value).then((res) => {
+  //   console.log(res)
+  // })
 }
 const stopConnectAction = () => {
   disconnect()
