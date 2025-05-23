@@ -122,7 +122,7 @@ const passStatus = ref(0)
 const params = reactive({
   qmtPath: '',
   clientId: '',
-  server_url: 'ws://193.112.151.98:8080/ws',
+  server_url: '',
   salt: ''
 })
 

@@ -25,20 +25,26 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { Message, Lock, Connection } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { login } from '@/api/user'
 import { setToken, setUserInfo } from '@/api/auth'
-import { saveConfig, connectWs } from '@/api/comm_tube'
+import { saveConfig, connectWs,getSettingConfig } from '@/api/comm_tube'
 const router = useRouter()
 const loginFormRef = ref(null)
 const loading = ref(false)
 
 const loginForm = reactive({
-  email: 'rtys788@icloud.com',
-  password: 'a123456'
+  email: '',
+  password: ''
+})
+
+
+onMounted(async ()=>{
+  const config = await getSettingConfig()  
+  loginForm.email = config.account
 })
 
 const rules = {
@@ -71,7 +77,8 @@ const handleLogin =  async() => {
     loading.value = true
 
     await saveConfig({
-      run_model_type: 2
+      run_model_type: 2,
+      account: loginForm.email
     })
 
     const res =  await login(loginForm)
@@ -80,6 +87,9 @@ const handleLogin =  async() => {
     await setUserInfo(res.data.user)
     // 连接websocket
     await connectWs(res.data.user.server_url)
+
+
+    
     ElMessage.success('登录成功')
     // 跳转到用户明细页面
     router.push({ name: 'SettingUserDetail' })

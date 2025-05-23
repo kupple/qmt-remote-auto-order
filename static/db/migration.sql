@@ -161,3 +161,9 @@ ALTER TABLE setting ADD COLUMN auto_buy_purchase_ipo INTEGER DEFAULT '0';
 
 UPDATE alembic_version SET version_num='1aa18a798069' WHERE alembic_version.version_num = '5c506eb4d39e';
 
+-- Running upgrade 1aa18a798069 -> 9b3c8e5abf11
+
+ALTER TABLE setting ADD COLUMN account VARCHAR;
+
+UPDATE alembic_version SET version_num='9b3c8e5abf11' WHERE alembic_version.version_num = '1aa18a798069';
+
