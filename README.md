@@ -1,7 +1,7 @@
 <div align="center">
   <img src="resources/logo.png" width="200" height="200" alt="Logo"/>
   <div>&nbsp;</div>
-  <b><font size="10">qmt远程自动下单程序</font></b>
+  <span><font size="5">qmt远程自动下单程序</font></span>
 </div>
 
 ## 项目简介
@@ -42,7 +42,7 @@
 - element-plus 2.3+
   
 ## 下载
-
+    尚未提交安装应用包后续会打包上传，如需可下方联系作者获取
 ## 开发说明
 
 1. 克隆仓库
