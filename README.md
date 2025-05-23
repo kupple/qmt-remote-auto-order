@@ -20,6 +20,10 @@
     使用本软件需要开通joinquantVip会员模拟回测功能和含QMT功能证券账号，如未开通可到文章下方添加微信咨询开通（声明：仅做微信推荐与本人无任何利益）
 `
 
+## 界面截图
+<img src="resources/Home.jpg" width="600"  alt="Logo"/>
+
+
 ## 功能特点
 
 
