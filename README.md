@@ -1,7 +1,7 @@
 <div align="center">
   <img src="resources/logo.png" width="200" height="200" alt="Logo"/>
   <div>&nbsp;</div>
-  <b><font size="5">qmt远程自动下单程序</font></b>
+  <b><font size="10">qmt远程自动下单程序</font></b>
 </div>
 
 ## 项目简介
@@ -58,7 +58,7 @@ npm run build
 
 ```
 
-## ToDo
+## TODO
 - 接入更多平台如掘金量化，SuperMind
 - 接入easytrader
 - 按金额比例数量下单
