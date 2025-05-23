@@ -1,77 +1,70 @@
-# 注意
-```
- 该项目正在开发中
-```
-# QMT Remote Auto Order
-
-<img src="gui/src/assets/images/logo.png" width="200" height="200" alt="Logo" style="background-color:rgb(129, 129, 129); padding: 10px; border-radius: 10px;">
-
-
+<div align="center">
+  <img src="resources/logo.png" width="200" height="200" alt="Logo"/>
+  <div>&nbsp;</div>
+  <b><font size="5">qmt远程自动下单程序</font></b>
+</div>
 
 ## 项目简介
 
-QMT Remote Auto Order 是一个自动化交易系统，用于远程管理和执行交易订单。
+基于pywebview开发的一款能在回测平台(暂时支持聚宽)发送下单信号，收到信号后在qmt进行本地下单。使用本程序旨在简化自动下单流程，免去代码，让用户友好操作。
 
 ## 功能特点
 
-- 远程订单管理
-- 自动化交易执行
-- 实时监控和报告
+
 - 用户友好的界面
+- 自动打新打债逆回购功能
+- 一键转换代码功能 复制->粘贴 完成代码的转换
+- token验证确保信号安全
+- 支持多策略运行
+- 查看受理订单
+- 支持自建服务器搭建/私有服务器
+- 后端使用go高性能服务作为支持
+- 后端有重发机制确保发出信号安全
+
 
 ## 技术栈
+- python 3.9+
+- pywebview 6.0+
+- nodejs 22+
+- vue 3.0+
+- element-plus 2.3+
+  
+## 下载
 
-- 后端：Python
-- 前端：Node.js
-- 数据库：SQLite
-
-## 安装说明
+## 开发说明
 
 1. 克隆仓库
+```   
+    请自行安装nodejs >= 20.0 python >= 3.8
+```
+   
+2. 克隆仓库
+
 ```bash
-git clone [repository-url]
+git clone https://github.com/kupple/qmt-remote-auto-order
 ```
 
-2. 安装依赖
+3. 初始化/运行/打包
+
 ```bash
-# 安装后端依赖
-pip install -r requirements.txt
+# 安装依赖
+npm run init
 
-# 安装前端依赖
-cd gui
-pnpm install
-```
+# 运行开发模型
+npm run start
 
-3. 运行应用
-```bash
-# 启动后端服务
-python main.py
-
-# 启动前端服务
-cd gui
-pnpm dev
-```
-
-## 使用说明
-
-1. 启动应用后，通过浏览器访问 `http://localhost:3000`
-2. 登录系统
-3. 开始使用自动化交易功能
-
-## 项目结构
+# 打包应用
+npm run build
 
 ```
-├── api/            # API 接口
-├── gui/            # 前端界面
-├── pyapp/          # Python 应用
-├── static/         # 静态资源
-└── main.py         # 主程序入口
-```
 
-## 许可证
-
-本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
-
+## ToDo
+- 接入更多平台如掘金量化，SuperMind
+- 接入easytrader
+- 按金额比例数量下单
+  
 ## 联系方式
 
 如有问题或建议，请提交 Issue 或 Pull Request。
+
+<img src="resources/WechatIMG.jpg" width="300"  alt="Logo"/>
