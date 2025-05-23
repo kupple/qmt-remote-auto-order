@@ -83,4 +83,6 @@ npm run build
 
 开通qmt权限(无门槛/低佣金)可添加
 
+有偿搭建私有服务器支持可联系
+
 <img src="resources/WechatIMG.jpg" width="300"  alt="Logo"/>
