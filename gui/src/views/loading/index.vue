@@ -24,7 +24,6 @@ onMounted(() => {
   setTimeout(async () => {
     const config = await getSettingConfig()
     if (config.mini_qmt_path && config.client_id) {
-      console.log("zkxcjzkx;c")
       connectQMT({ mini_qmt_path: config.mini_qmt_path, client_id: config.client_id })
     }
     if (config.run_model_type === 1) {

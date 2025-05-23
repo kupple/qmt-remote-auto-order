@@ -64,7 +64,7 @@ class DB:
 
     def connect(self):
         '''数据库连接'''
-        engine = create_engine(f'sqlite:///{DB.dbPath}?check_same_thread=False', echo=Config.devEnv)
+        engine = create_engine(f'sqlite:///{DB.dbPath}?check_same_thread=False', echo=False)
         DB.session = sessionmaker(bind=engine)
 
     def close(self):

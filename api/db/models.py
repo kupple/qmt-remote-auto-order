@@ -77,6 +77,9 @@ class Setting(BaseModel):
     salt = Column(String(), doc='盐值', nullable=True)
     server_url = Column(String(), doc='服务器URL', nullable=True)
     run_model_type = Column(Integer, doc='运行模式类型', nullable=True, server_default='0')
+    auto_national_debt = Column(Integer, doc='自动逆回购', nullable=True, server_default='0')
+    auto_buy_stock_ipo = Column(Integer, doc='自动打新股', nullable=True, server_default='0')
+    auto_buy_purchase_ipo = Column(Integer, doc='自动打新债·', nullable=True, server_default='0')
 
     def __str__(self):
         return f"Setting: {self.client_id}"

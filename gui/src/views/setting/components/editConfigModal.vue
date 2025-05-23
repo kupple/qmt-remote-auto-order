@@ -27,17 +27,17 @@
 import { ref, computed, onMounted, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { QuestionFilled } from '@element-plus/icons-vue'
-import { getSettingConfig, saveConfig, testQMTConnect } from '@/api/comm_tube'
+import { getSettingConfig, saveConfig, testQMTConnect,connectQMT } from '@/api/comm_tube'
 const formRef = ref(null)
 const dialogVisible = ref(false)
 const emit = defineEmits(['callBack'])
 const passStatus = ref(0)
 const accountArr = ref([])
 
-const connectionAction = ()=>{
-  testQMTConnect(params.qmtPath).then((res)=>{
-    if(res.is_connect){ 
-      if(res.account_arr.length == 0){
+const connectionAction = () => {
+  testQMTConnect(params.qmtPath).then((res) => {
+    if (res.is_connect) {
+      if (res.account_arr.length == 0) {
         ElMessage({
           message: '获取的资金数量为0 请重新登录MiniQMT客户端',
           type: 'error'
@@ -51,7 +51,7 @@ const connectionAction = ()=>{
         type: 'success'
       })
       passStatus.value = 1
-    }else{
+    } else {
       ElMessage({
         message: '请检查QMT路径是否正确',
         type: 'error'
@@ -94,6 +94,7 @@ const saveConfigAction = async () => {
       })
       return
     }
+    await connectQMT({ mini_qmt_path: params.qmtPath, client_id: params.clientId })
     await saveConfig({
       mini_qmt_path: params.qmtPath,
       client_id: params.clientId
@@ -105,6 +106,7 @@ const saveConfigAction = async () => {
     dialogVisible.value = false
     emit('callBack')
   } catch (error) {
+    console.log(error)
     ElMessage({
       message: '请填写完整的表单信息',
       type: 'error'

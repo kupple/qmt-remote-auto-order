@@ -25,7 +25,7 @@
         <el-table :data="dataSource" :height="height" style="width: 100%">
           <el-table-column prop="create_time" label="下单时间" width="150" align="center" />
           <el-table-column prop="security_code" label="证券代码" width="150" />
-          <el-table-column prop="amount" label="下单数量" width="150" />
+          <el-table-column prop="volume" label="下单数量" width="150" />
           <el-table-column prop="is_buy" label="方向" width="150" >
             <template #default="{ row }">
               <el-tag :type="row.is_buy === 1 ? 'success' : 'danger'" size="small">{{ row.is_buy === 1 ? '买入' : '卖出' }}</el-tag>
@@ -69,7 +69,6 @@ const getDataSourceList = async () => {
     page: pageInfo.page,
     pageSize: pageInfo.pageSize
   })
-  console.log(res.data)
   dataSource.value = res.data.map((item) => ({
     ...item,
     create_time: dayjs(item.created_at).format('YYYY-MM-DD HH:mm:ss'),

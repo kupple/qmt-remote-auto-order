@@ -28,7 +28,7 @@ class Config:
     appVersion = "V0.0.1"  # 应用版本号
     appDeveloper = "mubin"  # 应用开发者
     appBlogs = "https://blog.pangao.vip"  # 个人博客
-    appPackage = 'vip.pangao'    # 应用包名，用于在本地电脑生成 vip.pangao.ppx 唯一文件夹
+    appPackage = 'qmt.auto.order'    
     appUpdateUrl = 'https://api.github.com/repos/pangao1990/ppx/releases/latest'    # 获取程序更新信息 https://api.github.com/repos/pangao1990/ppx/releases/latest
     appISSID = 'F35003AB-441A-C0A6-4527-937E6A02F789'    # Inno Setup 打包唯一编号。在执行 pnpm run init 之前，请设置为空，程序会自动生成唯一编号，生成后请勿修改！！！
 

@@ -7,7 +7,7 @@
         <span class="user-info-card-email">{{ userInfo?.email }}</span>
         <span v-if="userInfo?.level === 0" class="user-info-card-email-level">{{ '普通用户' }}</span>
         <span v-if="userInfo?.level === 1" class="user-info-card-email-level">{{ 'VIP豪华用户' }}</span>
-        <span class="user-info-card-created-at">{{ formatDate(userInfo?.created_at) }}</span>
+        <span class="user-info-card-created-at">{{ dayjs(userInfo?.created_at).format('YYYY-MM-DD HH:mm:ss') }}</span>
       </div>
     </el-card>
     <el-card class="edit-div">
@@ -31,6 +31,7 @@ import { getUserInfo, clearAuth } from '@/api/auth'
 import { useRouter } from 'vue-router'
 import { SwitchButton } from '@element-plus/icons-vue'
 import editConfigModal from './editConfigModal.vue'
+import dayjs from "dayjs"
 const router = useRouter()
 const userInfo = ref(null)
 const editConfigModalRef = ref(null)
@@ -49,6 +50,11 @@ onMounted(async () => {
   const setting = await getSetting()
   const tmpuserInfo = await getUserInfo()
   userInfo.value = tmpuserInfo
+
+  if(setting.client_id == "" || setting.mini_qmt_path == ""){
+    console.log("配置文件未初始化")
+    editConfigModalRef.value.showModal()
+  }
 })
 
 const formatDate = (dateString) => {
@@ -67,9 +73,9 @@ const formatDate = (dateString) => {
 // 获取配置文件
 const getSetting = async () => {
   const res = await getSettingConfig()
-  console.log(res)
   params.qmtPath = res.mini_qmt_path
   params.clientId = res.client_id
+  return res
 }
 
 const handleLogout = () => {

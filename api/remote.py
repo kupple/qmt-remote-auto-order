@@ -32,7 +32,6 @@ class Remote:
             while True:
                 message = await self.ws.recv()
                 data = json.loads(message)
-                print(data)
                 content = data['content'] = json.loads(data['content'])
                 # 发送确认消息给服务端
                 await self.ws.send(json.dumps({
@@ -45,6 +44,14 @@ class Remote:
                     "message": "",
                     "data":content,
                 })
+                
+                if self.qmt.is_connect == False :
+                    System.system_py2js(self,'remoteCallBack',  {
+                        "state": 1,
+                        "message": "",
+                        "status": "2",
+                        "data":"请先在个人页面配置好qmt路径和资金账号",
+                    })
                 self.qmt.manage_qmt_trader(data)
 
         except websockets.exceptions.ConnectionClosed:

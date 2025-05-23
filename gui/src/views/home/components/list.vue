@@ -6,7 +6,7 @@
         <el-table class="table-container" :data="taskList">
           <el-table-column prop="name" label="任务名称" />
           <el-table-column prop="strategy_code" label="任务编号"> </el-table-column>
-          <el-table-column prop="allocation_amount" label="分配金额" />
+          <!-- <el-table-column prop="allocation_amount" label="分配金额" /> -->
           <el-table-column label="操作" width="200" align="center">
             <template #default="scope">
               <div style="display: flex; align-items: center">
@@ -22,9 +22,25 @@
         </el-table>
       </div>
       <div class="bottom-container-right">
+        <el-divider>功能</el-divider>
         <el-form :model="form" label-width="100px">
           <el-form-item label="自动逆回购">
-            <el-switch v-model="form.is_open" />
+            <el-switch size="small" v-model="form.auto_national_debt" @change="(e)=>autoAutomaticReverseAtion(1,e)" />
+            <el-tooltip effect="dark" content="开启后3点10分自动将盈余资金买入1天期国债逆回购，不占用资金" placement="top">
+              <el-icon style="margin-left: 10px; color: #999; font-size: 18px"><QuestionFilled /></el-icon>
+            </el-tooltip>
+          </el-form-item>
+          <el-form-item  label="自动打新股">
+            <el-switch disabled size="small" v-model="form.auto_buy_stock_ipo" @change="(e)=>autoAutomaticReverseAtion(2,e)" />
+            <el-tooltip disabled effect="dark" content="开启后10点10分自动申购新股" placement="top">
+              <el-icon style="margin-left: 10px; color: #999; font-size: 18px"><QuestionFilled /></el-icon>
+            </el-tooltip>
+          </el-form-item>
+          <el-form-item label="自动打债">
+            <el-switch disabled size="small" v-model="form.auto_buy_purchase_ipo" @change="(e)=>autoAutomaticReverseAtion(3,e)" />
+            <el-tooltip effect="dark" content="开启后10点10分自动申购新债" placement="top">
+              <el-icon style="margin-left: 10px; color: #999; font-size: 18px"><QuestionFilled /></el-icon>
+            </el-tooltip>
           </el-form-item>
         </el-form>
       </div>
@@ -35,19 +51,43 @@
 
 <script setup>
 import ListModal from './listModal.vue'
-import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted, reactive } from 'vue'
+import { QuestionFilled } from '@element-plus/icons-vue'
 import { useCommonStore } from '@/store/common.js'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter, useRoute } from 'vue-router'
-import { getSettingConfig, runTask, getTaskList } from '@/api/comm_tube'
+import { getSettingConfig, runTask, getTaskList, saveConfig } from '@/api/comm_tube'
 const serverAddress = ref('http://127.0.0.1:5000')
 
 const router = useRouter() // 使用useRouter函数创建router实例
 const route = useRoute()
 
+// 自动逆回购
+const autoAutomaticReverseAtion = async (type, e) => {
+  let subDic = {}
+  if (type === 1) {
+    subDic["auto_national_debt"] = e ? 1 : 0
+  }
+  if (type === 2) {
+    subDic["auto_buy_stock_ipo"] = e ? 1 : 0
+  }
+  if (type === 3) {
+    subDic["auto_buy_purchase_ipo"] = e ? 1 : 0
+  }
+  await saveConfig(subDic)
+}
+
+const form = reactive({
+  auto_national_debt: true,
+  auto_buy_stock_ipo: true,
+  auto_buy_purchase_ipo: true
+})
+
 const getConfig = async () => {
   const res = await getSettingConfig()
-  serverAddress.value = res.server_url
+  form.auto_national_debt = res.auto_national_debt == 1 ? true : false
+  form.auto_buy_stock_ipo = res.auto_buy_stock_ipo == 1 ? true : false
+  form.auto_buy_purchase_ipo = res.auto_buy_purchase_ipo == 1 ? true : false
 }
 
 const taskList = computed(() => {
@@ -57,10 +97,6 @@ const taskList = computed(() => {
 const convertToCodeAction = async (row) => {
   router.push(`/transition?id=${row.id}`)
 }
-
-const form = ref({
-  is_open: false
-})
 
 // 开始任务
 const handleEdit = async (row) => {
@@ -77,7 +113,7 @@ const handleEdit = async (row) => {
       return
     }
   }
-  
+
   const res = await runTask(row)
   if (res) {
     ElMessage.success('操作成功')
@@ -138,6 +174,7 @@ onMounted(async () => {
   }
   .bottom-container-right {
     display: flex;
+    flex-direction: column;
     flex: 1;
     padding: 10px;
     background: #fff;

@@ -70,5 +70,8 @@ export const testQMTConnect = (path) => {
   return window.pywebview.api.testQMTConnect(path)
 }
 
+export const checkStrategyCodeExists = (strategy_code)=>{
+  return window.pywebview.api.check_strategy_code_exists(strategy_code)
+}
 
 // export const 

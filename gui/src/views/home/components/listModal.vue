@@ -4,19 +4,20 @@
       <el-form-item label="任务名称" required>
         <el-input style="width: 50%" v-model="form.name" placeholder="请输入任务名称" />
       </el-form-item>
-      <el-form-item label="任务编号" >
+      <el-form-item label="任务编号">
         <el-input style="width: 50%" v-model="form.strategy_code" placeholder="请输入任务编号" maxlength="6" />
       </el-form-item>
       <el-form-item label="下单类型">
         <el-radio-group v-model="form.orderCountType">
           <el-radio :label="1">跟随策略</el-radio>
-          <el-tooltip
-            effect="dark"
-            content="即将开放"
-            placement="top"
-          >
-            <el-radio disabled :label="2">多账号策略</el-radio>
+          <el-tooltip effect="dark" content="请在聚宽填写对应账号的策略金额，如需多个策略请合理分配各策略金额并在资金账号预留对应的资金" placement="top">
+            <el-icon style="color: #999; font-size: 18px"><QuestionFilled /></el-icon>
           </el-tooltip>
+        </el-radio-group>
+      </el-form-item>
+      <el-form-item label="下单平台">
+        <el-radio-group v-model="form.platform">
+          <el-radio disabled :label="1">聚宽</el-radio>
         </el-radio-group>
       </el-form-item>
       <div v-if="form.orderCountType === 2" class="amount-container" style="display: flex; justify-content: space-between">
@@ -41,12 +42,15 @@
 <script setup>
 import { ref, computed, onMounted, reactive } from 'vue'
 import { useCommonStore } from '@/store/common.js'
-import { createTask } from '@/api/comm_tube'
+import { QuestionFilled } from '@element-plus/icons-vue'
+import { createTask, checkStrategyCodeExists } from '@/api/comm_tube'
+import { ElMessage } from 'element-plus'
 const taskList = computed(() => useCommonStore().taskList)
 const emit = defineEmits(['getTaskList'])
 const dialogVisible = ref(false)
 const form = reactive({
   name: '',
+  platform: 1,
   strategy_code: '',
   orderCountType: 1,
   strategyAmount: 0,
@@ -82,6 +86,11 @@ const showModal = (dic) => {
   }
 }
 const handleSubmit = async () => {
+  const judege = await checkStrategyCodeExists(form.strategy_code)
+  if (judege) {
+    ElMessage.error('任务编号已存在,请重新输入')
+    return
+  }
   await createTask({
     id: editDic.value?.id || undefined,
     name: form.name,

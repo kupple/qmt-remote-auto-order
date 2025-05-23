@@ -4,9 +4,7 @@ import { useRemoteStore } from '@/store/remote.js'
 
 window["remoteCallBack"] = (res) => {
   const dic = JSON.parse(res);
-
   useRemoteStore().setRemoteStore(dic);
-  
   
 };
 

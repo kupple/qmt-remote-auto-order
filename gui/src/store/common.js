@@ -17,8 +17,6 @@ export const useCommonStore = defineStore('common', {
       this.isQMTProcessExit = params
     },
     changeIsAccSubSuccess(params){
-      console.log(params)
-      console.log("adasdasdasda")
       this.isAccSubSuccess = params
     },
     setTaskList(params) {

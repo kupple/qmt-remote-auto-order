@@ -8,7 +8,7 @@
     </div>
     <div class="terminal-container" ref="listRef">
       <span v-for="(item, idx) in messagesArr" :key="idx">
-        <span class="tips">{{ item.message }}</span>
+        <span class="tips" :style="{ color: item.status === 2 ? 'red' : 'white' }">{{ item.date }}-{{ item.message }}</span>
       </span>
     </div>
   </div>

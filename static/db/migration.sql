@@ -147,3 +147,17 @@ UPDATE alembic_version SET version_num='b0aeb5a4cef5' WHERE alembic_version.vers
 
 UPDATE alembic_version SET version_num='523683b9b2e8' WHERE alembic_version.version_num = 'b0aeb5a4cef5';
 
+-- Running upgrade 523683b9b2e8 -> 5c506eb4d39e
+
+ALTER TABLE setting ADD COLUMN auto_national_debt INTEGER DEFAULT '0';
+
+UPDATE alembic_version SET version_num='5c506eb4d39e' WHERE alembic_version.version_num = '523683b9b2e8';
+
+-- Running upgrade 5c506eb4d39e -> 1aa18a798069
+
+ALTER TABLE setting ADD COLUMN auto_buy_stock_ipo INTEGER DEFAULT '0';
+
+ALTER TABLE setting ADD COLUMN auto_buy_purchase_ipo INTEGER DEFAULT '0';
+
+UPDATE alembic_version SET version_num='1aa18a798069' WHERE alembic_version.version_num = '5c506eb4d39e';
+

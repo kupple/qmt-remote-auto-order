@@ -1,5 +1,5 @@
-from .xtquant import xtdata
-from .xtquant import xttrader
+from pyapp.pkg.xtquant import xtdata
+from pyapp.pkg.xtquant import xttrader
 import time
 import pandas as pd
 

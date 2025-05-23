@@ -302,3 +302,25 @@ class ORM:
             last_id = trade.id
         dbSession.close()
         return last_id
+
+    def check_strategy_code_exists(self, strategy_code):
+        """检查策略代码是否已存在
+        Args:
+            strategy_code (str): 要检查的策略代码
+        Returns:
+            bool: 如果策略代码存在返回True，否则返回False
+        """
+        if not strategy_code:
+            return False
+            
+        dbSession = DB.session()
+        with dbSession.begin():
+            stmt = select(TaskList).where(
+                and_(
+                    TaskList.strategy_code == strategy_code,
+                    TaskList.delete_time.is_(None)
+                )
+            )
+            result = dbSession.execute(stmt).first()
+        dbSession.close()
+        return result is not None

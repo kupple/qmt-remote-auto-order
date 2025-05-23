@@ -21,7 +21,9 @@ export const useRemoteStore = defineStore('remote', {
             if(params.type === 'test'){
 
             }else{
-                this.connectState = params.state
+                if(params.state != undefined || params.state != null){
+                    this.connectState = params.state    
+                }
             }
             // 模拟盘 回测 信号单
             if(params.data){
@@ -39,9 +41,12 @@ export const useRemoteStore = defineStore('remote', {
                 this.clientId = params.unique_id
             }
             // console.log(params.message)
-            params.message = dayjs().format("MM-DD HH:mm:ss") + "-" + params.message
-            console.log(params.message)
-            this.messagesArr.push(params)
+            params.date = dayjs().format("MM-DD HH:mm:ss")
+            this.messagesArr.push({
+                message: params.message,
+                status: params.status || 1,
+                date: params.date,
+            })
         }
     }
 })
