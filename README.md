@@ -42,7 +42,13 @@
 - element-plus 2.3+
   
 ## 下载
-    尚未提交安装应用包后续会打包上传，如需可下方联系作者获取
+
+尚未提交安装应用包后续会打包上传，如需可下方联系作者获取
+
+**若无法打开程序/白屏请下载webview2** 后重新打开
+
+[webview2下载地址](https://developer.microsoft.com/zh-cn/microsoft-edge/webview2/)
+
 ## 开发说明
 
 1. 克隆仓库
@@ -74,6 +80,11 @@ npm run build
 - 接入更多平台如掘金量化，SuperMind
 - 接入easytrader
 - 按金额比例数量下单
+
+## 感谢
+
+ [PPX](https://github.com/pangao1990/PPX)是一款基于pywebview和PyInstaller框架，构建macOS、Windows和Linux平台客户端的应用框架。
+
   
 ## 联系方式
 
