@@ -6,6 +6,7 @@ import random
 import pandas as pd
 import math
 from .qmt_data import qmt_data
+from ..tools.deal import get_qmt_price_type
 
 
 
@@ -82,11 +83,13 @@ class qmt_trader:
    return 'stock'
    
  def sell(self,security='600031.SH',
-     amount=100,price_type=xtconstant.FIX_PRICE,price=20,strategy_name='',order_remark=''):
+     amount=100,order_style_str='',price=20,strategy_name='',order_remark=''):
   '''
   单独独立股票卖出函数
   '''
+  
   order_type=xtconstant.STOCK_SELL
+  price_type = get_qmt_price_type(security,order_style_str)
   # 对交易回调进行订阅，订阅后可以收到交易主推，返回0表示订阅成功
   subscribe_result = self.xt_trader.subscribe(self.acc)
   print(self.xt_trader.query_stock_asset_async(account=self.acc,callback=subscribe_result))
@@ -105,11 +108,12 @@ class qmt_trader:
    print('卖出 标的{} 价格{} 委托数量{}小于0有问题'.format(stock_code,price,order_volume))   
  
  def buy(self,security='600031.SH',
-     amount=100,price=20,price_type=xtconstant.MARKET_PEER_PRICE_FIRST,strategy_name='',order_remark=''):
+     amount=100,price=20,order_style_str='',strategy_name='',order_remark=''):
   '''
   单独独立股票买入函数
   '''
   order_type = xtconstant.STOCK_BUY
+  price_type = get_qmt_price_type(security, order_style_str)
   # 对交易回调进行订阅，订阅后可以收到交易主推，返回0表示订阅成功
   subscribe_result = self.xt_trader.subscribe(self.acc)
   print(self.xt_trader.query_stock_asset_async(account=self.acc,callback=subscribe_result))

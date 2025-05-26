@@ -6,7 +6,18 @@
         <el-table class="table-container" :data="taskList">
           <el-table-column prop="name" label="任务名称" />
           <el-table-column prop="strategy_code" label="任务编号"> </el-table-column>
-          <!-- <el-table-column prop="allocation_amount" label="分配金额" /> -->
+          <el-table-column prop="order_count_type" label="下单类型">
+            <template #default="scope">
+              <span v-if="scope.row.order_count_type == 1">跟随策略</span>
+              <span v-else>动态调整</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="allocation_amount" label="分配金额">
+            <template #default="scope">
+              <span v-if="scope.row.order_count_type == 1">跟随策略</span>
+              <span v-else>{{scope.row.allocation_amount}}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="操作" width="200" align="center">
             <template #default="scope">
               <div style="display: flex; align-items: center">
@@ -25,19 +36,19 @@
         <el-divider>功能</el-divider>
         <el-form :model="form" label-width="100px">
           <el-form-item label="自动逆回购">
-            <el-switch size="small" v-model="form.auto_national_debt" @change="(e)=>autoAutomaticReverseAtion(1,e)" />
+            <el-switch size="small" v-model="form.auto_national_debt" @change="(e) => autoAutomaticReverseAtion(1, e)" />
             <el-tooltip effect="dark" content="开启后3点10分自动将盈余资金买入1天期国债逆回购，不占用资金" placement="top">
               <el-icon style="margin-left: 10px; color: #999; font-size: 18px"><QuestionFilled /></el-icon>
             </el-tooltip>
           </el-form-item>
-          <el-form-item  label="自动打新股">
-            <el-switch disabled size="small" v-model="form.auto_buy_stock_ipo" @change="(e)=>autoAutomaticReverseAtion(2,e)" />
-            <el-tooltip disabled effect="dark" content="开启后10点10分自动申购新股" placement="top">
+          <el-form-item label="自动打新股">
+            <el-switch  size="small" v-model="form.auto_buy_stock_ipo" @change="(e) => autoAutomaticReverseAtion(2, e)" />
+            <el-tooltip effect="dark" content="开启后10点10分自动申购新股" placement="top">
               <el-icon style="margin-left: 10px; color: #999; font-size: 18px"><QuestionFilled /></el-icon>
             </el-tooltip>
           </el-form-item>
           <el-form-item label="自动打债">
-            <el-switch disabled size="small" v-model="form.auto_buy_purchase_ipo" @change="(e)=>autoAutomaticReverseAtion(3,e)" />
+            <el-switch  size="small" v-model="form.auto_buy_purchase_ipo" @change="(e) => autoAutomaticReverseAtion(3, e)" />
             <el-tooltip effect="dark" content="开启后10点10分自动申购新债" placement="top">
               <el-icon style="margin-left: 10px; color: #999; font-size: 18px"><QuestionFilled /></el-icon>
             </el-tooltip>
@@ -57,7 +68,6 @@ import { useCommonStore } from '@/store/common.js'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter, useRoute } from 'vue-router'
 import { getSettingConfig, runTask, getTaskList, saveConfig } from '@/api/comm_tube'
-const serverAddress = ref('http://127.0.0.1:5000')
 
 const router = useRouter() // 使用useRouter函数创建router实例
 const route = useRoute()
@@ -66,13 +76,13 @@ const route = useRoute()
 const autoAutomaticReverseAtion = async (type, e) => {
   let subDic = {}
   if (type === 1) {
-    subDic["auto_national_debt"] = e ? 1 : 0
+    subDic['auto_national_debt'] = e ? 1 : 0
   }
   if (type === 2) {
-    subDic["auto_buy_stock_ipo"] = e ? 1 : 0
+    subDic['auto_buy_stock_ipo'] = e ? 1 : 0
   }
   if (type === 3) {
-    subDic["auto_buy_purchase_ipo"] = e ? 1 : 0
+    subDic['auto_buy_purchase_ipo'] = e ? 1 : 0
   }
   await saveConfig(subDic)
 }
@@ -166,7 +176,7 @@ onMounted(async () => {
     }
   }
   .bottom-container-left {
-    flex: 3;
+    flex: 5;
     background: #fff;
     padding: 10px;
     min-width: 0;

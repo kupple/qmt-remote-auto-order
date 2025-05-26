@@ -1,9 +1,9 @@
 {
-  "name": "ppx",
+  "name": "qmt-remote-auto-order",
   "private": true,
   "version": "5.2.2",
-  "description": "PPX是一款基于pywebview和PyInstaller框架，构建macOS、Windows和Linux平台客户端的应用框架。本框架的视图层支持Vue、React、Angular、HTML中的任意一种，业务层采用本地Python+调用远程API。",
-  "author": "潘高 <pangao1990@qq.com>",
+  "description": "QMT-REMOTE-AUTO-ORDER是基于pywebview开发的一款能在回测平台(暂时支持聚宽)发送下单信号，收到信号后在qmt进行本地下单。使用本程序旨在简化自动下单流程，免去代码，让用户友好操作。",
+  "author": "mubin <rtys788@icloud.com.com>",
   "scripts": {
     "initComments": "清空缓存，配置环境",
     "init": "pnpm run clean && pnpm install && pnpm run initInstall",

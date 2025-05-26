@@ -39,6 +39,7 @@ class Remote:
                     "id": data.get("id", ""),
                     "timestamp": int(time.time() * 1000)  # 转换为毫秒级整数时间戳
                 }))
+                # 发送信息 写法没错
                 System.system_py2js(self,'remoteCallBack',  {
                     "state": 1,
                     "message": "",
@@ -52,7 +53,7 @@ class Remote:
                         "status": "2",
                         "data":"请先在个人页面配置好qmt路径和资金账号",
                     })
-                self.qmt.manage_qmt_trader(data)
+                self.qmt.manage_qmt_trader(content)
 
         except websockets.exceptions.ConnectionClosed:
             print('Connection closed')

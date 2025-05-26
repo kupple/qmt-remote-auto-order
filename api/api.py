@@ -101,6 +101,10 @@ class API(System):
     def transitionCode(self,data,taskDic):
         return self.common.transition_code(data,taskDic)
     
+    def revertTransitionCode(self,data):
+        return self.common.revert_transition_code(data)
+    
+    
     def getOrderList(self,data):
         return self.orm.get_order_list(data)
     
@@ -175,10 +179,11 @@ class API(System):
             config =  self.orm.get_setting_config()
             # 新股
             if config["auto_buy_stock_ipo"] == 1 and config["client_id"] != "" and config["mini_qmt_path"] != "" and self.qmt.qmt_trader != None:
-                pass
+                self.qmt.autoBuyNewStock()
+                
             # 新债
             if config["auto_buy_purchase_ipo"] == 1 and config["client_id"] != "" and config["mini_qmt_path"] != "" and self.qmt.qmt_trader != None:
-                pass
+                self.qmt.autoBuyconvertibleBond()
             
             # 重新调度下一次执行
             if self.daily_timer is not None:  # 只有在定时器未被取消的情况下才继续调度

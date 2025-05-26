@@ -167,3 +167,35 @@ ALTER TABLE setting ADD COLUMN account VARCHAR;
 
 UPDATE alembic_version SET version_num='9b3c8e5abf11' WHERE alembic_version.version_num = '1aa18a798069';
 
+-- Running upgrade 9b3c8e5abf11 -> 1f921a4f9c15
+
+CREATE TABLE position (
+    security_code VARCHAR, 
+    volume INTEGER, 
+    amount NUMERIC, 
+    id INTEGER NOT NULL, 
+    created_at DATETIME DEFAULT (DATETIME(CURRENT_TIMESTAMP, 'localtime')), 
+    updated_at DATETIME DEFAULT (DATETIME(CURRENT_TIMESTAMP, 'localtime')), 
+    PRIMARY KEY (id)
+);
+
+ALTER TABLE tasklist ADD COLUMN position_amount INTEGER;
+
+UPDATE alembic_version SET version_num='1f921a4f9c15' WHERE alembic_version.version_num = '9b3c8e5abf11';
+
+-- Running upgrade 1f921a4f9c15 -> 532942a6e3c4
+
+CREATE TABLE positions (
+    security_code VARCHAR, 
+    volume INTEGER, 
+    amount NUMERIC, 
+    id INTEGER NOT NULL, 
+    created_at DATETIME DEFAULT (DATETIME(CURRENT_TIMESTAMP, 'localtime')), 
+    updated_at DATETIME DEFAULT (DATETIME(CURRENT_TIMESTAMP, 'localtime')), 
+    PRIMARY KEY (id)
+);
+
+DROP TABLE position;
+
+UPDATE alembic_version SET version_num='532942a6e3c4' WHERE alembic_version.version_num = '1f921a4f9c15';
+

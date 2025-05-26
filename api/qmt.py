@@ -9,7 +9,7 @@ import platform
 from api.system import System
 from .tools.deal import convert_stock_suffix
 import datetime
-
+from .trading_related.additional_data import stock_xgsglb_em_on_today,bond_zh_cov
 
 class MyXtQuantTraderCallback(XtQuantTraderCallback):
  
@@ -153,11 +153,37 @@ class QMT:
         "message": "" + text,
     })
     
+  def autoBuyNewStock(self):
+    df = stock_xgsglb_em_on_today()
+    selected_columns = ['申购代码', '申购上限', '发行价格']
+    for _, row in df[selected_columns].iterrows():
+      # 获取每行的数据
+      code = row['申购代码']
+      limit = row['申购上限']
+      price = row['发行价格']
+      # 这里可以添加你的处理逻辑
+      print(f"申购代码: {code}, 申购上限: {limit}, 发行价格: {price}")
+      codeSt = stock_xgsglb_em_on_today(code)
+      self.qmt_trader.buy(codeSt,limit,price,order_remark='打新')
+
+  def autoBuyconvertibleBond(self):
+    df = bond_zh_cov()
+    selected_columns = ['申购代码', '申购上限']
+
+    for _, row in df[selected_columns].iterrows():
+      # 获取每行的数据
+      code = row['申购代码']
+      limit = row['申购上限']
+      price = 100
+      limit = limit * 10000
+      codeSt = stock_xgsglb_em_on_today(code)
+      self.qmt_trader.buy(codeSt,limit,price,order_remark='打债')
+
+    
   # 下单协议{code:code,price:price,amount:amount,type:type}
   def manage_qmt_trader(self,data):
     try:    
-      # self.connectQMT()
-      strategy_id = data['strategy_id']
+      strategy_code = data['strategy_code']
       run_params = data['run_params']
       # 获取参数
       security = data['params']['security']
@@ -180,7 +206,7 @@ class QMT:
         'pindex':pindex,
         'platform':'joinquant',
         'run_params':run_params,
-        'strategy_code':strategy_id,
+        'strategy_code':strategy_code,
         'fix_result_order_id':None,
         'is_buy':is_buy,
         'avg_cost':avg_cost,
@@ -197,10 +223,11 @@ class QMT:
       if self.is_connect == False:
         return 
       
-      # 不是模拟环境不能受理
-      if run_params['simple_backtest'] or run_params['full_backtest']:
-        return
       
+      # 不是模拟环境不能受理
+      if run_params == 'simple_backtest' or 'full_backtest':
+        print("回测环境不受理")
+        return
       # 判断交易时间
       now = datetime.datetime.now()
       if now.hour < 9 or (now.hour == 15 and now.minute > 30) or now.hour > 15:
@@ -208,28 +235,37 @@ class QMT:
             "message": "非交易时间不能下单",
         })
         return
-      
       # ------------------------------ 交易函数----------------------------------------
       oderId = str(oderId)
       if amount < 0:
         print(f"委托数量{amount}小于0有问题")
         return
-      
-      task = next((item for item in self.orm.get_task_list() if item.get('strategy_code') == strategy_id), None)
+      task = next((item for item in self.orm.get_task_list() if item.get('strategy_code') == strategy_code), None)
       if task:
         if task['is_open'] == 1:
           order_count_type = task['order_count_type']
+          security = convert_stock_suffix(security)
           # 按照策略买入卖出
           if order_count_type == 1:
             if is_buy ==  1:
-              self.qmt_trader.buy(convert_stock_suffix(security),amount,price,strategy_name=strategy_id,order_remark = oderId)
+              self.qmt_trader.buy(security=security,
+                                  amount=amount,
+                                  order_style_str='',
+                                  price=price,
+                                  strategy_name=strategy_code,
+                                  order_remark = oderId)
             elif is_buy == 0:
-              self.qmt_trader.sell(convert_stock_suffix(security),amount,price,order_remark = oderId)
+              self.qmt_trader.sell(security=security,
+                                   amount=amount,
+                                   order_style_str='',
+                                   strategy_name=strategy_code,
+                                   price=price,
+                                   order_remark = oderId)
           
         else:
-          print(f"任务不存在: {strategy_id}")
+          print(f"任务不存在: {strategy_code}")
       else:
-        print(f"任务不存在: {strategy_id}")
+        print(f"任务不存在: {strategy_code}")
     except Exception as e:
         print(e)
 

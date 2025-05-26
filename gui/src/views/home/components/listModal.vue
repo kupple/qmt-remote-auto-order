@@ -9,25 +9,29 @@
       </el-form-item>
       <el-form-item label="下单类型">
         <el-radio-group v-model="form.orderCountType">
-          <el-radio :label="1">跟随策略</el-radio>
-          <el-tooltip effect="dark" content="请在聚宽填写对应账号的策略金额，如需多个策略请合理分配各策略金额并在资金账号预留对应的资金" placement="top">
+          <el-radio style="margin-right: 5px" :label="1">资金跟随策略</el-radio>
+          <el-tooltip effect="dark" content="资金分配完全跟随端策略，不易产生剩余资金" placement="top">
+            <el-icon style="color: #999; font-size: 18px;margin-right:40px"><QuestionFilled /></el-icon>
+          </el-tooltip>
+          <el-radio :label="2" style="margin-right: 5px">动态调整模式</el-radio>
+          <el-tooltip effect="dark" content="可以动态分配资金控制仓位" placement="top">
             <el-icon style="color: #999; font-size: 18px"><QuestionFilled /></el-icon>
           </el-tooltip>
         </el-radio-group>
       </el-form-item>
+      <div v-if="form.orderCountType === 2" class="amount-container" style="display: flex; justify-content: space-between">
+        <!-- <el-form-item label="策略金额">
+          <el-input v-model="form.strategyAmount" placeholder="请输入策略金额" type="number" :min="0" @input="handleStrategyAmountInput" />
+        </el-form-item> -->
+        <el-form-item label="实际分配金额">
+          <el-input v-model="form.allocationAmount" placeholder="请输入账号分配金额" type="number" :min="0" @input="handleAllocationAmountInput" />
+        </el-form-item>
+      </div>
       <el-form-item label="下单平台">
         <el-radio-group v-model="form.platform">
           <el-radio disabled :label="1">聚宽</el-radio>
         </el-radio-group>
       </el-form-item>
-      <div v-if="form.orderCountType === 2" class="amount-container" style="display: flex; justify-content: space-between">
-        <el-form-item label="策略金额">
-          <el-input v-model="form.strategyAmount" placeholder="请输入策略金额" type="number" :min="0" @input="handleStrategyAmountInput" />
-        </el-form-item>
-        <el-form-item label="实际分配金额">
-          <el-input v-model="form.allocationAmount" placeholder="请输入账号分配金额" type="number" :min="0" @input="handleAllocationAmountInput" />
-        </el-form-item>
-      </div>
       <!-- <el-form-item v-else label="实际分配金额">
         <el-input style="width: 50%" v-model="form.allocationAmount" placeholder="请输入账号分配金额" type="number" :min="0" @input="handleAllocationAmountInput" />
       </el-form-item> -->

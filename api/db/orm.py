@@ -202,20 +202,27 @@ class ORM:
         return last_id
 
     def get_order_list(self, data):
+        # full_backtest
+        # simple_backtest
         """获取订单列表"""
         dbSession = DB.session()
+        if 'time' not in data or data['time'] == None:
+            data['time'] = ['00:00',"23:59"]
         with dbSession.begin():
-            start_current_date = datetime.now().strftime("%Y-%m-%d") + ' 00:00:00'
-            end_current_date = datetime.now().strftime("%Y-%m-%d") + ' 23:59:59'
+            start_current_date = datetime.now().strftime("%Y-%m-%d") + f' {data["time"][0]}:00'
+            end_current_date = datetime.now().strftime("%Y-%m-%d") + F' {data["time"][1]}:59'
             if 'date' in data and data['date'] is not None:
-                start_current_date = data['date'] + ' 00:00:00'
-                end_current_date = data['date'] + ' 23:59:59'
+                start_current_date = data['date'] + F' {data["time"][0]}:00'
+                end_current_date = data['date'] +  F' {data["time"][1]}:59'
 
             conditions = []
             if 'security_code' in data and data['security_code']:
                 conditions.append(Orders.security_code.like(f"%{data['security_code']}%"))
             if 'run_params' in data and data['run_params']:
-                conditions.append(Orders.run_params == data['run_params'])
+                if data['run_params'] == 'simple_backtest':
+                    conditions.append(or_(Orders.run_params == 'simple_backtest', Orders.run_params == 'full_backtest'))
+                else:
+                    conditions.append(Orders.run_params == data['run_params'])
             conditions.append(Orders.created_at >= start_current_date)
             conditions.append(Orders.created_at < end_current_date)
 
@@ -230,6 +237,7 @@ class ORM:
             total = dbSession.execute(count_stmt).scalar()
 
         dbSession.close()
+        print(data_list)
         return {
             'data': data_list,
             'total': total

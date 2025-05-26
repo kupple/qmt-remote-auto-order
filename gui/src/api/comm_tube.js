@@ -28,6 +28,12 @@ export const getOrderList = (params) => {
 export const transitionCode = (params,taskDic) => {
   return window.pywebview.api.transitionCode(params,taskDic)
 }
+
+export const revertTransitionCode = (data) => {
+  return window.pywebview.api.revertTransitionCode(data)
+}
+
+
 export const connectWs = (params) => {
   return window.pywebview.api.connectWs(params)
 }

@@ -14,16 +14,15 @@
           <div style="display: flex; flex-direction: row; align-items: center">
             <span class="section-title">今日委托</span>
             <el-radio-group v-model="run_params" size="small" @change="switchEntrustedTodayList">
-              <el-radio-button label="模拟盘" value="sim_trade" />
-              <el-radio-button label="编码回测" value="simple_backtest" />
-              <el-radio-button label="回测" value="full_backtest" />
+              <el-radio-button label="模拟盘/实盘下单" value="sim_trade" />
+              <el-radio-button label="回测" value="simple_backtest" />
             </el-radio-group>
           </div>
           <el-table stripe :data="entrustedTodayList" size="small" height="100%">
-            <el-table-column prop="create_time" label="委托时间" />
+            <el-table-column prop="created_at" label="委托时间" />
             <el-table-column prop="security_code" label="股票代码" />
             <el-table-column prop="price" label="价格" />
-            <el-table-column prop="amount" label="数量" />
+            <el-table-column prop="volume" label="数量" />
             <el-table-column prop="is_buy" label="方向" width="60">
               <template #default="{ row }">
                 <el-tag :type="row.is_buy === 1 ? 'success' : 'danger'" size="small">{{ row.is_buy === 1 ? '买入' : '卖出' }}</el-tag>
@@ -172,6 +171,7 @@ const editTask = async () => {
   box-sizing: border-box;
   // height: 100vh;
   height: 100%;
+  width: 100%;
   overflow: hidden;
   .detail-container-header {
     display: flex;

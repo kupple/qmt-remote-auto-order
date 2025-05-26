@@ -110,6 +110,7 @@ class TaskList(BaseModel):
     strategy_code = Column(String(), doc='策略代码', nullable=True)
     order_count_type = Column(Integer, doc='订单计数类型', nullable=True)
     strategy_amount = Column(Integer, doc='策略金额', nullable=True)
+    position_amount = Column(Integer, doc='持仓额度', nullable=True)
     allocation_amount = Column(Integer, doc='分配金额', nullable=True)
     enable = Column(Integer, doc='是否启用', nullable=True, server_default='1')
     days_number = Column(Integer, doc='天数', nullable=True)
@@ -188,3 +189,13 @@ class Trades(BaseModel):
 
     def __str__(self):
         return f"Trade: {self.order_sysid}"
+
+
+class Positions(BaseModel):
+    __tablename__ = "positions"
+    security_code = Column(String(), doc='证券代码', nullable=True)
+    volume = Column(Integer, doc='数量', nullable=True)
+    amount = Column(Numeric(), doc='金额', nullable=True)
+    
+    def __str__(self):
+        return f"Positions: {self.security_code}"
