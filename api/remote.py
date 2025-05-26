@@ -155,7 +155,6 @@ class Remote:
                 await self.reconnect()
 
     def connect(self, server_url,ways):
-        print(ways)
         print("Starting connect method...")
         self.should_reconnect = True
         self.reconnect_count = 0
