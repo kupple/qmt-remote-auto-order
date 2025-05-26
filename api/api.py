@@ -54,9 +54,9 @@ class API(System):
     def isProcessExist(self):
         return self.common.is_process_exist()
     
-    def connectWs(self,server_url):
+    def connectWs(self,server_url,ways = 2):
         self.orm.save_config({"server_url":server_url})
-        self.thread1 = threading.Thread(target=self.remote.connect, args=(server_url,))
+        self.thread1 = threading.Thread(target=self.remote.connect, args=(server_url,ways,))
         self.thread1.start()
     
     def disconnect(self):

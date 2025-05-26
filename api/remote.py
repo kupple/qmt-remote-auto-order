@@ -11,6 +11,7 @@ import json
 import time
 from .tools.sysConfig import get_system_unique_id
 from datetime import datetime,timezone
+from api.tools.tokenManager import generate_token
 
 class Remote:
     is_connected = False
@@ -113,11 +114,21 @@ class Remote:
                 "message": "测试-通信正常",
             })
     
-    async def connect_ws(self,server_url):
+    async def connect_ws(self,server_url,ways = 1):
         print("Starting connect_ws...")
         Remote.server_url = server_url
         try:
-            TOKEN = self.orm.getStorageVar('qmt_token')
+            TOKEN = None
+            if ways == 2:
+                TOKEN = self.orm.getStorageVar('qmt_token')
+            else:
+                config = self.orm.get_setting_config()
+                unique_id = get_system_unique_id()
+                plaintext = {
+                    "u": unique_id            
+                }
+                TOKEN = generate_token(plaintext,config['salt'])
+            
             print("Attempting to connect to WebSocket...")
             self.ws = await websockets.connect(server_url, additional_headers={"Authorization": f"Bearer {TOKEN}"})
             print("WebSocket connected successfully!")
@@ -143,7 +154,7 @@ class Remote:
                 print("Attempting to reconnect...")
                 await self.reconnect()
 
-    def connect(self, server_url):
+    def connect(self, server_url,ways):
         print("Starting connect method...")
         self.should_reconnect = True
         self.reconnect_count = 0
@@ -155,7 +166,7 @@ class Remote:
         
         async def start_connection():
             try:
-                await self.connect_ws(server_url)
+                await self.connect_ws(server_url,ways)
             except Exception as e:
                 print(f"Error in connect_ws: {e}")
         

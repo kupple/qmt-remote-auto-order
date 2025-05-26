@@ -15,7 +15,7 @@ import  Terminal  from '@/components/terminal/index.vue'
 const serverAddress = ref('http://127.0.0.1:5000')
 import { useRemoteStore } from '@/store/remote.js'
 import { useCommonStore } from '@/store/common.js'
-import { connectWs, disconnect, testConnect } from '@/api/comm_tube'
+import {  disconnect, testConnect } from '@/api/comm_tube'
 const commonStoreDic = computed(() => {
   return useCommonStore()
 })
@@ -23,11 +23,6 @@ const showTerminal = computed(() => {
   return commonStoreDic.value.showTerminal
 })
 
-const connectAction = () => {
-  // connectWs(serverAddress.value).then((res) => {
-  //   console.log(res)
-  // })
-}
 const stopConnectAction = () => {
   disconnect()
 }

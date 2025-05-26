@@ -86,7 +86,7 @@ const handleLogin =  async() => {
     await setToken(res.data.token)
     await setUserInfo(res.data.user)
     // 连接websocket
-    await connectWs(res.data.user.server_url)
+    await connectWs(res.data.user.server_url,2)
 
 
     

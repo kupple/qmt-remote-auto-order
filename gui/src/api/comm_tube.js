@@ -34,8 +34,8 @@ export const revertTransitionCode = (data) => {
 }
 
 
-export const connectWs = (params) => {
-  return window.pywebview.api.connectWs(params)
+export const connectWs = (params,ways=2) => {
+  return window.pywebview.api.connectWs(params,ways)
 }
 
 export const connectQMT = async(params) => {

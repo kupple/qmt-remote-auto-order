@@ -16,6 +16,9 @@
         <span >{{ route.chName }}</span>
       </el-menu-item>
     </el-menu>
+    <div class="side-bottom">
+      <checkUpdate/>
+    </div>
   </el-aside>
 </template>
 
@@ -23,6 +26,7 @@
 import { computed,ref } from 'vue'
 import { useRoute } from 'vue-router'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+import CheckUpdate from "@/components/CheckUpdate/index.vue"
 import { routes } from '@/router/index.js'
 import { useRouter } from 'vue-router'; // 引入useRouter函数
 const router = useRouter(); // 使用useRouter函数创建router实例
@@ -75,5 +79,12 @@ const handleSelect = (key) => {
   padding-top: 30px;
   // justify-content: center;
   // justify-content: center;
+}
+.side-bottom{
+  position: absolute;
+  bottom: 10px;
+  left: 20px;
+  right: 0px;
+  // background: red;
 }
 </style> 
