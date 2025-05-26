@@ -10,8 +10,9 @@
           </el-tooltip>
         </el-form-item>
         <el-form-item label="QMT路径" prop="qmtPath" required>
-          <el-input v-model="params.qmtPath" placeholder="请输入QMT安装路径" required />
-          <el-button type="primary" @click="connectionAction" style="margin-left: 10px">连接/获取资金账号</el-button>
+          <span v-if="hasBeenSelect==1">{{params.qmtPath}}</span>
+          <el-button v-if="hasBeenSelect==0" type="primary" @click="chooseDirectoryAction">打开目录</el-button>
+          <el-button v-if="hasBeenSelect==1" type="primary" @click="connectionAction" style="margin-left: 10px">连接/获取资金账号</el-button>
           <el-tooltip effect="dark" content="示例: D:\长城策略交易系统\userdata_mini" placement="top">
             <el-icon style="margin-left: 10px; color: #999; font-size: 18px"><QuestionFilled /></el-icon>
           </el-tooltip>
@@ -57,7 +58,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRemoteStore } from '@/store/remote.js'
 import { useRoute, useRouter } from 'vue-router'
 const router = useRouter()
-import { getSettingConfig, saveConfig, connectWs, disconnect, getRemoteState } from '@/api/comm_tube'
+import { getSettingConfig, saveConfig, connectWs, disconnect, getRemoteState,chooseDirectory } from '@/api/comm_tube'
 import { QuestionFilled } from '@element-plus/icons-vue'
 import { useCommonStore } from '@/store/common.js'
 import { CircleCheckFilled, CircleCloseFilled } from '@element-plus/icons-vue'
@@ -116,7 +117,7 @@ const rules = {
 }
 
 const accountArr = ref([])
-
+const hasBeenSelect = ref(false)
 const passStatus = ref(0)
 
 const params = reactive({
@@ -179,6 +180,18 @@ const backAction = async () => {
     run_model_type: 0
   })
   router.push('/setting/login')
+}
+
+const chooseDirectoryAction = async()=>{
+  const res = await chooseDirectory()
+  if(res[0]==true){
+    ElMessage.success('该目录通过验证')
+    params.qmtPath = res[1]
+    hasBeenSelect.value = 1
+  }else{
+    ElMessage.error('请选择正确的目录地址')
+    hasBeenSelect.value = 0
+  }
 }
 
 const disconnectAction = () => {

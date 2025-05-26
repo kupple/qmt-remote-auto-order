@@ -1,20 +1,20 @@
 
-; è„šæœ¬ç”± Inno Setup è„šæœ¬å‘å¯¼ ç”Ÿæˆï¼
-; æœ‰å…³åˆ›å»º Inno Setup è„šæœ¬æ–‡ä»¶çš„è¯¦ç»†èµ„æ–™è¯·æŸ¥é˜…å¸®åŠ©æ–‡æ¡£ï¼
+; ½Å±¾ÓÉ Inno Setup ½Å±¾Ïòµ¼ Éú³É£¡
+; ÓĞ¹Ø´´½¨ Inno Setup ½Å±¾ÎÄ¼şµÄÏêÏ¸×ÊÁÏÇë²éÔÄ°ïÖúÎÄµµ£¡
 
-#define MyAppName "PPX"
-#define MyAppVersion "1.0.0"
-#define MyAppPublisher "PanGao"
-#define MyAppURL "http://blog.pangao.vip"
-#define MyAppExeName "PPX.exe"
-#define MyAppAssocName MyAppName + " æ–‡ä»¶"
+#define MyAppName "qmt_auto_order"
+#define MyAppVersion "0.0.1"
+#define MyAppPublisher "mubin"
+#define MyAppURL "https://blog.pangao.vip"
+#define MyAppExeName "qmt_auto_order.exe"
+#define MyAppAssocName MyAppName + " ÎÄ¼ş"
 #define MyAppAssocExt ".myp"
 #define MyAppAssocKey StringChange(MyAppAssocName, " ", "") + MyAppAssocExt
 
 [Setup]
-; æ³¨: AppIdçš„å€¼ä¸ºå•ç‹¬æ ‡è¯†è¯¥åº”ç”¨ç¨‹åºã€‚
-; ä¸è¦ä¸ºå…¶ä»–å®‰è£…ç¨‹åºä½¿ç”¨ç›¸åŒçš„AppIdå€¼ã€‚
-; (è‹¥è¦ç”Ÿæˆæ–°çš„ GUIDï¼Œå¯åœ¨èœå•ä¸­ç‚¹å‡» "å·¥å…·|ç”Ÿæˆ GUID"ã€‚)
+; ×¢: AppIdµÄÖµÎªµ¥¶À±êÊ¶¸ÃÓ¦ÓÃ³ÌĞò¡£
+; ²»ÒªÎªÆäËû°²×°³ÌĞòÊ¹ÓÃÏàÍ¬µÄAppIdÖµ¡£
+; (ÈôÒªÉú³ÉĞÂµÄ GUID£¬¿ÉÔÚ²Ëµ¥ÖĞµã»÷ "¹¤¾ß|Éú³É GUID"¡£)
 AppId={{F35003AB-441A-C0A6-4527-937E6A02F789}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
@@ -26,11 +26,11 @@ AppUpdatesURL={#MyAppURL}
 DefaultDirName={autopf}\{#MyAppName}
 ChangesAssociations=yes
 DisableProgramGroupPage=yes
-; ç§»é™¤ä»¥ä¸‹è¡Œï¼Œä»¥åœ¨ç®¡ç†å®‰è£…æ¨¡å¼ä¸‹è¿è¡Œï¼ˆä¸ºæ‰€æœ‰ç”¨æˆ·å®‰è£…ï¼‰ã€‚
+; ÒÆ³ıÒÔÏÂĞĞ£¬ÒÔÔÚ¹ÜÀí°²×°Ä£Ê½ÏÂÔËĞĞ£¨ÎªËùÓĞÓÃ»§°²×°£©¡£
 PrivilegesRequired=lowest
-OutputDir=C:\pywebview\PPX\build
-OutputBaseFilename=PPX-V1.0.0_Windows
-SetupIconFile=C:\pywebview\PPX\pyapp\icon\logo.ico
+OutputDir=D:\git\qmt-remote-auto-order\build
+OutputBaseFilename=qmt_auto_order-V0.0.1_Windows
+SetupIconFile=D:\git\qmt-remote-auto-order\pyapp\icon\logo.ico
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -42,8 +42,8 @@ Name: "chinesesimp"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "C:\pywebview\PPX\build\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-; æ³¨æ„: ä¸è¦åœ¨ä»»ä½•å…±äº«ç³»ç»Ÿæ–‡ä»¶ä¸Šä½¿ç”¨â€œFlags: ignoreversionâ€
+Source: "D:\git\qmt-remote-auto-order\build\{#MyAppName}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
+; ×¢Òâ: ²»ÒªÔÚÈÎºÎ¹²ÏíÏµÍ³ÎÄ¼şÉÏÊ¹ÓÃ¡°Flags: ignoreversion¡±
 
 [Registry]
 Root: HKA; Subkey: "Software\Classes\{#MyAppAssocExt}\OpenWithProgids"; ValueType: string; ValueName: "{#MyAppAssocKey}"; ValueData: ""; Flags: uninsdeletevalue

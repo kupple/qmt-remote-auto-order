@@ -80,4 +80,7 @@ export const checkStrategyCodeExists = (strategy_code)=>{
   return window.pywebview.api.check_strategy_code_exists(strategy_code)
 }
 
+export const chooseDirectory = ()=>{
+  return window.pywebview.api.open_directory_dialog()
+}
 // export const 

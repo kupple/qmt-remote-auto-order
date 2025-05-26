@@ -71,3 +71,15 @@ def ws_to_http(ws_url):
         "wss": "https"
     }.get(parsed.scheme, parsed.scheme)  # 协议映射，默认保留原协议
     return f"{scheme}://{parsed.netloc}"
+
+
+
+def get_os_type():
+    """获取当前操作系统类型"""
+    system = platform.system()
+    if system == "Windows":
+        return "windows"
+    elif system == "Darwin":
+        return "macos"
+    else:
+        return "unknown"
