@@ -51,7 +51,7 @@ import { onMounted, reactive, ref, computed } from 'vue'
 import { useCommonStore } from '@/store/common.js'
 import { useRemoteStore } from '@/store/remote.js'
 import { CircleCheckFilled, CircleCloseFilled } from '@element-plus/icons-vue'
-import { isProcessExist } from '@/api/comm_tube'
+import { isProcessExist,getSettingConfig,connectQMT } from '@/api/comm_tube'
 const time = ref('')
 defineOptions({
   name: 'LayoutFooter'
@@ -65,6 +65,16 @@ const isAccSubSuccess = computed(() => useCommonStore().isAccSubSuccess)
 onMounted(async () => {
   setInterval(async () => {
     const res = await isProcessExist()
+    if(isQMTProcessExit.value == false && res == true){
+      // connectQMT
+      const config = await getSettingConfig()
+      if(config.mini_qmt_path && config.client_id){
+          await connectQMT({
+            mini_qmt_path: config.mini_qmt_path,
+            client_id: config.client_id
+          })
+      }
+    }
     useCommonStore().changeIsQMTProcessExit(res)
   }, 2000)
   setInterval(async () => {
