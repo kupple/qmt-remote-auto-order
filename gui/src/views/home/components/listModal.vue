@@ -14,7 +14,7 @@
             <el-icon style="color: #999; font-size: 18px;margin-right:40px"><QuestionFilled /></el-icon>
           </el-tooltip>
           <el-radio disabled :label="2" style="margin-right: 5px">动态调整模式</el-radio>
-          <el-tooltip effect="dark" content="可以动态分配资金控制仓位" placement="top">
+          <el-tooltip effect="dark" content="可以动态分配资金控制仓位暂未开放" placement="top">
             <el-icon style="color: #999; font-size: 18px"><QuestionFilled /></el-icon>
           </el-tooltip>
         </el-radio-group>
