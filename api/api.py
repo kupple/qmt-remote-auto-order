@@ -12,7 +12,10 @@ from api.remote import Remote
 from api.qmt import QMT
 import threading
 from api.system import System
-
+from .tools.sysConfig import get_os_type
+import subprocess
+import webview
+import os
 
 class API(System):
     def __init__(self):
@@ -51,9 +54,9 @@ class API(System):
     def isProcessExist(self):
         return self.common.is_process_exist()
     
-    def connectWs(self,server_url):
+    def connectWs(self,server_url,ways = 2):
         self.orm.save_config({"server_url":server_url})
-        self.thread1 = threading.Thread(target=self.remote.connect, args=(server_url,))
+        self.thread1 = threading.Thread(target=self.remote.connect, args=(server_url,ways,))
         self.thread1.start()
     
     def disconnect(self):
@@ -212,3 +215,31 @@ class API(System):
     
     def check_strategy_code_exists(self,strategy_code):
         return self.orm.check_strategy_code_exists(strategy_code)
+
+    def open_directory_dialog(self):
+        """打开系统目录选择对话框（跨平台）"""
+        os_type = get_os_type()
+        
+        if os_type == "windows":
+            # Windows 直接使用 PyWebView 的文件夹选择对话框
+            directory = System._window.create_file_dialog(
+                webview.FOLDER_DIALOG,
+                directory=os.path.expanduser("~"),
+                allow_multiple=False
+            )
+            path = directory[0] if directory else None
+            if path != None:
+                userdata_path = os.path.join(path, "userdata_mini")
+                if os.path.exists(userdata_path):
+                    return True, userdata_path
+                else:
+                    return False, None
+                
+            else:
+                return False,None
+        
+        elif os_type == "macos":
+           return True,"D:\\长城策略交易系统new\\userdata_mini"
+        
+        else:
+            return None        

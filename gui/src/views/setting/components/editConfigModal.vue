@@ -1,9 +1,11 @@
 <template>
-  <el-dialog v-model="dialogVisible" title="基本设置" width="50vw" center>
+  <el-dialog v-model="dialogVisible" title="基本设置" width="60vw" center>
     <el-form label-width="auto" :model="params" :rules="rules" ref="formRef">
-      <el-form-item label="QMT路径" prop="qmtPath" required>
-        <el-input v-model="params.qmtPath" placeholder="请输入QMT安装路径" required />
-        <el-button type="primary" @click="connectionAction" style="margin-left: 10px">连接/获取资金账号</el-button>
+      <el-form-item class="el-form-item__content" label="QMT路径" prop="qmtPath" required>
+        <span class="path" v-if="hasBeenSelect == 1">{{ params.qmtPath }}</span>
+        <el-button v-if="hasBeenSelect == 0" type="primary" @click="chooseDirectoryAction">打开目录</el-button>
+        <el-button v-if="hasBeenSelect == 1" type="primary" @click="connectionAction" style="margin-left: 10px">获取资金账号</el-button>
+        <el-button style="margin-left:0px" v-if="hasBeenSelect == 1" type="danger" @click="chooseDirectoryAction">重置</el-button>
         <el-tooltip effect="dark" content="示例: D:\长城策略交易系统\userdata_mini" placement="top">
           <el-icon style="margin-left: 10px; color: #999; font-size: 18px"><QuestionFilled /></el-icon>
         </el-tooltip>
@@ -27,12 +29,13 @@
 import { ref, computed, onMounted, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { QuestionFilled } from '@element-plus/icons-vue'
-import { getSettingConfig, saveConfig, testQMTConnect,connectQMT } from '@/api/comm_tube'
+import { getSettingConfig, saveConfig, testQMTConnect, connectQMT, chooseDirectory } from '@/api/comm_tube'
 const formRef = ref(null)
 const dialogVisible = ref(false)
 const emit = defineEmits(['callBack'])
 const passStatus = ref(0)
 const accountArr = ref([])
+const hasBeenSelect = ref(false)
 
 const connectionAction = () => {
   testQMTConnect(params.qmtPath).then((res) => {
@@ -61,6 +64,18 @@ const connectionAction = () => {
   })
 }
 
+const chooseDirectoryAction = async () => {
+  const res = await chooseDirectory()
+  if (res[0] == true) {
+    ElMessage.success('该目录通过验证')
+    params.qmtPath = res[1]
+    hasBeenSelect.value = 1
+  } else {
+    ElMessage.error('请选择正确的目录地址')
+    hasBeenSelect.value = 0
+  }
+}
+
 const rules = {
   qmtPath: [{ required: true, message: '请输入QMT路径', trigger: 'blur' }],
   clientId: [{ required: true, message: '请输入客户编号ID', trigger: 'blur' }]
@@ -75,6 +90,11 @@ const getSetting = async () => {
   const res = await getSettingConfig()
   params.qmtPath = res.mini_qmt_path
   params.clientId = res.client_id
+  if(res.mini_qmt_path){
+    hasBeenSelect.value = true
+  }else{
+    hasBeenSelect.value = false
+  }
 }
 
 const showModal = () => {
@@ -137,5 +157,11 @@ defineExpose({
 }
 .save-btn {
   width: 100%;
+}
+.path {
+  white-space: nowrap; /* 禁止换行 */
+  overflow: hidden; /* 隐藏溢出内容 */
+  text-overflow: ellipsis; /* 超出部分显示省略号 */
+  display: inline-block; /* 使宽度约束生效（必要时） */
 }
 </style>

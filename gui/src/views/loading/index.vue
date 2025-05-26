@@ -28,13 +28,13 @@ onMounted(() => {
     }
     if (config.run_model_type === 1) {
       if (config.salt && config.server_url && config.client_id && config.mini_qmt_path) {
-        connectWs(config.server_url)
+        connectWs(config.server_url,1)
       }
     } else if (config.run_model_type === 2) {
       const userInfo = await getUserInfo()
       const token = await getToken()
       if (userInfo && token && config.server_url) {
-        connectWs(config.server_url)
+        connectWs(config.server_url,2)
       }
     }
     router.push('/home/list')

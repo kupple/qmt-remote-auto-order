@@ -34,8 +34,8 @@ export const revertTransitionCode = (data) => {
 }
 
 
-export const connectWs = (params) => {
-  return window.pywebview.api.connectWs(params)
+export const connectWs = (params,ways=2) => {
+  return window.pywebview.api.connectWs(params,ways)
 }
 
 export const connectQMT = async(params) => {
@@ -80,4 +80,7 @@ export const checkStrategyCodeExists = (strategy_code)=>{
   return window.pywebview.api.check_strategy_code_exists(strategy_code)
 }
 
+export const chooseDirectory = ()=>{
+  return window.pywebview.api.open_directory_dialog()
+}
 // export const 

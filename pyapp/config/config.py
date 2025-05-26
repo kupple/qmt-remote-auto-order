@@ -29,7 +29,7 @@ class Config:
     appDeveloper = "mubin"  # 应用开发者
     appBlogs = "https://blog.pangao.vip"  # 个人博客
     appPackage = 'qmt.auto.order'    
-    appUpdateUrl = 'https://api.github.com/repos/pangao1990/ppx/releases/latest'    # 获取程序更新信息 https://api.github.com/repos/pangao1990/ppx/releases/latest
+    appUpdateUrl = 'https://api.github.com/repos/kupple/qmt-remote-auto-order/releases/latest'    # 获取程序更新信息 https://api.github.com/repos/pangao1990/ppx/releases/latest
     appISSID = 'F35003AB-441A-C0A6-4527-937E6A02F789'    # Inno Setup 打包唯一编号。在执行 pnpm run init 之前，请设置为空，程序会自动生成唯一编号，生成后请勿修改！！！
 
     ##
