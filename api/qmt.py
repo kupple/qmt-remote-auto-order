@@ -107,7 +107,7 @@ class QMT:
       }
     
     import random
-    from .xtquant.xttrader import XtQuantTrader
+    from pyapp.pkg.xtquant.xttrader import XtQuantTrader
     
     result = {
       'msg':'',
