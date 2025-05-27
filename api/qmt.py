@@ -163,7 +163,7 @@ class QMT:
       price = row['发行价格']
       # 这里可以添加你的处理逻辑
       print(f"申购代码: {code}, 申购上限: {limit}, 发行价格: {price}")
-      codeSt = stock_xgsglb_em_on_today(code)
+      codeSt = convert_stock_suffix(code)
       self.qmt_trader.buy(codeSt,limit,price,order_remark='打新')
 
   def autoBuyconvertibleBond(self):
@@ -176,7 +176,7 @@ class QMT:
       limit = row['申购上限']
       price = 100
       limit = limit * 10000
-      codeSt = stock_xgsglb_em_on_today(code)
+      codeSt = convert_stock_suffix(code)
       self.qmt_trader.buy(codeSt,limit,price,order_remark='打债')
 
     

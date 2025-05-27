@@ -280,6 +280,10 @@ def stock_xgsglb_em_on_today(symbol: str = "全部股票") -> pd.DataFrame:
         )
         big_df["涨幅"] = pd.to_numeric(big_df["涨幅"], errors="coerce")
         big_df["每中一签获利"] = pd.to_numeric(big_df["每中一签获利"], errors="coerce")
+    
+    # 过滤掉北交所的股票（股票代码以8开头）
+    # 只保留0字头、6字头、3字头的股票
+    big_df = big_df[big_df["股票代码"].str.startswith(("0", "6", "3"))]
     return big_df
 
 

@@ -10,12 +10,16 @@ from api.db.orm import ORM
 from api.common import Common
 from api.remote import Remote
 from api.qmt import QMT
+from api.trading_related.task_scheduler import TaskScheduler
 import threading
 from api.system import System
 from .tools.sysConfig import get_os_type
 import subprocess
 import webview
 import os
+import datetime
+import logging
+
 
 class API(System):
     def __init__(self):
@@ -23,15 +27,16 @@ class API(System):
         self.orm = ORM()
         self.common = Common(self.orm)
         self.qmt = QMT(self.orm)
-        self.remote = Remote(self.qmt,self.orm)
+        self.remote = Remote(self.qmt, self.orm)
         self.thread1 = None
-        self.daily_timer = None  # 用于存储定时器对象
         
-        # 国债逆回购
-        self.schedule_daily_task_new_purchase(hour=15, minute=10)
-        # 打新打债
-        self.schedule_daily_task_new_stock(hour=10, minute=10)
+        # 初始化任务调度器
+        self.task_scheduler = TaskScheduler(self.qmt, self.orm)
         
+        # 启动定时任务
+        self.task_scheduler.schedule_national_debt(hour=15, minute=10)
+        self.task_scheduler.schedule_new_stock(hour=10, minute=10)
+        self.task_scheduler.schedule_new_bond(hour=10, minute=10)
 
     def setWindow(self, window):
         '''获取窗口实例'''
@@ -114,104 +119,9 @@ class API(System):
     def testQMTConnect(self,path):
         return self.qmt.test_connect(path)
 
-    # 开启国债逆回购
-    def schedule_daily_task_new_purchase(self, hour=15, minute=10):
-        """
-        设置每天定时执行的任务
-        :param hour: 小时（24小时制），默认21（晚上9点）
-        :param minute: 分钟，默认0
-        """
-        import datetime
-        import time
-
-        def calculate_delay():
-            now = datetime.datetime.now()
-            target_time = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
-            
-            # 如果目标时间已经过了，就设置为明天
-            if now >= target_time:
-                target_time = target_time + datetime.timedelta(days=1)
-            
-            # 计算延迟秒数
-            delay = (target_time - now).total_seconds()
-            return delay
-
-        def schedule_next():
-            config =  self.orm.get_setting_config()
-            if config["auto_national_debt"] == 1 and config["client_id"] != "" and config["mini_qmt_path"] != "" and self.qmt.qmt_trader != None:
-                self.qmt.buyReverseRepo()
-            
-            # 重新调度下一次执行
-            if self.daily_timer is not None:  # 只有在定时器未被取消的情况下才继续调度
-                delay = calculate_delay()
-                self.daily_timer = threading.Timer(delay, schedule_next)
-                self.daily_timer.start()
-
-        # 取消现有的定时器（如果存在）
-        self.cancel_daily_task()
-        
-        # 启动新的定时器
-        delay = calculate_delay()
-        self.daily_timer = threading.Timer(delay, schedule_next)
-        self.daily_timer.start()
-        return True
-    
-       # 开启国债逆回购
-    def schedule_daily_task_new_stock(self, hour=10, minute=10):
-        """
-        设置每天定时执行的任务
-        :param hour: 小时（24小时制），默认21（晚上9点）
-        :param minute: 分钟，默认0
-        """
-        import datetime
-        import time
-
-        def calculate_delay():
-            now = datetime.datetime.now()
-            target_time = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
-            
-            # 如果目标时间已经过了，就设置为明天
-            if now >= target_time:
-                target_time = target_time + datetime.timedelta(days=1)
-            
-            # 计算延迟秒数
-            delay = (target_time - now).total_seconds()
-            return delay
-
-        def schedule_next():
-            config =  self.orm.get_setting_config()
-            # 新股
-            if config["auto_buy_stock_ipo"] == 1 and config["client_id"] != "" and config["mini_qmt_path"] != "" and self.qmt.qmt_trader != None:
-                self.qmt.autoBuyNewStock()
-                
-            # 新债
-            if config["auto_buy_purchase_ipo"] == 1 and config["client_id"] != "" and config["mini_qmt_path"] != "" and self.qmt.qmt_trader != None:
-                self.qmt.autoBuyconvertibleBond()
-            
-            # 重新调度下一次执行
-            if self.daily_timer is not None:  # 只有在定时器未被取消的情况下才继续调度
-                delay = calculate_delay()
-                self.daily_timer = threading.Timer(delay, schedule_next)
-                self.daily_timer.start()
-
-        # 取消现有的定时器（如果存在）
-        self.cancel_daily_task()
-        
-        # 启动新的定时器
-        delay = calculate_delay()
-        self.daily_timer = threading.Timer(delay, schedule_next)
-        self.daily_timer.start()
-        return True
-
     def cancel_daily_task(self):
-        """
-        取消定时任务
-        """
-        if self.daily_timer is not None:
-            self.daily_timer.cancel()
-            self.daily_timer = None
-            return True
-        return False
+        """取消所有定时任务"""
+        return self.task_scheduler.cancel_all_tasks()
     
     def check_strategy_code_exists(self,strategy_code):
         return self.orm.check_strategy_code_exists(strategy_code)
