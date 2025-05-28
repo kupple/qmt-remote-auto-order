@@ -120,3 +120,4 @@ dist
 
 __pycache__/
 *.pyc
+./pyapp/pyenv
