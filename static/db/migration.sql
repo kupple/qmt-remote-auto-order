@@ -199,3 +199,9 @@ DROP TABLE position;
 
 UPDATE alembic_version SET version_num='532942a6e3c4' WHERE alembic_version.version_num = '1f921a4f9c15';
 
+-- Running upgrade 532942a6e3c4 -> 665c2306314e
+
+ALTER TABLE setting ADD COLUMN auto_startup INTEGER DEFAULT '0';
+
+UPDATE alembic_version SET version_num='665c2306314e' WHERE alembic_version.version_num = '532942a6e3c4';
+

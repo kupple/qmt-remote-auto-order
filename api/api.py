@@ -19,7 +19,7 @@ import webview
 import os
 import datetime
 import logging
-
+import sys
 
 class API(System):
     def __init__(self):
@@ -41,6 +41,36 @@ class API(System):
     def setWindow(self, window):
         '''获取窗口实例'''
         System._window = window
+        
+    def set_automatically(self,enable = True):
+        
+        if sys.platform.startswith('darwin'):
+            return True
+        else:
+            import winreg
+            
+        # 从应用路径自动生成安全的注册表项名称
+        app_basename = os.path.splitext(os.path.basename(sys.executable))[0]
+        app_name = f"PyWebView_{app_basename}"  # 添加前缀避免冲突
+        
+        try:
+            key = winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER,
+                r"Software\Microsoft\Windows\CurrentVersion\Run",
+                0,
+                winreg.KEY_SET_VALUE
+            )
+            
+            if enable:
+                winreg.SetValueEx(key, app_name, 0, winreg.REG_SZ, sys.executable)
+                print(f"已启用自启动: {app_name}")
+            else:
+                winreg.DeleteValue(key, app_name)
+                print(f"已禁用自启动: {app_name}")
+                
+            winreg.CloseKey(key)
+        except WindowsError as e:
+            print(f"注册表操作失败: {e}")        
 
     def storage_get(self, key):
         '''获取存储变量'''

@@ -80,6 +80,7 @@ class Setting(BaseModel):
     auto_national_debt = Column(Integer, doc='自动逆回购', nullable=True, server_default='0')
     auto_buy_stock_ipo = Column(Integer, doc='自动打新股', nullable=True, server_default='0')
     auto_buy_purchase_ipo = Column(Integer, doc='自动打新债·', nullable=True, server_default='0')
+    auto_startup = Column(Integer, doc='开机自启动', nullable=True, server_default='0')
     account = Column(String(), doc='账号·', nullable=True)
     def __str__(self):
         return f"Setting: {self.client_id}"

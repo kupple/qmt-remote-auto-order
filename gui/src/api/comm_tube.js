@@ -83,4 +83,8 @@ export const checkStrategyCodeExists = (strategy_code)=>{
 export const chooseDirectory = ()=>{
   return window.pywebview.api.open_directory_dialog()
 }
+
+export const setAutomatically = ()=>{
+  return window.pywebview.api.set_automatically()
+}
 // export const 

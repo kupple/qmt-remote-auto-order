@@ -15,7 +15,7 @@
           <el-table-column prop="allocation_amount" label="分配金额">
             <template #default="scope">
               <span v-if="scope.row.order_count_type == 1">跟随策略</span>
-              <span v-else>{{scope.row.allocation_amount}}</span>
+              <span v-else>{{ scope.row.allocation_amount }}</span>
             </template>
           </el-table-column>
           <el-table-column label="操作" width="200" align="center">
@@ -42,16 +42,20 @@
             </el-tooltip>
           </el-form-item>
           <el-form-item label="自动打新股">
-            <el-switch  size="small" v-model="form.auto_buy_stock_ipo" @change="(e) => autoAutomaticReverseAtion(2, e)" />
+            <el-switch size="small" v-model="form.auto_buy_stock_ipo" @change="(e) => autoAutomaticReverseAtion(2, e)" />
             <el-tooltip effect="dark" content="开启后10点10分自动申购新股" placement="top">
               <el-icon style="margin-left: 10px; color: #999; font-size: 18px"><QuestionFilled /></el-icon>
             </el-tooltip>
           </el-form-item>
           <el-form-item label="自动打债">
-            <el-switch  size="small" v-model="form.auto_buy_purchase_ipo" @change="(e) => autoAutomaticReverseAtion(3, e)" />
+            <el-switch size="small" v-model="form.auto_buy_purchase_ipo" @change="(e) => autoAutomaticReverseAtion(3, e)" />
             <el-tooltip effect="dark" content="开启后10点10分自动申购新债" placement="top">
               <el-icon style="margin-left: 10px; color: #999; font-size: 18px"><QuestionFilled /></el-icon>
             </el-tooltip>
+          </el-form-item>
+          <el-divider>系统</el-divider>
+          <el-form-item label="开机自启动">
+            <el-switch size="small" v-model="form.auto_startup" @change="(e) => autoAutomaticReverseAtion(4, e)" />
           </el-form-item>
         </el-form>
       </div>
@@ -67,7 +71,7 @@ import { QuestionFilled } from '@element-plus/icons-vue'
 import { useCommonStore } from '@/store/common.js'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter, useRoute } from 'vue-router'
-import { getSettingConfig, runTask, getTaskList, saveConfig } from '@/api/comm_tube'
+import { getSettingConfig, runTask, getTaskList, saveConfig,  setAutomatically } from '@/api/comm_tube'
 
 const router = useRouter() // 使用useRouter函数创建router实例
 const route = useRoute()
@@ -84,6 +88,11 @@ const autoAutomaticReverseAtion = async (type, e) => {
   if (type === 3) {
     subDic['auto_buy_purchase_ipo'] = e ? 1 : 0
   }
+  if (type === 4) {
+    subDic['auto_startup'] = e ? 1 : 0
+    await setAutomatically(e)
+  }
+  
   await saveConfig(subDic)
 }
 
@@ -98,6 +107,8 @@ const getConfig = async () => {
   form.auto_national_debt = res.auto_national_debt == 1 ? true : false
   form.auto_buy_stock_ipo = res.auto_buy_stock_ipo == 1 ? true : false
   form.auto_buy_purchase_ipo = res.auto_buy_purchase_ipo == 1 ? true : false
+  form.auto_startup = res.auto_startup == 1 ? true : false
+  
 }
 
 const taskList = computed(() => {
