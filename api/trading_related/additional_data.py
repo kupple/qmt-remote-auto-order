@@ -441,6 +441,9 @@ def bond_zh_cov() -> pd.DataFrame:
     ).dt.date
     big_df["债现价"] = big_df["债现价"].fillna(100)
     
-    big_df = big_df[big_df['申购日期'] == current_date]
 
+    
+    big_df = big_df.loc[big_df['申购日期'] == pd.to_datetime(current_date)]
+    
+    
     return big_df

@@ -223,9 +223,8 @@ class QMT:
       if self.is_connect == False:
         return 
       
-      
       # 不是模拟环境不能受理
-      if run_params == 'simple_backtest' or 'full_backtest':
+      if run_params == 'simple_backtest' or run_params == 'full_backtest':
         print("回测环境不受理")
         return
       # 判断交易时间
