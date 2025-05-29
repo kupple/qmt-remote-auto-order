@@ -24,10 +24,9 @@ from pyapp.config.config import Config
 from pyapp.db.db import DB
 
 cfg = Config()    # 配置
+cfg.init()    # Initialize config first to set up app data directory
 db = DB()    # 数据库类
 api = API()    # 本地接口
-
-cfg.init()
 
 # 全局变量
 window = None
