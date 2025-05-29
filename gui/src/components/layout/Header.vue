@@ -60,5 +60,7 @@ const handleBack = () => {
   display: flex;
   align-items: center;
   gap: 4px;
+  /* margin-top: 2px; */
+  font-size: 16px;
 }
 </style> 

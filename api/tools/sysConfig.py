@@ -9,10 +9,10 @@ def get_system_unique_id():
     system = platform.system()
     if system == "Windows":
         try:
-            import wmi
-            c = wmi.WMI()
-            for system in c.Win32_ComputerSystemProduct():
-                return system.UUID
+            result = subprocess.check_output("wmic csproduct get uuid", shell=True, text=True)
+            result = result.replace('\n', '').replace('\r', '')
+            uuid_str = result.split()[-1]  # 按空白字符分割字符串，取最后一个元素
+            return uuid_str
         except Exception as e:
             print(f"Error getting UUID on Windows: {e}")
     elif system == "Linux":

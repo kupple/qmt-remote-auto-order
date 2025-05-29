@@ -9,6 +9,8 @@ import threading
 import datetime
 import logging
 from typing import Optional, Callable
+from api.system import System
+
 
 class TaskScheduler:
     """定时任务调度器，用于管理所有交易相关的定时任务"""
