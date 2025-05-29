@@ -121,3 +121,12 @@ dist
 __pycache__/
 *.pyc
 pyapp/pyenv
+
+__pycache__/
+
+# 其他常见的 Python 忽略项
+*.pyo
+*.pyd
+*.egg-info/
+.env
+venv/
