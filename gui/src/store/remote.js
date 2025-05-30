@@ -1,9 +1,13 @@
 // frontend/src/store/user.js
+import router from '@/router/index.js'
 import dayjs from 'dayjs'
+import { ElMessage } from 'element-plus'
+
 import {
     defineStore
 } from 'pinia'
 
+import { clearAuth } from '@/api/auth'
 export const useRemoteStore = defineStore('remote', {
     state: () => ({
         connectState: 0,
@@ -17,12 +21,21 @@ export const useRemoteStore = defineStore('remote', {
         changeClientId(params) {
             this.clientId = params
         },
-        setRemoteStore(params){
+        async setRemoteStore(params){
             if(params.type === 'test'){
 
             }else{
                 if(params.state != undefined || params.state != null){
                     this.connectState = params.state    
+                }
+            }
+            if(params.code){
+                console.log(params.code)
+
+                if(params.code == "-101"){
+                    await clearAuth()
+                    ElMessage.error('已有账号在其他地方登录')
+                    router.push('/setting/login')
                 }
             }
             // 模拟盘 回测 信号单

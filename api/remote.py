@@ -34,12 +34,25 @@ class Remote:
                 message = await self.ws.recv()
                 data = json.loads(message)
                 content = data['content'] = json.loads(data['content'])
+                
                 # 发送确认消息给服务端
                 await self.ws.send(json.dumps({
                     "type": "ack",
                     "id": data.get("id", ""),
                     "timestamp": int(time.time() * 1000)  # 转换为毫秒级整数时间戳
                 }))
+
+                # 如果是退出登录
+                if "type" in content and content["type"] == "logout":
+                    System.system_py2js(self,'remoteCallBack',  {
+                        "state": 0,
+                        "message": "其他地方已登录断开连接请重新登录",
+                        "code":"-101"
+                    })
+                    self.close_ws()
+                    continue
+                
+
                 # 发送信息 写法没错
                 System.system_py2js(self,'remoteCallBack',  {
                     "state": 1,
