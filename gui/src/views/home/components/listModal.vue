@@ -8,25 +8,37 @@
         <el-input style="width: 50%" v-model="form.strategy_code" placeholder="请输入任务编号" maxlength="6" />
       </el-form-item>
       <el-form-item label="下单类型">
-        <el-radio-group v-model="form.orderCountType">
+        <el-radio-group v-model="form.order_count_type">
           <el-radio style="margin-right: 5px" :label="1">资金跟随策略</el-radio>
           <el-tooltip effect="dark" content="资金分配完全跟随端策略，不易产生剩余资金" placement="top">
-            <el-icon style="color: #999; font-size: 18px;margin-right:40px"><QuestionFilled /></el-icon>
+            <el-icon style="color: #999; font-size: 18px; margin-right: 40px"><QuestionFilled /></el-icon>
           </el-tooltip>
-          <el-radio disabled :label="2" style="margin-right: 5px">动态调整模式</el-radio>
+          <el-radio :label="2" style="margin-right: 5px">动态调整模式</el-radio>
           <el-tooltip effect="dark" content="可以动态分配资金控制仓位暂未开放" placement="top">
             <el-icon style="color: #999; font-size: 18px"><QuestionFilled /></el-icon>
           </el-tooltip>
         </el-radio-group>
       </el-form-item>
-      <div v-if="form.orderCountType === 2" class="amount-container" style="display: flex; justify-content: space-between">
+      <div v-if="form.order_count_type === 2" class="amount-container" style="display: flex; justify-content: space-between">
         <!-- <el-form-item label="策略金额">
           <el-input v-model="form.strategyAmount" placeholder="请输入策略金额" type="number" :min="0" @input="handleStrategyAmountInput" />
         </el-form-item> -->
-        <el-form-item label="实际分配金额">
-          <el-input v-model="form.allocationAmount" placeholder="请输入账号分配金额" type="number" :min="0" @input="handleAllocationAmountInput" />
+        <el-form-item label="分配金额" required>
+          <el-input v-model="form.allocation_amount" placeholder="请输入账号分配金额" type="number" :min="0" @input="handleAllocationAmountInput" />
         </el-form-item>
       </div>
+      <el-form-item label="手续费设置" v-if="form.order_count_type === 2" required>
+        <div class="service_charge">
+          <div class="service_charge-item">
+            <span>费率(万分之几)</span>
+            <el-input v-model="form.service_charge" placeholder="请输入账号分配金额" type="number" :min="0"  />
+          </div>
+          <div class="service_charge-item">
+            <span>最低手续费(免5输入0)</span>
+            <el-input v-model="form.lower_limit_of_fees" placeholder="请输入账号分配金额" type="number" :min="0" />
+          </div>
+        </div>
+      </el-form-item>
       <el-form-item label="下单平台">
         <el-radio-group v-model="form.platform">
           <el-radio disabled :label="1">聚宽</el-radio>
@@ -56,23 +68,25 @@ const form = reactive({
   name: '',
   platform: 1,
   strategy_code: '',
-  orderCountType: 1,
-  strategyAmount: 0,
-  allocationAmount: 0
+  order_count_type: 1,
+  strategy_amount: 0,
+  allocation_amount: 0,
+  service_charge:0,
+  lower_limit_of_fees:0
 })
 const editDic = ref({})
 
 const handleStrategyAmountInput = (value) => {
   const num = Number(value)
   if (!isNaN(num)) {
-    form.value.strategyAmount = Number(num.toFixed(2))
+    form.strategy_amount = Number(num.toFixed(2))
   }
 }
 
 const handleAllocationAmountInput = (value) => {
   const num = Number(value)
   if (!isNaN(num)) {
-    form.value.allocationAmount = Number(num.toFixed(2))
+    form.allocation_amount = Number(num.toFixed(2))
   }
 }
 
@@ -82,26 +96,32 @@ const showModal = (dic) => {
     editDic.value = dic
     form.name = dic.name
     form.strategy_code = dic.strategy_code
-    form.orderCountType = dic.order_count_type
-    form.strategyAmount = dic.strategy_amount
-    form.allocationAmount = dic.allocation_amount
+    form.order_count_type = dic.order_count_type
+    form.strategy_amount = dic.strategy_amount
+    form.allocation_amount = dic.allocation_amount
   } else {
     editDic.value = null
   }
 }
 const handleSubmit = async () => {
-  const judege = await checkStrategyCodeExists(form.strategy_code)
-  if (judege) {
-    ElMessage.error('任务编号已存在,请重新输入')
-    return
+  if(editDic.value?.id){
+    
+  }else{
+    const judege = await checkStrategyCodeExists(form.strategy_code)
+    if (judege) {
+      ElMessage.error('任务编号已存在,请重新输入')
+      return
+    }
   }
   await createTask({
     id: editDic.value?.id || undefined,
     name: form.name,
     strategy_code: form.strategy_code,
-    orderCountType: form.orderCountType,
-    strategyAmount: form.strategyAmount,
-    allocationAmount: form.allocationAmount
+    order_count_type: form.order_count_type,
+    strategy_amount: form.strategy_amount,
+    allocation_amount: form.allocation_amount,
+    service_charge: form.service_charge,
+    lower_limit_of_fees: form.lower_limit_of_fees
   })
   emit('getTaskList')
   dialogVisible.value = false
@@ -116,5 +136,14 @@ defineExpose({
 .list-container-modal {
   padding: 20px;
   background: #fff;
+}
+.service_charge{
+  display: flex;
+  align-items: center;
+  gap:20px;
+  .service_charge-item{
+    display: flex;
+    flex-direction: column;
+  }
 }
 </style>

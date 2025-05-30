@@ -7,7 +7,7 @@ from pyapp.pkg.xtquant.xttrader import XtQuantTrader, XtQuantTraderCallback
 import sys
 import platform
 from api.system import System
-from .tools.deal import convert_stock_suffix
+from .trading_related.deal import convert_stock_suffix
 import datetime
 from .trading_related.additional_data import stock_xgsglb_em_on_today,bond_zh_cov
 

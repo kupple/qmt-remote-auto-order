@@ -6,7 +6,7 @@ import random
 import pandas as pd
 import math
 from .qmt_data import qmt_data
-from ..tools.deal import get_qmt_price_type
+from .deal import get_qmt_price_type
 
 
 

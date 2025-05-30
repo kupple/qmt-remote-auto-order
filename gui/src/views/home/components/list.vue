@@ -8,17 +8,17 @@
           <el-table-column prop="strategy_code" label="任务编号"> </el-table-column>
           <el-table-column prop="order_count_type" label="下单类型">
             <template #default="scope">
-              <span v-if="scope.row.order_count_type == 1">跟随策略</span>
-              <span v-else>动态调整</span>
+              <el-tag v-if="scope.row.order_count_type == 1" type="success">跟随策略</el-tag>
+              <el-tag v-else type="primary">动态调整</el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="allocation_amount" label="分配金额">
             <template #default="scope">
-              <span v-if="scope.row.order_count_type == 1">跟随策略</span>
+              <span v-if="scope.row.order_count_type == 1">-</span>
               <span v-else>{{ scope.row.allocation_amount }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="200" align="center">
+          <el-table-column label="操作" width="270" align="center">
             <template #default="scope">
               <div style="display: flex; align-items: center">
                 <el-button link v-if="scope.row.is_open === 0" type="primary" @click="handleEdit({ id: scope.row.id, is_open: 1 })">开始</el-button>
@@ -27,6 +27,8 @@
                 <el-button link type="primary" @click="goToDetail(scope.row)">详情</el-button>
                 <el-divider direction="vertical" />
                 <el-button link type="primary" @click="convertToCodeAction(scope.row)">代码转换</el-button>
+                <el-divider direction="vertical" v-if="scope.row.order_count_type == 2" />
+                <el-button v-if="scope.row.order_count_type == 2" link type="primary" @click="openAdjustmentModal(scope.row)">调整金额</el-button>
               </div>
             </template>
           </el-table-column>
@@ -61,11 +63,13 @@
       </div>
     </div>
     <ListModal ref="listModalRef" @getTaskList="getTaskListAction" />
-  </div>
+    <AdjustmentModal ref="adjustmentModalRef" @getTaskList="getTaskListAction" />
+  </div>  
 </template>
 
 <script setup>
 import ListModal from './listModal.vue'
+import AdjustmentModal from './adjustmentModal.vue'
 import { ref, computed, watch, nextTick, onMounted, onUnmounted, reactive } from 'vue'
 import { QuestionFilled } from '@element-plus/icons-vue'
 import { useCommonStore } from '@/store/common.js'
@@ -145,8 +149,14 @@ const handleEdit = async (row) => {
 }
 
 const listModalRef = ref(null)
+const adjustmentModalRef = ref(null)
+
 const openModal = () => {
   listModalRef.value.showModal()
+}
+
+const openAdjustmentModal = (dic) => {
+  adjustmentModalRef.value.showModal(dic)
 }
 
 const getTaskListAction = async () => {

@@ -126,9 +126,11 @@ class ORM:
                 task = TaskList(
                     name=data['name'],
                     strategy_code=strategy_code,
-                    order_count_type=data['orderCountType'],
-                    strategy_amount=data['strategyAmount'],
-                    allocation_amount=data['allocationAmount']
+                    order_count_type=data['order_count_type'],
+                    strategy_amount=data['strategy_amount'],
+                    allocation_amount=data['allocation_amount'],
+                    service_charge=data['service_charge'],
+                    lower_limit_of_fees=data['service_charge']
                 )
                 dbSession.add(task)
             else:
@@ -137,9 +139,11 @@ class ORM:
                 if task:
                     task.name = data['name']
                     task.strategy_code = strategy_code
-                    task.order_count_type = data['orderCountType']
-                    task.strategy_amount = data['strategyAmount']
-                    task.allocation_amount = data['allocationAmount']
+                    task.order_count_type = data['order_count_type']
+                    task.strategy_amount = data['strategy_amount']
+                    task.allocation_amount = data['allocation_amount']
+                    task.service_charge=data['service_charge']
+                    task.lower_limit_of_fees=data['service_charge']
         dbSession.close()
         return True
 

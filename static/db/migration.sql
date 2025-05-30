@@ -205,3 +205,17 @@ ALTER TABLE setting ADD COLUMN auto_startup INTEGER DEFAULT '0';
 
 UPDATE alembic_version SET version_num='665c2306314e' WHERE alembic_version.version_num = '532942a6e3c4';
 
+-- Running upgrade 665c2306314e -> 0beac3d413f5
+
+ALTER TABLE tasklist ADD COLUMN service_charge NUMERIC;
+
+ALTER TABLE tasklist ADD COLUMN lower_limit_of_fees NUMERIC;
+
+UPDATE alembic_version SET version_num='0beac3d413f5' WHERE alembic_version.version_num = '665c2306314e';
+
+-- Running upgrade 0beac3d413f5 -> a4f715ab4b80
+
+ALTER TABLE positions ADD COLUMN task_id INTEGER;
+
+UPDATE alembic_version SET version_num='a4f715ab4b80' WHERE alembic_version.version_num = '0beac3d413f5';
+

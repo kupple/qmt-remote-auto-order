@@ -2,6 +2,60 @@ from pyapp.pkg.xtquant import xtconstant
 import re
 
 
+def calculate_stock_fee(
+    transaction_type: str,  # 'buy' 或 'sell'
+    stock_price: float,     # 股票单价
+    quantity: int,          # 交易数量
+    commission_rate: float = 0.0003,  # 佣金率，默认0.03%
+    min_commission: float = 5.0,      # 最低佣金，默认5元
+    stamp_duty_rate: float = 0.001,   # 印花税率，默认0.1%（卖出时收取）
+    transfer_fee_rate: float = 0.00001  # 过户费率，默认0.001%
+) -> float:
+    """
+    计算股票交易手续费，返回总费用
+    
+    参数:
+        transaction_type: 交易类型，'buy' 表示买入，'sell' 表示卖出
+        stock_price: 股票单价
+        quantity: 交易数量
+        commission_rate: 佣金率，默认0.03%
+        min_commission: 最低佣金，默认5元
+        stamp_duty_rate: 印花税率，默认0.1%（卖出时收取）
+        transfer_fee_rate: 过户费率，默认0.001%
+    
+    返回:
+        float: 总手续费金额
+    """
+    turnover = stock_price * quantity
+    
+    # 计算佣金（不足最低标准时按最低标准收取）
+    commission = max(turnover * commission_rate, min_commission)
+    
+    # 计算印花税（仅卖出时收取）
+    stamp_duty = turnover * stamp_duty_rate if transaction_type == 'sell' else 0
+    
+    # 计算过户费
+    transfer_fee = turnover * transfer_fee_rate
+    
+    # 返回总费用
+    return commission + stamp_duty + transfer_fee
+
+# 示例用法
+if __name__ == "__main__":
+    # 买入示例：单价10元，买入1000股，佣金率0.03%
+    buy_result = calculate_stock_fee('buy', 10, 1000)
+    print("买入费用计算结果:")
+    for key, value in buy_result.items():
+        print(f"{key}: {value:.2f}" if isinstance(value, float) else f"{key}: {value}")
+    
+    print("\n------------------------\n")
+    
+    # 卖出示例：单价15元，卖出1000股，佣金率0.03%
+    sell_result = calculate_stock_fee('sell', 15, 1000)
+    print("卖出费用计算结果:")
+    for key, value in sell_result.items():
+        print(f"{key}: {value:.2f}" if isinstance(value, float) else f"{key}: {value}")
+
 # 将聚宽代码转成qmt
 def convert_stock_suffix(stock_code: str) -> str:
     """

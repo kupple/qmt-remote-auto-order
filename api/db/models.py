@@ -118,6 +118,9 @@ class TaskList(BaseModel):
     is_open = Column(Integer, doc='是否开启', nullable=True, server_default='0')
     delete_time = Column(DateTime(), doc='删除时间', nullable=True)
     start_time = Column(DateTime(), doc='开始时间', nullable=True)
+    service_charge = Column(Numeric(), doc='手续费', nullable=True)
+    lower_limit_of_fees = Column(Numeric(), doc='手续费下限', nullable=True)
+
 
     def __str__(self):
         return f"Task: {self.name}"
@@ -197,6 +200,9 @@ class Positions(BaseModel):
     security_code = Column(String(), doc='证券代码', nullable=True)
     volume = Column(Integer, doc='数量', nullable=True)
     amount = Column(Numeric(), doc='金额', nullable=True)
+    task_id = Column(Integer, doc='任务ID', nullable=True)
+
+
     
     def __str__(self):
         return f"Positions: {self.security_code}"
