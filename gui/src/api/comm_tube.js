@@ -88,3 +88,7 @@ export const setAutomatically = ()=>{
   return window.pywebview.api.set_automatically()
 }
 // export const 
+
+export const createBacktest = (params) => {
+  return window.pywebview.api.create_backtest(params)
+}

@@ -183,3 +183,6 @@ class API(System):
         
         else:
             return None        
+        
+    def create_backtest(self,data):
+        return self.orm.create_backtest(data)

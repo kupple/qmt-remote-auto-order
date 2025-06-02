@@ -18,7 +18,7 @@
               <span v-else>{{ scope.row.allocation_amount }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="270" align="center">
+          <el-table-column label="操作" width="330" align="center">
             <template #default="scope">
               <div style="display: flex; align-items: center">
                 <el-button link v-if="scope.row.is_open === 0" type="primary" @click="handleEdit({ id: scope.row.id, is_open: 1 })">开始</el-button>
@@ -27,6 +27,8 @@
                 <el-button link type="primary" @click="goToDetail(scope.row)">详情</el-button>
                 <el-divider direction="vertical" />
                 <el-button link type="primary" @click="convertToCodeAction(scope.row)">代码转换</el-button>
+                <el-divider direction="vertical" />
+                <el-button link type="primary" @click="backtestAction(scope.row)">调式</el-button>
                 <el-divider direction="vertical" v-if="scope.row.order_count_type == 2" />
                 <el-button v-if="scope.row.order_count_type == 2" link type="primary" @click="openAdjustmentModal(scope.row)">调整金额</el-button>
               </div>
@@ -118,6 +120,10 @@ const getConfig = async () => {
 const taskList = computed(() => {
   return useCommonStore().taskList
 })
+
+const backtestAction = async (row) => {
+  router.push(`/backtest?id=${row.id}`)
+}
 
 const convertToCodeAction = async (row) => {
   router.push(`/transition?id=${row.id}`)

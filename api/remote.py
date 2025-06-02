@@ -22,6 +22,7 @@ class Remote:
     def __init__(self,qmt, orm):
         self.stop_event = asyncio.Event()
         self.qmt = qmt
+        self.ways = 1
         self.orm = orm
         self.ws = None
         self.reconnect_count = 0
@@ -88,7 +89,7 @@ class Remote:
         })
         
         await asyncio.sleep(self.RECONNECT_INTERVAL)
-        await self.connect_ws(Remote.server_url)
+        await self.connect_ws()
 
     async def disconnect(self):
         self.should_reconnect = False
@@ -110,7 +111,7 @@ class Remote:
             Remote.is_connected = False
         
     def testConnect(self):
-        url = f"{Remote.server_url}/send_message"
+        url = f"{self.server_url}/send_message"
         unique_id = get_system_unique_id()
         payload = json.dumps({
             "message": "Hello, specific client!",
@@ -127,12 +128,11 @@ class Remote:
                 "message": "测试-通信正常",
             })
     
-    async def connect_ws(self,server_url,ways = 1):
-        print("Starting connect_ws...")
-        Remote.server_url = server_url
+    async def connect_ws(self):
+        print("Starting connect_ws...",self.server_url,self.ways)
         try:
             TOKEN = None
-            if ways == 2:
+            if self.ways == 2:
                 TOKEN = self.orm.getStorageVar('qmt_token')
             else:
                 config = self.orm.get_setting_config()
@@ -143,7 +143,7 @@ class Remote:
                 TOKEN = generate_token(plaintext,config['salt'])
             
             print("Attempting to connect to WebSocket...")
-            self.ws = await websockets.connect(server_url, additional_headers={"Authorization": f"Bearer {TOKEN}"})
+            self.ws = await websockets.connect(self.server_url, additional_headers={"Authorization": f"Bearer {TOKEN}"})
             print("WebSocket connected successfully!")
 
             System.system_py2js(self,'remoteCallBack',  {
@@ -179,7 +179,9 @@ class Remote:
         
         async def start_connection():
             try:
-                await self.connect_ws(server_url,ways)
+                self.server_url = server_url
+                self.ways = ways
+                await self.connect_ws()
             except Exception as e:
                 print(f"Error in connect_ws: {e}")
         

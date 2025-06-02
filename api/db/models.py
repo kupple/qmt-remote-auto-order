@@ -120,7 +120,7 @@ class TaskList(BaseModel):
     start_time = Column(DateTime(), doc='开始时间', nullable=True)
     service_charge = Column(Numeric(), doc='手续费', nullable=True)
     lower_limit_of_fees = Column(Numeric(), doc='手续费下限', nullable=True)
-
+    backtest_id = Column(Integer, doc='回测ID', nullable=True)
 
     def __str__(self):
         return f"Task: {self.name}"
@@ -146,7 +146,7 @@ class Orders(BaseModel):
     commission = Column(Numeric(), doc='佣金', nullable=True)
     status = Column(Integer, doc='状态', nullable=True, server_default='0')
     transaction_status = Column(Integer, doc='交易状态', nullable=True, server_default='0')
-
+    backtest_id = Column(Integer, doc='回测ID', nullable=True)
     def __str__(self):
         return f"Order: {self.security_code}"
 
@@ -169,7 +169,7 @@ class Entrusts(BaseModel):
     order_sysid = Column(String(), doc='订单系统ID', nullable=True)
     status = Column(Integer, doc='状态', nullable=True, server_default='0')
     offset_flag = Column(Integer, doc='偏移标志', nullable=True)
-
+    backtest_id = Column(Integer, doc='回测ID', nullable=True)
     def __str__(self):
         return f"Entrust: {self.traded_id}"
 
@@ -190,7 +190,7 @@ class Trades(BaseModel):
     offset_flag = Column(Integer, doc='偏移标志', nullable=True)
     orders_id = Column(Integer, doc='订单ID', nullable=True)
     status = Column(Integer, doc='状态', nullable=True, server_default='0')
-
+    backtest_id = Column(Integer, doc='回测ID', nullable=True)
     def __str__(self):
         return f"Trade: {self.order_sysid}"
 
@@ -201,8 +201,22 @@ class Positions(BaseModel):
     volume = Column(Integer, doc='数量', nullable=True)
     amount = Column(Numeric(), doc='金额', nullable=True)
     task_id = Column(Integer, doc='任务ID', nullable=True)
-
+    backtest_id = Column(Integer, doc='回测ID', nullable=True)
 
     
     def __str__(self):
         return f"Positions: {self.security_code}"
+
+class Backtest(BaseModel):
+    __tablename__ = "backtest"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(), doc='名称', nullable=True)
+    service_charge = Column(Numeric(), doc='手续费', nullable=True)
+    initial_capital = Column(Numeric(), doc='起始资金', nullable=True) 
+    lower_limit_of_fees = Column(Numeric(), doc='手续费下限', nullable=True)
+    final_amount = Column(Numeric(), doc='结束金额', nullable=True)
+    task_id = Column(Integer, doc='任务ID', nullable=True) 
+    frequency = Column(String(), doc='频率', nullable=True)
+    state = Column(String(), doc='状态', nullable=True)
+    def __str__(self):
+        return f"Backtest: {self.id}"

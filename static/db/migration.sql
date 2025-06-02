@@ -219,3 +219,57 @@ ALTER TABLE positions ADD COLUMN task_id INTEGER;
 
 UPDATE alembic_version SET version_num='a4f715ab4b80' WHERE alembic_version.version_num = '0beac3d413f5';
 
+-- Running upgrade a4f715ab4b80 -> 84093fc6bb19
+
+CREATE TABLE backtest (
+    id INTEGER NOT NULL, 
+    start_time DATETIME, 
+    service_charge NUMERIC, 
+    initial_amount NUMERIC, 
+    final_amount NUMERIC, 
+    task_id INTEGER, 
+    created_at DATETIME DEFAULT (DATETIME(CURRENT_TIMESTAMP, 'localtime')), 
+    updated_at DATETIME DEFAULT (DATETIME(CURRENT_TIMESTAMP, 'localtime')), 
+    PRIMARY KEY (id)
+);
+
+ALTER TABLE tasklist ADD COLUMN backtest_id INTEGER;
+
+UPDATE alembic_version SET version_num='84093fc6bb19' WHERE alembic_version.version_num = 'a4f715ab4b80';
+
+-- Running upgrade 84093fc6bb19 -> d0a534f62656
+
+ALTER TABLE entrusts ADD COLUMN backtest_id INTEGER;
+
+ALTER TABLE orders ADD COLUMN backtest_id INTEGER;
+
+ALTER TABLE positions ADD COLUMN backtest_id INTEGER;
+
+ALTER TABLE trades ADD COLUMN backtest_id INTEGER;
+
+UPDATE alembic_version SET version_num='d0a534f62656' WHERE alembic_version.version_num = '84093fc6bb19';
+
+-- Running upgrade d0a534f62656 -> d00d4466cc95
+
+ALTER TABLE backtest ADD COLUMN name VARCHAR;
+
+ALTER TABLE backtest ADD COLUMN frequency VARCHAR;
+
+UPDATE alembic_version SET version_num='d00d4466cc95' WHERE alembic_version.version_num = 'd0a534f62656';
+
+-- Running upgrade d00d4466cc95 -> dac0eafcee97
+
+ALTER TABLE backtest ADD COLUMN initial_capital NUMERIC;
+
+ALTER TABLE backtest ADD COLUMN lower_limit_of_fees NUMERIC;
+
+ALTER TABLE backtest DROP COLUMN initial_amount;
+
+UPDATE alembic_version SET version_num='dac0eafcee97' WHERE alembic_version.version_num = 'd00d4466cc95';
+
+-- Running upgrade dac0eafcee97 -> 2fa8af85fa19
+
+ALTER TABLE backtest ADD COLUMN state VARCHAR;
+
+UPDATE alembic_version SET version_num='2fa8af85fa19' WHERE alembic_version.version_num = 'dac0eafcee97';
+

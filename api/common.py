@@ -10,7 +10,7 @@ import json
 import re
 from api.tools.sysConfig import get_system_unique_id,ws_to_http
 from api.tools.tokenManager import generate_token,verify_token
-
+from api.tools.template import get_template_order_count_type_1,get_template_order_count_type_2
 class Common:
     def __init__(self,orm) -> None:
         self.orm = orm
@@ -53,139 +53,53 @@ class Common:
         
     def revert_transition_code(self,data):
         try:
-            # 移除添加的 import 语句
-            data = re.sub(r'^import requests\n', '', data, count=1, flags=re.M)
-            data = re.sub(r'^import json\n', '', data, count=1, flags=re.M)
+            # 移除TOKEN定义
+            data = re.sub(r'TOKEN\s*=\s*[\'"][^\'"]*[\'"]\n', '', data)
             
-            # 移除插入的 g.run_params 行
-            pattern = r'(def\s+initialize\s*\(\s*\w+\s*\)\s*:.*?)(\n\s+g\.run_params\s*=\s*\w+\.run_params\.type)'
-            data = re.sub(pattern, r'\1', data, flags=re.DOTALL)
+            # 移除begin状态请求代码
+            begin_pattern = r'# 发送begin状态[\s\S]*?data\s*=\s*jsonDic\s*\)\n'
+            data = re.sub(begin_pattern, '', data)
             
-            # 移除 qmt_auto_orders 函数定义
-            pattern = r'def qmt_auto_orders\(method_name, \*args, \*\*kwargs\):.*?return orderInfo\s*'
-            data = re.sub(pattern, '', data, flags=re.DOTALL)
+            # 移除on_strategy_end函数
+            end_pattern = r'def\s+on_strategy_end\s*\([^\)]*\)\s*:[\s\S]*?return\s+response\n'
+            data = re.sub(end_pattern, '', data)
             
-            # 恢复原始的订单方法调用
-            pattern = r'qmt_auto_orders\("(order_target|order_value|order_target_value|order)",\s*([^)]*)\)'
-            data = re.sub(pattern, r'\1(\2)', data)
+            # 移除g.context赋值行（如果存在）
+            data = re.sub(r'^\s+g\.context\s*=\s*context\n', '', data, flags=re.M)
             
-            # 移除多余的空行
-            data = re.sub(r'\n\s*\n', '\n\n', data).strip() + '\n'
+            # 还原请求头中的TOKEN引用
+            data = re.sub(r"'Authorization':\s+'Bearer\s*'\+\s*TOKEN", r"'Authorization': 'Bearer {token}'", data)
+            
+            # 移除qmt_auto_orders函数
+            auto_orders_pattern = r'def\s+qmt_auto_orders\s*\([^\)]*\)\s*:[\s\S]*?return\s+orderInfo\n'
+            data = re.sub(auto_orders_pattern, '', data)
+            
+            # 还原原始下单函数调用
+            data = re.sub(r'qmt_auto_orders\(["\'](order_target|order_value|order_target_value|order)["\'],\s*', r'\1(', data)
+            
+            # 移除portfolio相关参数（针对type_2）
+            portfolio_pattern = r"'total_amount':\s*g\.context\.portfolio\.positions\[security\]\.total_amount,?[\s\n]*'total_value':\s*g\.context\.portfolio\.total_value,?[\s\n]*"
+            data = re.sub(portfolio_pattern, '', data)
             
             return data
         except Exception as e:
             print(f"还原错误: {e}")
-            return "还原错误"
+            return "还原错误"    
 
-    
+    # 转译代码 
     def transition_code(self,data,taskDic):
-        # server_url = ORM().get_setting_config()["server_url"]
         config =  self.orm.get_setting_config()
         run_model_type = config['run_model_type']
-        server_url = ws_to_http(config['server_url'])
-        strategy_code = taskDic['strategy_code']
 
-        try:
-            unique_id = None
-            token = None
-            if run_model_type == 2:
-                token = self.orm.getStorageVar('qmt_token')
-                token = token
-            else:
-                unique_id = get_system_unique_id()
-                plaintext = {
-                    "u": unique_id            
-                }
-                token = generate_token(plaintext,config['salt'])
-            
-            if 'import requests' not in data:
-                # 在文件开头添加 import 语句
-                data = 'import requests\n' + data
-            if 'import json' not in data:
-                # 在文件开头添加 import 语句
-                data = 'import json\n' + data
-                
-            pattern = r'def\s+initialize\s*\(\s*(\w+)\s*\)\s*:'
-            match = re.search(pattern, data)
-        
-            param_name = ''
-            if match:
-                # 获取参数名
-                param_name = match.group(1)
-                
-            # 构建要插入的代码行
-            insert_line = f"    g.run_params = {param_name}.run_params.type"
-            
-            # 找到函数定义行的位置
-            def_line_pos = data.find(match.group(0)) + len(match.group(0))
-            
-            # 在函数定义后插入新行
-            data = data[:def_line_pos] + '\n' + insert_line + data[def_line_pos:]
-            
-            data = data + '\n'
-            data = data + F"""
-def qmt_auto_orders(method_name, *args, **kwargs):
-    # 获取系统方法
-    method_map = {{
-        'order_target': order_target,
-        'order_value': order_value,
-        'order': order,
-        'order_target_value': order_target_value,
-    }}
-        
-    # 提取参数并调用系统方法
-    system_method = method_map[method_name]
-    
-    security = args[0] if len(args) > 0 else kwargs.get('security')
-    value = args[1] if len(args) > 1 else kwargs.get('value')
-    style = args[2] if len(args) > 2 else kwargs.get('style')
-    style_str = f"{{type(style).__name__}}({{getattr(style, 'limit_price', '')}})" if style else None
-    side = args[3] if len(args) > 3 else kwargs.get('side','long')
-    pindex = args[4] if len(args) > 4 else kwargs.get('pindex',0)
-
-    
-    
-    orderInfo = system_method(security, value,
-                        style=style_str,
-                        side=side,
-                        pindex=pindex)
-    if orderInfo == None:
-        return None
-    jsonDic = json.dumps({{
-        'method': method_name,
-        'run_params': g.run_params,
-        'strategy_code':'{strategy_code}',
-        'params': {{
-            'security':security,
-            'value':value,
-            'style':style,
-            'price':orderInfo.price,
-            'amount':orderInfo.amount,
-            'avg_cost':orderInfo.avg_cost,
-            'commission':orderInfo.commission,
-            'is_buy':orderInfo.is_buy,
-            'add_time':orderInfo.add_time.strftime("%Y-%m-%d %H:%M:%S"),
-            'pindex':pindex,
-        }}
-    }})
-    url = "{server_url}/send_message"
-    response = requests.request('POST', url, headers=
-    {{
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer {token}'
-    }}, data= jsonDic)
-    return orderInfo
-    """ 
-            # 匹配方法名和括号内的参数
-            pattern = r'\b(order_target|order_value|order_target_value|order)\(([^)]*)\)'
-            
-            # 使用正则替换，将原方法名作为第一个参数传入 qmt_auto_orders
-            data = re.sub(pattern, r'qmt_auto_orders("\1", \2)', data)
-            return data
-        except Exception as e:
-            print(e)
-            return "转译错误"
-        
-        
-
-
+        if run_model_type == 2:
+            token = self.orm.getStorageVar('qmt_token')
+        else:
+            unique_id = get_system_unique_id()
+            plaintext = {
+                "u": unique_id            
+            }
+            token = generate_token(plaintext,config['salt'])
+        if taskDic['order_count_type'] == 1:
+            return get_template_order_count_type_1(taskDic,data,config,token)
+        else:
+            return get_template_order_count_type_2(taskDic,data,config,token)

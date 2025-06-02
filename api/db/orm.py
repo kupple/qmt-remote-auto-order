@@ -16,7 +16,7 @@ usage:
 
 from datetime import datetime
 from api.db.models import (
-    PPXStorageVar, Setting, TaskList, Orders, Entrusts, Trades
+    PPXStorageVar, Setting, TaskList, Orders, Entrusts, Trades, Backtest
 )
 from pyapp.db.db import DB
 from sqlalchemy import select, update, insert, and_, or_, desc, func
@@ -336,3 +336,62 @@ class ORM:
             result = dbSession.execute(stmt).first()
         dbSession.close()
         return result is not None
+
+    def query_position_by_task_id(self, task_id, security_code=None):
+        """通过任务id查找当前持仓"""
+        if not task_id:
+            return None
+        
+        dbSession = DB.session()
+        with dbSession.begin():
+            stmt = select(Positions).where(Positions.task_id == task_id)
+            if security_code:
+                stmt = stmt.where(Positions.security_code == security_code)
+            stmt = stmt.where(Positions.delete_time.is_(None))
+            result = dbSession.execute(stmt).all()
+        dbSession.close()
+        return result
+    
+    def create_backtest(self, data):
+        """创建回测"""
+        dbSession = DB.session()
+        with dbSession.begin():
+            backtest = Backtest(**data)
+            dbSession.add(backtest)
+            dbSession.flush()
+            last_id = backtest.id
+        dbSession.close()
+        return last_id
+    
+    def update_backtest(self, id, **kwargs):
+        """更新回测"""
+        if not id:
+            return False
+        
+        dbSession = DB.session()
+        with dbSession.begin():
+            stmt = select(Backtest).where(Backtest.id == id)
+            backtest = dbSession.execute(stmt).scalar_one_or_none()
+            if backtest:
+                for key, value in kwargs.items():
+                    if hasattr(backtest, key):
+                        setattr(backtest, key, value)
+        dbSession.close()
+        return True
+    
+    def update_task(self, id, **kwargs):
+        """更新任务"""
+        if not id:
+            return False
+        
+        dbSession = DB.session()
+        with dbSession.begin():
+            stmt = select(TaskList).where(TaskList.id == id)
+            task = dbSession.execute(stmt).scalar_one_or_none()
+            if task:
+                for key, value in kwargs.items():
+                    if hasattr(task, key):
+                        setattr(task, key, value)
+        dbSession.close()
+        return True
+    
