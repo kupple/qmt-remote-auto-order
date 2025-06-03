@@ -273,3 +273,31 @@ ALTER TABLE backtest ADD COLUMN state VARCHAR;
 
 UPDATE alembic_version SET version_num='2fa8af85fa19' WHERE alembic_version.version_num = 'dac0eafcee97';
 
+-- Running upgrade 2fa8af85fa19 -> 529782e3dade
+
+ALTER TABLE backtest DROP COLUMN start_time;
+
+ALTER TABLE positions ADD COLUMN delete_time DATETIME;
+
+UPDATE alembic_version SET version_num='529782e3dade' WHERE alembic_version.version_num = '2fa8af85fa19';
+
+-- Running upgrade 529782e3dade -> e0c2edd701ce
+
+ALTER TABLE trades ADD COLUMN traded_amount NUMERIC;
+
+ALTER TABLE trades DROP COLUMN price;
+
+ALTER TABLE trades DROP COLUMN price_type;
+
+ALTER TABLE trades DROP COLUMN order_volume;
+
+ALTER TABLE trades DROP COLUMN order_time;
+
+UPDATE alembic_version SET version_num='e0c2edd701ce' WHERE alembic_version.version_num = '529782e3dade';
+
+-- Running upgrade e0c2edd701ce -> 98f4f321d568
+
+ALTER TABLE trades ADD COLUMN order_type INTEGER;
+
+UPDATE alembic_version SET version_num='98f4f321d568' WHERE alembic_version.version_num = 'e0c2edd701ce';
+

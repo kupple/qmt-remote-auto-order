@@ -16,7 +16,7 @@ usage:
 
 from datetime import datetime
 from api.db.models import (
-    PPXStorageVar, Setting, TaskList, Orders, Entrusts, Trades, Backtest
+    PPXStorageVar, Setting, TaskList, Orders, Entrusts, Trades, Backtest,Positions
 )
 from pyapp.db.db import DB
 from sqlalchemy import select, update, insert, and_, or_, desc, func
@@ -395,3 +395,57 @@ class ORM:
         dbSession.close()
         return True
     
+    
+    def query_position_by_task_or_backtest_id(self, task_id=None, backtest_id=None):
+        """通过taskid或者backtest_id查找仓位信息"""
+        if not task_id and not backtest_id:
+            return None
+        
+        dbSession = DB.session()
+        with dbSession.begin():
+            stmt = select(Positions)
+            if task_id:
+                stmt = stmt.where(Positions.task_id == task_id)
+            if backtest_id:
+                stmt = stmt.where(Positions.backtest_id == backtest_id)
+            stmt = stmt.where(Positions.delete_time.is_(None))
+            result = dbSession.execute(stmt).all()
+        dbSession.close()
+        return result
+
+    
+    def save_position(self,data,sub_data=None):
+      """保存持仓"""
+      if not data:
+        return None
+
+      dbSession = DB.session()
+      with dbSession.begin():
+        position = Positions()
+        for field in Positions.__table__.columns.keys():
+          if field in data:
+            setattr(position, field, data[field])
+        
+        # Handle sub data
+        if sub_data and isinstance(sub_data, dict):
+            for field, value in sub_data.items():
+                if hasattr(position, field):
+                    setattr(position, field, value)
+        
+        dbSession.add(position)
+        dbSession.flush()
+        last_id = position.id
+      dbSession.close()
+      return last_id
+  
+    def update_position(self, id, **kwargs):
+      """更新持仓"""
+      if not id:
+        return False
+      
+      dbSession = DB.session()
+      with dbSession.begin():
+        stmt = update(Positions).where(Positions.id == id).values(**kwargs)
+        dbSession.execute(stmt)
+      dbSession.close()
+      return True

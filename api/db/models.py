@@ -179,13 +179,11 @@ class Trades(BaseModel):
     __tablename__ = "trades"
     order_id = Column(Integer, doc='订单ID', nullable=True)
     order_sysid = Column(String(), doc='订单系统ID', nullable=True)
-    order_time = Column(Integer, doc='订单时间', nullable=True)
-    order_volume = Column(Integer, doc='订单数量', nullable=True)
-    price_type = Column(Integer, doc='价格类型', nullable=True)
-    price = Column(Numeric(), doc='价格', nullable=True)
-    traded_volume = Column(Numeric(), doc='交易数量', nullable=True)
+    traded_volume = Column(Integer(), doc='交易数量', nullable=True)
     traded_price = Column(Numeric(), doc='交易价格', nullable=True)
+    traded_amount = Column(Numeric(), doc='交易金额', nullable=True)
     order_status = Column(Integer, doc='订单状态', nullable=True)
+    order_type = Column(Integer, doc='订单类型', nullable=True)
     status_msg = Column(String(), doc='状态消息', nullable=True)
     offset_flag = Column(Integer, doc='偏移标志', nullable=True)
     orders_id = Column(Integer, doc='订单ID', nullable=True)
@@ -202,8 +200,7 @@ class Positions(BaseModel):
     amount = Column(Numeric(), doc='金额', nullable=True)
     task_id = Column(Integer, doc='任务ID', nullable=True)
     backtest_id = Column(Integer, doc='回测ID', nullable=True)
-
-    
+    delete_time = Column(DateTime(), doc='删除时间', nullable=True)
     def __str__(self):
         return f"Positions: {self.security_code}"
 

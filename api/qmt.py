@@ -10,12 +10,14 @@ from api.system import System
 from .trading_related.deal import convert_stock_suffix
 from datetime import datetime
 from .trading_related.additional_data import stock_xgsglb_em_on_today,bond_zh_cov
-from .tools.qmtTradingSimulator import QmtTradingSimulator,OrderType,PriceType,OffsetFlag
+from .tools.qmtTradingSimulator import QmtTradingSimulator,OrderType,PriceType
   
 class MyXtQuantTraderCallback(XtQuantTraderCallback):
  
-  def __init__(self,orm) -> None:
+  def __init__(self,orm,is_mock,backtest_id=None) -> None:
     self.orm = orm
+    self.is_mock = is_mock
+    self.backtest_id = backtest_id 
     super().__init__()
     
   def on_disconnected(self):
@@ -44,7 +46,8 @@ class MyXtQuantTraderCallback(XtQuantTraderCallback):
     if order.order_remark and order.strategy_name:
       orderId = order.order_remark
       self.orm.save_entrust(order,{
-        "orders_id": orderId
+        "orders_id": orderId,
+        "backtest_id": self.backtest_id 
       })
   def on_stock_asset(self, asset):
     """
@@ -60,8 +63,29 @@ class MyXtQuantTraderCallback(XtQuantTraderCallback):
     :param trade: XtTrade对象
     :return:
     """
-    print("on trade callback")
-    print(trade.account_id, trade.stock_code, trade.order_id)
+    # 系统下的单
+    if trade.order_remark and trade.strategy_name:
+      orderId = trade.order_remark
+      self.orm.save_trade(trade,{
+        "orders_id": orderId,
+        "backtest_id": self.backtest_id,
+      })
+      positions = self.orm.query_position_by_task_or_backtest_id(backtest_id=self.backtest_id)
+      if trade.stock_code not in positions:
+        self.orm.save_position({
+          "security_code": trade.stock_code,
+          "volume": trade.traded_volume,
+          "amount": trade.traded_amount,
+          "backtest_id": self.backtest_id
+        })
+      # 更新仓位
+      for position in positions:
+        if position.security_code == trade.stock_code:
+          if trade.order_type == OrderType.STOCK_BUY:
+            position.volume = position.volume + trade.traded_volume
+          elif trade.order_type == OrderType.STOCK_SELL:
+            position.volume = position.volume - trade.traded_volume
+          self.orm.update_position(position.id,volume=position.volume,backtest_id=self.backtest_id)
   def on_stock_position(self, position):
     """
     持仓变动推送
@@ -94,11 +118,12 @@ class MyXtQuantTraderCallback(XtQuantTraderCallback):
     """
     print("on_order_stock_async_response")
     # 系统下的单
-    if response.order_remark and response.strategy_name:
-      orderId = response.order_remark
-      self.orm.save_trade(response,{
-        "orders_id": orderId
-      })
+    # if response.order_remark and response.strategy_name:
+    #   orderId = response.order_remark
+    #   self.orm.save_trade(response,{
+    #     "orders_id": orderId,
+    #     "backtest_id": self.backtest_id
+    #   })
     # self.orm.update_order(orderId,status = 1,fix_result_order_id = response.order_id)
    
 
@@ -107,7 +132,9 @@ class QMT:
   def __init__(self,orm):
     self.qmt_trader = None
     self.orm = orm
-    self.callback = MyXtQuantTraderCallback(orm)
+    self.callback = MyXtQuantTraderCallback(orm,False)
+    
+    
     self.is_connect = False
     self.simulator = None
     
@@ -196,7 +223,7 @@ class QMT:
     
   # 下单协议{code:code,price:price,amount:amount,type:type}
   def manage_qmt_trader(self,data):    
-    print(data)
+    # print(data)
     try:    
       strategy_code = data['strategy_code']
       run_params = data['run_params']
@@ -253,19 +280,21 @@ class QMT:
           # 创建一个回测
           backtest_id = self.orm.create_backtest({
             'name':strategy_code,
-            'service_charge':commission,
-            'initial_capital':total_value,
-            'lower_limit_of_fees':commission,
-            'final_amount':total_value,
+            'service_charge':task['service_charge'],
+            # 'initial_capital':task['allocation_amount'],
+            # 'lower_limit_of_fees':task['lower_limit_of_fees'],
+            'final_amount':0,
             'task_id':task['id'],
             'state':state
           })
           self.orm.update_task(task['id'], backtest_id=backtest_id) 
+          # 设置回测id
+          self.mockCallback = MyXtQuantTraderCallback(self.orm,True,backtest_id)
           self.simulator = QmtTradingSimulator(
-              self.callback, 
-              commission_rate=0.00025,  # 佣金率万2.5
-              initial_cash=1000000.0,   # 初始资金200万
-              min_commission=5.0,       # 最低佣金5元
+              self.mockCallback, # 回测环境
+              commission_rate=task['service_charge'],  # 佣金率万2.5
+              initial_cash=task['allocation_amount'],   # 初始资金200万
+              min_commission=task['lower_limit_of_fees'],       # 最低佣金5元
               stamp_duty_rate=0.001,    # 印花税率0.1%
               transfer_fee_rate=0.00001 # 过户费率0.001%
           )
@@ -282,16 +311,14 @@ class QMT:
 
           # 将 datetime 对象转换为毫秒级时间戳
           timestamp_ms = int(dt.timestamp() * 1000)
-
           if is_buy == 1:
             self.simulator.place_order(
               stock_code=security,
               volume=amount,
               price=price,  
-              order_type=OrderType.LIMIT,
+              order_type=OrderType.STOCK_BUY,
               order_time=timestamp_ms,
               price_type=PriceType.LIMIT_PRICE,
-              offset_flag=OffsetFlag.BUY,
               strategy_name=strategy_code,
               order_remark=oderId
             )
@@ -300,10 +327,9 @@ class QMT:
               stock_code=security,
               volume=amount,
               price=price,
-              order_type=OrderType.LIMIT,
+              order_type=OrderType.STOCK_SELL,
               order_time=timestamp_ms,
               price_type=PriceType.LIMIT_PRICE, 
-              offset_flag=OffsetFlag.SELL,
               strategy_name=strategy_code,
               order_remark=oderId
             )
@@ -373,7 +399,7 @@ class QMT:
                                     price=price,
                                     order_remark = oderId)
         else:
-          print(f"任务不存在: {strategy_code}")
+          print(f"任务未开启: {strategy_code}")
     except Exception as e:
         print(e)
 

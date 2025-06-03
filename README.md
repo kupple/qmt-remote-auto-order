@@ -101,3 +101,6 @@ npm run build
 有偿搭建私有服务器支持可联系
 
 <img src="resources/WechatIMG.jpg" width="300"  alt="Logo"/>
+
+数据库文件路径
+/Users/zhao/Library/Application Support/qmt.auto.order.qmt_auto_order/static/db/base.db
