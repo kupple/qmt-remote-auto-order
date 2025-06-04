@@ -92,3 +92,10 @@ export const setAutomatically = ()=>{
 export const createBacktest = (params) => {
   return window.pywebview.api.create_backtest(params)
 }
+
+export const queryBacktestByTaskId = (task_id) => {
+  return window.pywebview.api.query_backtest_by_task_id(task_id)
+}
+export const count_strategy_analyzer = (task_id,backtest_id) => {
+  return window.pywebview.api.count_strategy_analyzer(task_id,backtest_id)
+}

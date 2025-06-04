@@ -79,6 +79,18 @@ export const routes = [
     }
   },
   {
+    path: '/backtestDetail',
+    name: 'BacktestDetail',
+    chName: '回测详情',
+    icon: 'Sort',
+    show: false,
+    component: () => import('../views/backtestDetail/index.vue'),
+    meta: {
+      title: '回测详情',
+      showBack: true
+    }
+  },
+  {
     path: '/setting',
     name: 'Setting',
     chName: '设置',

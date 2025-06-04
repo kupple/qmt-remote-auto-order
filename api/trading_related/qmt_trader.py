@@ -204,7 +204,7 @@ class qmt_trader:
   price=spot_data[security]['lastPrice']
   price=float(price)
   stock_code =self.adjust_stock(stock=security)
-  order_volume=av_cash // 100
+  order_volume= ((av_cash // 100) // 10) * 10
   if order_volume>0:
     fix_result_order_id = self.xt_trader.order_stock(account=self.acc,stock_code=stock_code, order_type=order_type,
                 order_volume=order_volume, price_type=price_type,

@@ -130,7 +130,8 @@ class ORM:
                     strategy_amount=data['strategy_amount'],
                     allocation_amount=data['allocation_amount'],
                     service_charge=data['service_charge'],
-                    lower_limit_of_fees=data['service_charge']
+                    lower_limit_of_fees=data['lower_limit_of_fees'],
+                    dynamic_calculation_type=data['dynamic_calculation_type']   
                 )
                 dbSession.add(task)
             else:
@@ -138,12 +139,13 @@ class ORM:
                 task = dbSession.execute(stmt).scalar_one_or_none()
                 if task:
                     task.name = data['name']
-                    task.strategy_code = strategy_code
+                    task.strategy_code = strategy_code  
                     task.order_count_type = data['order_count_type']
+                    task.dynamic_calculation_type = data['dynamic_calculation_type']
                     task.strategy_amount = data['strategy_amount']
                     task.allocation_amount = data['allocation_amount']
                     task.service_charge=data['service_charge']
-                    task.lower_limit_of_fees=data['service_charge']
+                    task.lower_limit_of_fees=data['lower_limit_of_fees']
         dbSession.close()
         return True
 
@@ -409,7 +411,9 @@ class ORM:
             if backtest_id:
                 stmt = stmt.where(Positions.backtest_id == backtest_id)
             stmt = stmt.where(Positions.delete_time.is_(None))
-            result = dbSession.execute(stmt).all()
+            result = dbSession.execute(stmt).scalars().all()
+            result = [task.toDict() for task in result]
+            
         dbSession.close()
         return result
 
@@ -449,3 +453,46 @@ class ORM:
         dbSession.execute(stmt)
       dbSession.close()
       return True
+  
+    def query_backtest_by_task_id(self, task_id):
+        """通过taskid获取回测列表"""
+        if not task_id:
+            return None
+        dbSession = DB.session()
+        with dbSession.begin():
+            stmt = select(Backtest).where(Backtest.task_id == task_id).order_by(Backtest.created_at.desc())
+            result = dbSession.execute(stmt).scalars().all()
+            data_list = [order.toDict() for order in result]
+        dbSession.close()
+        return data_list
+    
+    def query_backtest_by_id(self, backtest_id):
+        """通过backtestid获取回测"""
+        if not backtest_id:
+            return None
+        dbSession = DB.session()
+        with dbSession.begin():
+            stmt = select(Backtest).where(Backtest.id == backtest_id)
+            result = dbSession.execute(stmt).scalar_one_or_none()
+            if result:
+                return result.toDict()
+        dbSession.close()
+        return None
+    
+    def count_strategy_analyzer(self,task_id=None,backtest_id=None):
+        """统计策略分析"""
+        dbSession = DB.session()
+        with dbSession.begin():
+            stmt = select(Trades)
+            if task_id:
+                stmt = stmt.where(Trades.task_id == task_id)
+            if backtest_id:
+                stmt = stmt.where(Trades.backtest_id == backtest_id)
+            result = dbSession.execute(stmt)
+            trades = []
+            for row in result:
+                trades.append(row[0].toDict())
+            return trades
+        dbSession.close()
+        return []
+            

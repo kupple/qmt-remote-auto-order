@@ -11,6 +11,7 @@ from api.common import Common
 from api.remote import Remote
 from api.qmt import QMT
 from api.trading_related.task_scheduler import TaskScheduler
+from api.trading_related.strategy_analyzer import analyze_stock_data
 import threading
 from api.system import System
 from .tools.sysConfig import get_os_type
@@ -20,6 +21,8 @@ import os
 import datetime
 import logging
 import sys
+
+
 
 class API(System):
     def __init__(self):
@@ -185,4 +188,18 @@ class API(System):
             return None        
         
     def create_backtest(self,data):
-        return self.orm.create_backtest(data)
+        return self.orm.create_backtest(data)   
+    
+    def query_backtest_by_task_id(self, task_id):
+        result = self.orm.query_backtest_by_task_id(task_id)
+        return result
+    
+    def count_strategy_analyzer(self,task_id,backtest_id):
+        sample_trades = self.orm.count_strategy_analyzer(task_id,backtest_id)
+        
+        
+        backtest = self.orm.query_backtest_by_id(backtest_id)
+        
+        # 假设 trades 是你的交易数据列表
+        result = analyze_stock_data(sample_trades, initial_capital=backtest['initial_capital'])
+        return result

@@ -14,7 +14,19 @@
             <el-icon style="color: #999; font-size: 18px; margin-right: 40px"><QuestionFilled /></el-icon>
           </el-tooltip>
           <el-radio :label="2" style="margin-right: 5px">动态调整模式</el-radio>
-          <el-tooltip effect="dark" content="可以动态分配资金控制仓位暂未开放" placement="top">
+          <el-tooltip effect="dark" content="可以动态分配资金控制仓位" placement="top">
+            <el-icon style="color: #999; font-size: 18px"><QuestionFilled /></el-icon>
+          </el-tooltip>
+        </el-radio-group>
+      </el-form-item>
+      <el-form-item label="动态资金模式" v-if="form.order_count_type === 2">
+        <el-radio-group v-model="form.dynamic_calculation_type">
+          <el-radio style="margin-right: 5px" :label="1">固定模式</el-radio>
+          <el-tooltip effect="dark" content="交易金额不会超过分配金额" placement="top">
+            <el-icon style="color: #999; font-size: 18px; margin-right: 40px"><QuestionFilled /></el-icon>
+          </el-tooltip>
+          <el-radio :label="2" style="margin-right: 5px">根据盈亏分配</el-radio>
+          <el-tooltip effect="dark" content="分配金额会根据盈亏动态调整" placement="top">
             <el-icon style="color: #999; font-size: 18px"><QuestionFilled /></el-icon>
           </el-tooltip>
         </el-radio-group>
@@ -69,6 +81,7 @@ const form = reactive({
   platform: 1,
   strategy_code: '',
   order_count_type: 1,
+  dynamic_calculation_type: 1,
   strategy_amount: 0,
   allocation_amount: 0,
   service_charge:0,
@@ -97,8 +110,11 @@ const showModal = (dic) => {
     form.name = dic.name
     form.strategy_code = dic.strategy_code
     form.order_count_type = dic.order_count_type
+    form.dynamic_calculation_type = dic.dynamic_calculation_type
     form.strategy_amount = dic.strategy_amount
     form.allocation_amount = dic.allocation_amount
+    form.service_charge = dic.service_charge
+    form.lower_limit_of_fees = dic.lower_limit_of_fees
   } else {
     editDic.value = null
   }
@@ -118,13 +134,15 @@ const handleSubmit = async () => {
     name: form.name,
     strategy_code: form.strategy_code,
     order_count_type: form.order_count_type,
+    dynamic_calculation_type: form.dynamic_calculation_type,
     strategy_amount: form.strategy_amount,
     allocation_amount: form.allocation_amount,
     service_charge: form.service_charge,
-    lower_limit_of_fees: form.lower_limit_of_fees
+    lower_limit_of_fees: form.lower_limit_of_fees,
   })
   emit('getTaskList')
   dialogVisible.value = false
+  ElMessage.success('保存成功')
 }
 
 defineExpose({

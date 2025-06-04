@@ -301,3 +301,25 @@ ALTER TABLE trades ADD COLUMN order_type INTEGER;
 
 UPDATE alembic_version SET version_num='98f4f321d568' WHERE alembic_version.version_num = 'e0c2edd701ce';
 
+-- Running upgrade 98f4f321d568 -> 0c14bb355caa
+
+ALTER TABLE trades ADD COLUMN stock_code VARCHAR;
+
+UPDATE alembic_version SET version_num='0c14bb355caa' WHERE alembic_version.version_num = '98f4f321d568';
+
+-- Running upgrade 0c14bb355caa -> ba7814e60edb
+
+ALTER TABLE trades ADD COLUMN traded_time INTEGER;
+
+UPDATE alembic_version SET version_num='ba7814e60edb' WHERE alembic_version.version_num = '0c14bb355caa';
+
+-- Running upgrade ba7814e60edb -> cf01b55a1307
+
+ALTER TABLE tasklist ADD COLUMN dynamic_calculation_type INTEGER;
+
+UPDATE alembic_version SET version_num='cf01b55a1307' WHERE alembic_version.version_num = 'ba7814e60edb';
+
+-- Running upgrade cf01b55a1307 -> 4b30d3ff9ca0
+
+UPDATE alembic_version SET version_num='4b30d3ff9ca0' WHERE alembic_version.version_num = 'cf01b55a1307';
+

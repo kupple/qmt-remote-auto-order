@@ -10,7 +10,7 @@ from api.system import System
 from .trading_related.deal import convert_stock_suffix
 from datetime import datetime
 from .trading_related.additional_data import stock_xgsglb_em_on_today,bond_zh_cov
-from .tools.qmtTradingSimulator import QmtTradingSimulator,OrderType,PriceType
+from .trading_related.qmt_trading_simulator import QmtTradingSimulator,OrderType,PriceType
   
 class MyXtQuantTraderCallback(XtQuantTraderCallback):
  
@@ -63,29 +63,35 @@ class MyXtQuantTraderCallback(XtQuantTraderCallback):
     :param trade: XtTrade对象
     :return:
     """
-    # 系统下的单
-    if trade.order_remark and trade.strategy_name:
-      orderId = trade.order_remark
-      self.orm.save_trade(trade,{
-        "orders_id": orderId,
-        "backtest_id": self.backtest_id,
-      })
-      positions = self.orm.query_position_by_task_or_backtest_id(backtest_id=self.backtest_id)
-      if trade.stock_code not in positions:
-        self.orm.save_position({
-          "security_code": trade.stock_code,
-          "volume": trade.traded_volume,
-          "amount": trade.traded_amount,
-          "backtest_id": self.backtest_id
+    print("on trade callback")
+    try:
+      if trade.order_remark and trade.strategy_name:
+        orderId = trade.order_remark
+        self.orm.save_trade(trade,{
+          "orders_id": orderId,
+          "backtest_id": self.backtest_id,
         })
-      # 更新仓位
-      for position in positions:
-        if position.security_code == trade.stock_code:
-          if trade.order_type == OrderType.STOCK_BUY:
-            position.volume = position.volume + trade.traded_volume
-          elif trade.order_type == OrderType.STOCK_SELL:
-            position.volume = position.volume - trade.traded_volume
-          self.orm.update_position(position.id,volume=position.volume,backtest_id=self.backtest_id)
+        positions = self.orm.query_position_by_task_or_backtest_id(backtest_id=self.backtest_id)
+        for position in positions:
+          if trade.stock_code not in [position['security_code'] for position in positions]:
+            self.orm.save_position({
+              "security_code": trade.stock_code,
+              "volume": trade.traded_volume,
+              "amount": trade.traded_amount,
+            "backtest_id": self.backtest_id
+          })
+        # 更新仓位
+        for position in positions:
+          if position['security_code'] == trade.stock_code:
+            if trade.order_type == OrderType.STOCK_BUY:
+              position['volume'] = position['volume'] + trade.traded_volume
+            elif trade.order_type == OrderType.STOCK_SELL:
+              position['volume'] = position['volume'] - trade.traded_volume
+            self.orm.update_position(position['id'],volume=position['volume'],backtest_id=self.backtest_id)
+    except Exception as e:
+      print("on_stock_trade error")
+      print(e)
+    # 系统下的单
   def on_stock_position(self, position):
     """
     持仓变动推送
@@ -281,8 +287,8 @@ class QMT:
           backtest_id = self.orm.create_backtest({
             'name':strategy_code,
             'service_charge':task['service_charge'],
-            # 'initial_capital':task['allocation_amount'],
-            # 'lower_limit_of_fees':task['lower_limit_of_fees'],
+            'initial_capital':task['allocation_amount'],
+            'lower_limit_of_fees':task['lower_limit_of_fees'],
             'final_amount':0,
             'task_id':task['id'],
             'state':state

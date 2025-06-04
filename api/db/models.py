@@ -40,7 +40,11 @@ class BaseModel(Base):
                 if isinstance(col.type, DateTime):
                     value = convert_datetime(getattr(self, col.name))
                 elif isinstance(col.type, Numeric):
-                    value = float(getattr(self, col.name))
+                    value = getattr(self, col.name)
+                    if value is not None:
+                        value = float(value)
+                    else:
+                        value = getattr(self, col.name)
                 else:
                     value = getattr(self, col.name)
                 yield (col.name, value)
@@ -110,6 +114,7 @@ class TaskList(BaseModel):
     name = Column(String(), doc='任务名称', nullable=True)
     strategy_code = Column(String(), doc='策略代码', nullable=True)
     order_count_type = Column(Integer, doc='订单计数类型', nullable=True)
+    dynamic_calculation_type = Column(Integer, doc='动态计算类型', nullable=True,server_default='1')
     strategy_amount = Column(Integer, doc='策略金额', nullable=True)
     position_amount = Column(Integer, doc='持仓额度', nullable=True)
     allocation_amount = Column(Integer, doc='分配金额', nullable=True)
@@ -179,8 +184,10 @@ class Trades(BaseModel):
     __tablename__ = "trades"
     order_id = Column(Integer, doc='订单ID', nullable=True)
     order_sysid = Column(String(), doc='订单系统ID', nullable=True)
+    stock_code = Column(String(), doc='股票代码', nullable=True)
     traded_volume = Column(Integer(), doc='交易数量', nullable=True)
-    traded_price = Column(Numeric(), doc='交易价格', nullable=True)
+    traded_time = Column(Integer(), doc='交易时间', nullable=True)
+    traded_price = Column(Numeric(), doc='交易价格', nullable=True) 
     traded_amount = Column(Numeric(), doc='交易金额', nullable=True)
     order_status = Column(Integer, doc='订单状态', nullable=True)
     order_type = Column(Integer, doc='订单类型', nullable=True)

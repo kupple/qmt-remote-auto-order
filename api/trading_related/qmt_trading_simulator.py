@@ -280,14 +280,9 @@ class QmtTradingSimulator:
                 fee = self.calculate_fee("buy", price, volume)
                 if self.cash < (price * volume + fee):
                     return 1004, "资金不足"
-            # 卖出时检查持仓是否足够
+            # 卖出时检查持仓是否足够        
             else:
-                
-                print("position.can_use_volume")
                 position = self.positions.get(stock_code)
-                print({k: v for k, v in vars(position).items() if not k.startswith('__')})
-                print(position.volume)
-                print(volume)
                 if not position or position.volume < volume:
                     return 1007, "可用持仓不足"
         
@@ -438,6 +433,7 @@ class QmtTradingSimulator:
                 if order.stock_code in self.positions:
                     position = self.positions[order.stock_code]
                     total_volume = position.volume + trade.traded_volume
+                    print(total_volume)
                     position.avg_price = (position.avg_price * position.volume + trade.traded_price * trade.traded_volume) / total_volume
                     position.volume = total_volume
                     position.today_buy_volume += trade.traded_volume

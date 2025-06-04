@@ -1,37 +1,46 @@
 <template>
   <div class="backtest-container">
-    <div style="margin-bottom: 10px;">
-      <el-button type="primary"  @click="openModal">新建回测任务</el-button>
+    <div class="btn-container">
+      <el-button type="primary"   @click="openModal">设置回测参数</el-button>
     </div>  
-    <el-table size="small" :default-expand-all="true" :data="tableData" :border="true" :preserve-expanded-content="true" style="width: 100%;height:80vh">
-      <el-table-column type="expand">
-        <template #default="props">
-            <el-table :data="props.row.family" size="small">
-              <el-table-column label="Name" prop="name" />
-              <el-table-column label="State" prop="state" />
-              <el-table-column label="City" prop="city" />
-              <el-table-column label="Address" prop="address" />
-              <el-table-column label="Zip" prop="zip" />
-            </el-table>
+    <el-table  :default-expand-all="true" :data="tableData"  :preserve-expanded-content="true" style="width: 100%;height:80vh">
+      <el-table-column label="回测日期" prop="created_at" />
+      <el-table-column prop="initial_capital" label="起始金额"/>
+      <el-table-column prop="final_amount" label="结束金额"/>
+      <el-table-column label="操作" width="330" align="center">
+        <template #default="scope">
+          <div style="display: flex; align-items: center">
+            <el-button link type="primary" @click="goToDetail(scope.row)">详情</el-button>
+          </div>
         </template>
       </el-table-column>
-      <el-table-column label="日期" prop="date" />
     </el-table>
-    <NewModal ref="newModalRef" />
   </div>
 </template>
 
 <script setup>  
-import { ref, computed } from 'vue'
-import NewModal from './components/newModal.vue'
+import { ref, computed,onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 const route = useRoute()
+const router = useRouter()
 const tableData = ref([])
-const newModalRef = ref(null)
+import { queryBacktestByTaskId } from '@/api/comm_tube'
 
-const openModal = () => {
+
+const getBacktestList = async () => {
   const taskId = route.query.id
-  newModalRef.value.showModal(taskId)
+  const res = await queryBacktestByTaskId(taskId)
+  console.log(res)
+  tableData.value = res
+}
+
+onMounted(() => {
+  getBacktestList()
+})
+  
+const goToDetail = (row) => {
+  router.push(`/backtestDetail?id=${row.id}`)
 }
 
 </script>
@@ -39,5 +48,14 @@ const openModal = () => {
 <style scoped lang="less">
 .backtest-container {
   padding: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  .btn-container{
+    display: flex;
+    justify-content: flex-end;
+    background-color: #fff;
+    padding:10px;
+  }
 }
 </style>
