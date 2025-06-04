@@ -67,8 +67,7 @@ class XtAsset:
         self.cash = 0.0  # 可用资金
         self.market_value = 0.0  # 证券市值
         self.frozen_cash = 0.0  # 冻结资金
-        self.position_profit = 0.0  # 持仓盈亏
-        self.day_profit = 0.0  # 当日盈亏
+    
 
 # XtTrade对象
 class XtTrade:
@@ -162,17 +161,69 @@ class XtQuantTraderCallback:
         pass
 
 class QmtTradingSimulator:
-    def __init__(self, callback: XtQuantTraderCallback, commission_rate=0.0003, initial_cash=1000000.0, min_commission=5.0, stamp_duty_rate=0.001, transfer_fee_rate=0.00001):
+    def __init__(self, callback: XtQuantTraderCallback, commission_rate=0.00025, initial_cash=1000000, min_commission=5, stamp_duty_rate=0.001, transfer_fee_rate=0.00001, calculate_commission=False, is_following_mode=False):
         """
-        初始化QMT交易模拟器
+        初始化交易模拟器
         
         Args:
-            callback: 回调函数对象，处理各种交易事件
-            commission_rate: 佣金率，默认万3
-            initial_cash: 初始现金，默认100万
-            min_commission: 最低佣金，默认5元
-            stamp_duty_rate: 印花税率，默认0.1%
-            transfer_fee_rate: 过户费率，默认0.001%
+            callback: 回调对象
+            commission_rate: 佣金率
+            initial_cash: 初始资金
+            min_commission: 最低佣金
+            stamp_duty_rate: 印花税率
+            transfer_fee_rate: 过户费率
+            calculate_commission: 是否计算手续费
+            is_following_mode: 是否跟随模式，为True时不验证订单和冻结资金
+        """
+        self.callback = callback
+        self.account_id = "SIM001"
+        self.next_order_id = 10000
+        self.next_trade_id = 20000
+        self.next_seq = 1
+        self.lock = threading.Lock()
+        self.market_data = {}  # 模拟市场数据
+        self.calculate_commission = calculate_commission
+        self.is_following_mode = is_following_mode
+        
+        # 如果是跟随模式，使用默认值
+        if is_following_mode:
+            self.commission_rate = 0.0  # 跟随模式下不考虑手续费
+            self.min_commission = 0.0
+            self.stamp_duty_rate = 0.0
+            self.transfer_fee_rate = 0.0
+            self.cash = 0.0
+            self.positions = {}
+        else:
+            self.commission_rate = commission_rate
+            self.min_commission = min_commission
+            self.stamp_duty_rate = stamp_duty_rate
+            self.transfer_fee_rate = transfer_fee_rate
+            self.cash = initial_cash
+            self.positions = {}
+        """
+        初始化交易模拟器
+        
+        Args:
+            callback: 回调对象
+            commission_rate: 佣金率
+            initial_cash: 初始资金
+            min_commission: 最低佣金
+            stamp_duty_rate: 印花税率
+            transfer_fee_rate: 过户费率
+            calculate_commission: 是否计算手续费
+            is_following_mode: 是否跟随模式，为True时不验证订单和冻结资金
+        """
+        """
+        初始化交易模拟器
+        
+        Args:
+            callback: 回调对象
+            commission_rate: 佣金率
+            initial_cash: 初始资金
+            min_commission: 最低佣金
+            stamp_duty_rate: 印花税率
+            transfer_fee_rate: 过户费率
+            calculate_commission: 是否计算手续费
         """
         self.callback = callback
         self.commission_rate = commission_rate
@@ -187,20 +238,39 @@ class QmtTradingSimulator:
         self.stamp_duty_rate = stamp_duty_rate  # 印花税率
         self.transfer_fee_rate = transfer_fee_rate  # 过户费率
         self.market_data = {}  # 模拟市场数据
+        self.calculate_commission = calculate_commission
+        self.is_following_mode = is_following_mode
     
     def calculate_fee(self, transaction_type: str, stock_price: float, quantity: int) -> float:
         """计算交易手续费"""
-        return calculate_stock_fee(
-            transaction_type,
-            stock_price,
-            quantity,
-            0.00025,
-            5,
-            0.001,
-            0.00001
-        )
+        if self.calculate_commission:
+            return calculate_stock_fee(
+                transaction_type,
+                stock_price,
+                quantity,
+                self.commission_rate,
+                self.min_commission,
+                self.stamp_duty_rate,
+                self.transfer_fee_rate
+            )
+        else:
+            return 0.0
     
     def place_order(self, stock_code: str, volume: int, price: float, order_type: int, price_type: int, order_time: int = None, direction: int = Direction.LONG, strategy_name: str = "", order_remark: str = ""):
+        """
+        下单方法
+        
+        Args:
+            stock_code: 股票代码，格式如"600000.SH"
+            volume: 数量
+            price: 价格
+            order_type: 委托类型，参见OrderType
+            price_type: 报价类型，参见PriceType
+            order_time: 下单时间（毫秒级时间戳），默认为当前时间
+            direction: 多空方向，参见Direction
+            strategy_name: 策略名称
+            order_remark: 委托备注
+        """
         """
         下单方法
         
@@ -223,6 +293,20 @@ class QmtTradingSimulator:
         # 如果未提供下单时间，使用当前时间
         if order_time is None:
             order_time = int(time.time() * 1000)
+        
+        # 如果是跟随模式，直接下单，不验证订单和冻结资金
+        if self.is_following_mode:
+            # 创建订单对象
+            order = self._create_order(
+                order_id, stock_code, volume, price, 
+                order_type, price_type, direction,
+                strategy_name, order_remark, order_time
+            )
+            
+            # 立即调用异步下单响应
+            response = self._create_order_response(order_id, seq, 0, "下单成功", strategy_name, order_remark)
+            self.callback.on_order_stock_async_response(response)
+            return
         
         # 验证订单合法性
         error_id, error_msg = self._validate_order(stock_code, volume, price, order_type, price_type)
@@ -279,6 +363,9 @@ class QmtTradingSimulator:
             if order_type == OrderType.STOCK_BUY:
                 fee = self.calculate_fee("buy", price, volume)
                 if self.cash < (price * volume + fee):
+                    # order_time_str = time.strftime("%Y-%m-%d", time.localtime(order_time // 1000))
+                    # print("order_time_str",order_time_str)
+                    
                     return 1004, "资金不足"
             # 卖出时检查持仓是否足够        
             else:
@@ -345,41 +432,16 @@ class QmtTradingSimulator:
     
     def _simulate_trades(self, order: XtOrder):
         """模拟成交回报"""
-        # 生成1-3笔成交
-        num_trades = random.randint(1, 3)
-        remaining_volume = order.order_volume
-        
-        for i in range(num_trades):
-            # 最后一笔成交处理剩余全部数量
-            if i == num_trades - 1:
-                trade_volume = remaining_volume
-            else:
-                # 每笔成交数量为随机值
-                max_volume = max(1, remaining_volume // 2)
-                trade_volume = random.randint(1, max_volume)
-            
-            remaining_volume -= trade_volume
-            
-            # 根据价格类型生成成交价格
-            trade_price = self._get_trade_price(order)
-            
-            # 生成成交时间（略晚于下单时间）
-            traded_time = order.order_time + random.randint(1, 100)  # 毫秒级偏移
-            
-            # 创建成交对象
-            trade = self._create_trade(order, trade_price, trade_volume, traded_time)
-            
-            # 立即处理每笔成交
-            self._process_trade(trade, order)
+        trade_volume = order.order_volume
+        trade_price = self._get_trade_price(order)
+        traded_time = order.order_time + random.randint(1, 100)  # 毫秒级偏移
+        trade = self._create_trade(order, trade_price, trade_volume, traded_time)
+        self._process_trade(trade, order)
         
         # 更新订单状态
-        order.traded_volume = order.order_volume - remaining_volume
-        if remaining_volume > 0:
-            order.order_status = OrderStatus.PARTIAL
-            order.status_msg = f"部分成交，剩余{remaining_volume}"
-        else:
-            order.order_status = OrderStatus.FILLED
-            order.status_msg = "全部成交"
+        order.traded_volume = order.order_volume
+        order.order_status = OrderStatus.FILLED 
+        order.status_msg = "全部成交"
         
         # 计算成交均价
         if order.traded_volume > 0:

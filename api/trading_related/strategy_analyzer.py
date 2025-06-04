@@ -41,7 +41,58 @@ class StockPositionCalculator:
         # 按日期排序
         self.trades_df = self.trades_df.sort_values('date')
         
-    
+    # 最新持仓数据
+    def get_current_positions(self) -> List[Dict]:
+        """获取最新的持仓数据"""
+        # 获取所有交易
+        trades = self.trades_df.sort_values('traded_time')
+        
+        # 初始化持仓
+        positions = {}
+        
+        # 处理所有交易
+        for _, trade in trades.iterrows():
+            stock_code = str(trade['stock_code'])
+            volume = float(trade['traded_volume'])
+            price = float(trade['traded_price'])
+            direction = int(trade['order_type'])
+            
+            if stock_code not in positions:
+                positions[stock_code] = {
+                    'volume': 0.0,
+                    'avg_price': 0.0,
+                    'status': '无持仓'
+                }
+            
+            if direction == 23:  # 买入
+                # 更新持仓
+                positions[stock_code]['volume'] += volume
+                # 计算新的平均成本
+                total_volume = positions[stock_code]['volume']
+                total_cost = (total_volume - volume) * positions[stock_code]['avg_price'] + volume * price
+                positions[stock_code]['avg_price'] = total_cost / total_volume
+                positions[stock_code]['status'] = '持仓中'
+            elif direction == 24:  # 卖出
+                positions[stock_code]['volume'] -= volume
+                if positions[stock_code]['volume'] <= 0:
+                    positions[stock_code]['volume'] = 0
+                    positions[stock_code]['avg_price'] = 0
+                    positions[stock_code]['status'] = '无持仓'
+            
+        # 过滤掉volume=0的持仓
+        current_positions = [
+            {
+                'stock_code': stock,
+                'volume': pos['volume'],
+                'avg_price': pos['avg_price'],
+                'status': pos['status']
+            }
+            for stock, pos in positions.items()
+            if pos['volume'] > 0
+        ]
+        
+        return current_positions
+
     def calculate_daily_positions(self) -> Dict:
         """计算每天的股票持仓列表，包括变化量"""
         # 按日期分组处理交易
@@ -103,7 +154,7 @@ class StockPositionCalculator:
                     # 累加当日手续费
                     daily_records[date_str]['commission'] += commission
                     
-                    # 添加交易记录
+                    # # 添加交易记录
                     daily_records[date_str]['trades'].append({
                         'stock_code': stock_code,
                         'volume': volume,
@@ -116,7 +167,6 @@ class StockPositionCalculator:
                 # 如果当天没有交易，持仓保持前一天的状态
                 # 更新当日记录（已经初始化为当前持仓）
                 daily_records[date_str]['changes'] = {}  # 当日无变化
-            
         return daily_records
     
     def _process_date_trades(self, date_trades: pd.DataFrame, initial_positions: Dict[str, Dict[str, float]]) -> Tuple[Dict, Dict]:
@@ -394,14 +444,16 @@ def analyze_stock_data(trades: List[Dict], initial_capital: float = 100000.0) ->
         sorted_daily_positions.append({
             'date': date_str,
             'positions': positions_array,
-            'changes': daily_positions[date_str]['changes']
+            'changes': daily_positions[date_str]['changes'],
+            'commission': daily_positions[date_str]['commission'],
+            'trades': daily_positions[date_str]['trades']
         })
     
     # 计算策略绩效
-    performance_analyzer = StrategyPerformanceAnalyzer(trades, initial_capital)
-    performance = performance_analyzer.calculate_performance()
+    # performance_analyzer = StrategyPerformanceAnalyzer(trades, initial_capital)
+    # performance = performance_analyzer.calculate_performance()
     return {
         "daily_positions": sorted_daily_positions,
-        "performance": performance,
-        "daily_equity": json.dumps(performance_analyzer.daily_equity.to_dict('records'), default=lambda x: x.strftime('%Y-%m-%d') if isinstance(x, datetime.date) else x)  # 提供每日权益数据
+        # "performance": performance,
+        # "daily_equity": json.dumps(performance_analyzer.daily_equity.to_dict('records'), default=lambda x: x.strftime('%Y-%m-%d') if isinstance(x, datetime.date) else x)  # 提供每日权益数据
     }

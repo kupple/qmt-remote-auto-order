@@ -135,3 +135,5 @@ def get_qmt_price_type(security, order_style_str):
     # 默认使用最新价
     return xtconstant.LATEST_PRICE
 
+
+

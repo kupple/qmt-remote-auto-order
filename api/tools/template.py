@@ -92,10 +92,8 @@ def qmt_auto_orders(method_name, *args, **kwargs):
             'price':orderInfo.price,
             'amount':orderInfo.amount,
             'avg_cost':orderInfo.avg_cost,
-            'commission':orderInfo.commission,
             'is_buy':orderInfo.is_buy,
-            'add_time':orderInfo.add_time.strftime("%Y-%m-%d %H:%M:%S"),
-            'pindex':pindex,
+            'add_time':orderInfo.add_time.strftime("%Y-%m-%d %H:%M:%S")
         }}
     }})
     url = "{server_url}/send_message"
@@ -212,6 +210,9 @@ def qmt_auto_orders(method_name, *args, **kwargs):
     style_str = f"{{type(style).__name__}}({{getattr(style, 'limit_price', '')}})" if style else None
     side = args[3] if len(args) > 3 else kwargs.get('side','long')
     pindex = args[4] if len(args) > 4 else kwargs.get('pindex',0)
+    total_value = g.context.portfolio.total_value
+    
+
 
     orderInfo = system_method(security, value,
                         style=style_str,
@@ -219,11 +220,22 @@ def qmt_auto_orders(method_name, *args, **kwargs):
                         pindex=pindex)
     if orderInfo == None:
         return None
+    
+    positions = [
+        {{
+            'security': v.security,
+            'price': v.price,
+            'total_amount': v.total_amount,
+            'avg_cost': v.avg_cost,
+        }}
+        for v in g.context.portfolio.positions.values()
+    ]    
     jsonDic = json.dumps({{
         'method': method_name,
         'run_params': g.run_params,
         'strategy_code':'{strategy_code}',
         'state':'run',
+        'positions':positions,
         'params': {{
             'security':security,
             'value':value,
@@ -231,12 +243,9 @@ def qmt_auto_orders(method_name, *args, **kwargs):
             'price':orderInfo.price,
             'amount':orderInfo.amount,
             'avg_cost':orderInfo.avg_cost,
-            'commission':orderInfo.commission,
             'is_buy':orderInfo.is_buy,
             'add_time':orderInfo.add_time.strftime("%Y-%m-%d %H:%M:%S"),
-            'pindex':pindex,
-            'total_amount':g.context.portfolio.positions[security].total_amount,
-            'total_value':g.context.portfolio.total_value
+            'total_value':total_value
         }}
     }})
     url = "{server_url}/send_message"

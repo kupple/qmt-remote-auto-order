@@ -118,34 +118,18 @@ class ORM:
         """创建任务"""
         dbSession = DB.session()
         with dbSession.begin():
-            strategy_code = data.get('strategy_code', '')
-            if strategy_code == '':
-                strategy_code = generate_random_letters()
-                
             if 'id' not in data or data['id'] is None:
-                task = TaskList(
-                    name=data['name'],
-                    strategy_code=strategy_code,
-                    order_count_type=data['order_count_type'],
-                    strategy_amount=data['strategy_amount'],
-                    allocation_amount=data['allocation_amount'],
-                    service_charge=data['service_charge'],
-                    lower_limit_of_fees=data['lower_limit_of_fees'],
-                    dynamic_calculation_type=data['dynamic_calculation_type']   
-                )
+                if 'strategy_code' not in data or not data['strategy_code']:
+                    data['strategy_code'] = generate_random_letters()
+                task = TaskList(**data)
                 dbSession.add(task)
             else:
                 stmt = select(TaskList).where(TaskList.id == data['id'])
                 task = dbSession.execute(stmt).scalar_one_or_none()
                 if task:
-                    task.name = data['name']
-                    task.strategy_code = strategy_code  
-                    task.order_count_type = data['order_count_type']
-                    task.dynamic_calculation_type = data['dynamic_calculation_type']
-                    task.strategy_amount = data['strategy_amount']
-                    task.allocation_amount = data['allocation_amount']
-                    task.service_charge=data['service_charge']
-                    task.lower_limit_of_fees=data['lower_limit_of_fees']
+                    for key, value in data.items():
+                        if hasattr(task, key):
+                            setattr(task, key, value)
         dbSession.close()
         return True
 
@@ -195,11 +179,11 @@ class ORM:
                 commission=data['commission'],
                 is_buy=data['is_buy'],
                 add_time=data['add_time'],
-                pindex=data['pindex'],
                 platform=data['platform'],
                 run_params=data['run_params'],
                 fix_result_order_id=data['fix_result_order_id'],
-                strategy_code=data['strategy_code']
+                strategy_code=data['strategy_code'],
+                positions=data['positions']
             )
             dbSession.add(order)
             dbSession.flush()
@@ -346,9 +330,9 @@ class ORM:
         
         dbSession = DB.session()
         with dbSession.begin():
-            stmt = select(Positions).where(Positions.task_id == task_id)
+            stmt = select(Positions).where(Positions.task_id == task_id).where(Positions.is_mock == 0)
             if security_code:
-                stmt = stmt.where(Positions.security_code == security_code)
+                stmt = stmt.where(Positions.security_code == security_code).where(Positions.is_mock == 0)
             stmt = stmt.where(Positions.delete_time.is_(None))
             result = dbSession.execute(stmt).all()
         dbSession.close()
@@ -406,11 +390,11 @@ class ORM:
         dbSession = DB.session()
         with dbSession.begin():
             stmt = select(Positions)
-            if task_id:
-                stmt = stmt.where(Positions.task_id == task_id)
             if backtest_id:
-                stmt = stmt.where(Positions.backtest_id == backtest_id)
-            stmt = stmt.where(Positions.delete_time.is_(None))
+                stmt = stmt.where(Positions.backtest_id == backtest_id).where(Positions.is_mock == 1)   
+            elif task_id:
+                stmt = stmt.where(Positions.task_id == task_id).where(Positions.backtest_id.is_(None)).where(Positions.is_mock == 0)
+            
             result = dbSession.execute(stmt).scalars().all()
             result = [task.toDict() for task in result]
             
@@ -443,16 +427,42 @@ class ORM:
       return last_id
   
     def update_position(self, id, **kwargs):
-      """更新持仓"""
-      if not id:
-        return False
-      
-      dbSession = DB.session()
-      with dbSession.begin():
-        stmt = update(Positions).where(Positions.id == id).values(**kwargs)
-        dbSession.execute(stmt)
-      dbSession.close()
-      return True
+        """更新持仓信息"""
+        dbSession = DB.session()
+        with dbSession.begin():
+            stmt = update(Positions).where(Positions.id == id).values(**kwargs)
+            dbSession.execute(stmt)
+        return True
+
+    def update_backtest_accruing_amounts(self, backtest_id, profit_loss):
+        """更新回测账户的累计金额"""
+        dbSession = DB.session()
+        with dbSession.begin():
+            # 获取当前累计金额
+            stmt = select(Backtest.accruing_amounts).where(Backtest.id == backtest_id)
+            result = dbSession.execute(stmt).scalar()
+            
+            # 更新累计金额
+            new_accruing_amounts = result + profit_loss if result else profit_loss
+            stmt = update(Backtest).where(Backtest.id == backtest_id).values(accruing_amounts=new_accruing_amounts)
+            dbSession.execute(stmt)
+        dbSession.close()
+        return True
+    
+    def update_task_accruing_amounts(self, task_id, profit_loss):
+        """更新任务账户的累计金额"""
+        dbSession = DB.session()
+        with dbSession.begin():
+            # 获取当前累计金额
+            stmt = select(TaskList.accruing_amounts).where(TaskList.id == task_id)
+            result = dbSession.execute(stmt).scalar()
+            
+            # 更新累计金额
+            new_accruing_amounts = result + profit_loss if result else profit_loss
+            stmt = update(TaskList).where(TaskList.id == task_id).values(accruing_amounts=new_accruing_amounts)
+            dbSession.execute(stmt)
+        dbSession.close()
+        return True
   
     def query_backtest_by_task_id(self, task_id):
         """通过taskid获取回测列表"""
@@ -484,10 +494,11 @@ class ORM:
         dbSession = DB.session()
         with dbSession.begin():
             stmt = select(Trades)
-            if task_id:
-                stmt = stmt.where(Trades.task_id == task_id)
             if backtest_id:
-                stmt = stmt.where(Trades.backtest_id == backtest_id)
+                stmt = stmt.where(Trades.backtest_id == backtest_id).where(Trades.is_mock == 1)
+            elif task_id:
+                stmt = stmt.where(Trades.task_id == task_id).where(Trades.is_mock == 0)
+            
             result = dbSession.execute(stmt)
             trades = []
             for row in result:

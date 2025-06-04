@@ -92,10 +92,8 @@ class qmt_trader:
   price_type = get_qmt_price_type(security,order_style_str)
   # 对交易回调进行订阅，订阅后可以收到交易主推，返回0表示订阅成功
   subscribe_result = self.xt_trader.subscribe(self.acc)
-  print(self.xt_trader.query_stock_asset_async(account=self.acc,callback=subscribe_result))
-  #print(subscribe_result)
   stock_code =self.adjust_stock(stock=security)
-  price=self.select_slippage(stock=security,price=price,trader_type='sell')
+  # price=self.select_slippage(stock=security,price=price,trader_type='sell')
   order_volume=amount
   # 使用指定价下单，接口返回订单编号，后续可以用于撤单操作以及查询委托状态
   if order_volume>0:
@@ -107,6 +105,24 @@ class qmt_trader:
   else:
    print('卖出 标的{} 价格{} 委托数量{}小于0有问题'.format(stock_code,price,order_volume))   
  
+ def place_order(self,security='600031.SH',
+     amount=100,price=20,order_type=xtconstant.STOCK_BUY,order_style_str='',strategy_name='',order_remark=''):
+     if order_type == xtconstant.STOCK_BUY:
+      self.buy(security=security,
+      amount=amount,
+      price=price,
+      order_style_str=order_style_str,
+      strategy_name=strategy_name,
+      order_remark=order_remark)
+     elif order_type == xtconstant.STOCK_SELL:
+      self.sell(security=security,
+      amount=amount,
+      price=price,
+      order_style_str=order_style_str,
+      strategy_name=strategy_name,
+      order_remark=order_remark)  
+ 
+ 
  def buy(self,security='600031.SH',
      amount=100,price=20,order_style_str='',strategy_name='',order_remark=''):
   '''
@@ -116,8 +132,6 @@ class qmt_trader:
   price_type = get_qmt_price_type(security, order_style_str)
   # 对交易回调进行订阅，订阅后可以收到交易主推，返回0表示订阅成功
   subscribe_result = self.xt_trader.subscribe(self.acc)
-  print(self.xt_trader.query_stock_asset_async(account=self.acc,callback=subscribe_result))
-  #print(subscribe_result)
   stock_code =self.adjust_stock(stock=security)
   # price=self.select_slippage(stock=security,price=price,trader_type='buy')
   order_volume=amount

@@ -323,3 +323,65 @@ UPDATE alembic_version SET version_num='cf01b55a1307' WHERE alembic_version.vers
 
 UPDATE alembic_version SET version_num='4b30d3ff9ca0' WHERE alembic_version.version_num = 'cf01b55a1307';
 
+-- Running upgrade 4b30d3ff9ca0 -> b0ec1d0d11aa
+
+ALTER TABLE tasklist ADD COLUMN mock_service_charge NUMERIC;
+
+ALTER TABLE tasklist ADD COLUMN mock_lower_limit_of_fees NUMERIC;
+
+UPDATE alembic_version SET version_num='b0ec1d0d11aa' WHERE alembic_version.version_num = '4b30d3ff9ca0';
+
+-- Running upgrade b0ec1d0d11aa -> 5f389173a5d8
+
+ALTER TABLE tasklist ADD COLUMN mock_allocation_amount NUMERIC;
+
+UPDATE alembic_version SET version_num='5f389173a5d8' WHERE alembic_version.version_num = 'b0ec1d0d11aa';
+
+-- Running upgrade 5f389173a5d8 -> 19ff43303ec2
+
+UPDATE alembic_version SET version_num='19ff43303ec2' WHERE alembic_version.version_num = '5f389173a5d8';
+
+-- Running upgrade 19ff43303ec2 -> 1fb8c8dc58e3
+
+ALTER TABLE entrusts ADD COLUMN is_mock INTEGER DEFAULT '0';
+
+ALTER TABLE orders ADD COLUMN is_mock INTEGER DEFAULT '0';
+
+ALTER TABLE positions ADD COLUMN is_mock INTEGER DEFAULT '0';
+
+ALTER TABLE trades ADD COLUMN is_mock INTEGER DEFAULT '0';
+
+UPDATE alembic_version SET version_num='1fb8c8dc58e3' WHERE alembic_version.version_num = '19ff43303ec2';
+
+-- Running upgrade 1fb8c8dc58e3 -> 070a4abaf019
+
+CREATE INDEX ix_entrusts_is_mock ON entrusts (is_mock);
+
+CREATE INDEX ix_orders_is_mock ON orders (is_mock);
+
+CREATE INDEX ix_positions_is_mock ON positions (is_mock);
+
+CREATE INDEX ix_trades_is_mock ON trades (is_mock);
+
+UPDATE alembic_version SET version_num='070a4abaf019' WHERE alembic_version.version_num = '1fb8c8dc58e3';
+
+-- Running upgrade 070a4abaf019 -> aa39b00cc416
+
+ALTER TABLE backtest ADD COLUMN accruing_amounts NUMERIC;
+
+ALTER TABLE tasklist ADD COLUMN accruing_amounts NUMERIC;
+
+UPDATE alembic_version SET version_num='aa39b00cc416' WHERE alembic_version.version_num = '070a4abaf019';
+
+-- Running upgrade aa39b00cc416 -> 895b0cf90a97
+
+ALTER TABLE positions ADD COLUMN average_price NUMERIC;
+
+UPDATE alembic_version SET version_num='895b0cf90a97' WHERE alembic_version.version_num = 'aa39b00cc416';
+
+-- Running upgrade 895b0cf90a97 -> 61f020288394
+
+ALTER TABLE orders ADD COLUMN positions VARCHAR;
+
+UPDATE alembic_version SET version_num='61f020288394' WHERE alembic_version.version_num = '895b0cf90a97';
+

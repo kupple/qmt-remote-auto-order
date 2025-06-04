@@ -115,9 +115,10 @@ class TaskList(BaseModel):
     strategy_code = Column(String(), doc='策略代码', nullable=True)
     order_count_type = Column(Integer, doc='订单计数类型', nullable=True)
     dynamic_calculation_type = Column(Integer, doc='动态计算类型', nullable=True,server_default='1')
-    strategy_amount = Column(Integer, doc='策略金额', nullable=True)
-    position_amount = Column(Integer, doc='持仓额度', nullable=True)
-    allocation_amount = Column(Integer, doc='分配金额', nullable=True)
+    strategy_amount = Column(Numeric(), doc='策略金额', nullable=True)
+    position_amount = Column(Numeric(), doc='持仓额度', nullable=True)
+    allocation_amount = Column(Numeric(), doc='分配金额', nullable=True)
+    accruing_amounts = Column(Numeric(), doc='累计金额', nullable=True)
     enable = Column(Integer, doc='是否启用', nullable=True, server_default='1')
     days_number = Column(Integer, doc='天数', nullable=True)
     is_open = Column(Integer, doc='是否开启', nullable=True, server_default='0')
@@ -126,6 +127,10 @@ class TaskList(BaseModel):
     service_charge = Column(Numeric(), doc='手续费', nullable=True)
     lower_limit_of_fees = Column(Numeric(), doc='手续费下限', nullable=True)
     backtest_id = Column(Integer, doc='回测ID', nullable=True)
+    mock_service_charge = Column(Numeric(), doc='回测手续费', nullable=True)
+    mock_lower_limit_of_fees = Column(Numeric(), doc='回测手续费下限', nullable=True)
+    mock_allocation_amount = Column(Numeric(), doc='回测分配金额', nullable=True)
+    
 
     def __str__(self):
         return f"Task: {self.name}"
@@ -152,6 +157,8 @@ class Orders(BaseModel):
     status = Column(Integer, doc='状态', nullable=True, server_default='0')
     transaction_status = Column(Integer, doc='交易状态', nullable=True, server_default='0')
     backtest_id = Column(Integer, doc='回测ID', nullable=True)
+    positions = Column(String(), doc='持仓', nullable=True)
+    is_mock = Column(Integer, doc='是否回测', nullable=True, server_default='0',index=True)
     def __str__(self):
         return f"Order: {self.security_code}"
 
@@ -175,6 +182,7 @@ class Entrusts(BaseModel):
     status = Column(Integer, doc='状态', nullable=True, server_default='0')
     offset_flag = Column(Integer, doc='偏移标志', nullable=True)
     backtest_id = Column(Integer, doc='回测ID', nullable=True)
+    is_mock = Column(Integer, doc='是否回测', nullable=True, server_default='0',index=True)
     def __str__(self):
         return f"Entrust: {self.traded_id}"
 
@@ -196,6 +204,7 @@ class Trades(BaseModel):
     orders_id = Column(Integer, doc='订单ID', nullable=True)
     status = Column(Integer, doc='状态', nullable=True, server_default='0')
     backtest_id = Column(Integer, doc='回测ID', nullable=True)
+    is_mock = Column(Integer, doc='是否回测', nullable=True, server_default='0',index=True)
     def __str__(self):
         return f"Trade: {self.order_sysid}"
 
@@ -206,8 +215,10 @@ class Positions(BaseModel):
     volume = Column(Integer, doc='数量', nullable=True)
     amount = Column(Numeric(), doc='金额', nullable=True)
     task_id = Column(Integer, doc='任务ID', nullable=True)
+    average_price = Column(Numeric(), doc='平均成本', nullable=True)
     backtest_id = Column(Integer, doc='回测ID', nullable=True)
     delete_time = Column(DateTime(), doc='删除时间', nullable=True)
+    is_mock = Column(Integer, doc='是否回测', nullable=True, server_default='0', index=True)
     def __str__(self):
         return f"Positions: {self.security_code}"
 
@@ -216,6 +227,7 @@ class Backtest(BaseModel):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(), doc='名称', nullable=True)
     service_charge = Column(Numeric(), doc='手续费', nullable=True)
+    accruing_amounts = Column(Numeric(), doc='累计金额', nullable=True)
     initial_capital = Column(Numeric(), doc='起始资金', nullable=True) 
     lower_limit_of_fees = Column(Numeric(), doc='手续费下限', nullable=True)
     final_amount = Column(Numeric(), doc='结束金额', nullable=True)

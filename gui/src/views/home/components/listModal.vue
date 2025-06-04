@@ -76,6 +76,12 @@ import { ElMessage } from 'element-plus'
 const taskList = computed(() => useCommonStore().taskList)
 const emit = defineEmits(['getTaskList'])
 const dialogVisible = ref(false)
+const props = defineProps({
+  isBacktest: {
+    type: String,
+    default: ''
+  }
+})
 const form = reactive({
   name: '',
   platform: 1,
@@ -117,6 +123,10 @@ const showModal = (dic) => {
     form.lower_limit_of_fees = dic.lower_limit_of_fees
   } else {
     editDic.value = null
+    form.mock_allocation_amount = 100000
+    form.mock_service_charge = 0.00025
+    form.mock_lower_limit_of_fees = 5
+    
   }
 }
 const handleSubmit = async () => {
@@ -129,7 +139,7 @@ const handleSubmit = async () => {
       return
     }
   }
-  await createTask({
+  let dic = {
     id: editDic.value?.id || undefined,
     name: form.name,
     strategy_code: form.strategy_code,
@@ -139,7 +149,15 @@ const handleSubmit = async () => {
     allocation_amount: form.allocation_amount,
     service_charge: form.service_charge,
     lower_limit_of_fees: form.lower_limit_of_fees,
-  })
+  }
+  if(dic.id === undefined){
+    dic.mock_allocation_amount = 100000
+    dic.mock_service_charge = 0.00025
+    dic.mock_lower_limit_of_fees = 5
+    dic.accruing_amounts = dic.allocation_amount
+
+  }
+  await createTask(dic)
   emit('getTaskList')
   dialogVisible.value = false
   ElMessage.success('保存成功')

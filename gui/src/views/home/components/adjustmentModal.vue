@@ -9,6 +9,7 @@
         <el-button @click="dialogVisible = false">取消</el-button>
       </el-form-item>
     </el-form>
+    <span style="color: red">* 修改金额后累计金额会重置</span>
   </el-dialog>
 </template>
 
@@ -63,13 +64,8 @@ const showModal = (dic) => {
 const handleSubmit = async () => {
   await createTask({
     id: editDic.value?.id || undefined,
-    name: form.name,
-    strategy_code: form.strategy_code,
-    order_count_type: form.order_count_type,
-    strategy_amount: form.strategy_amount,
     allocation_amount: form.allocation_amount,
-    service_charge: form.service_charge,
-    lower_limit_of_fees: form.lower_limit_of_fees
+    accruing_amounts: form.allocation_amount
   })
   emit('getTaskList')
   dialogVisible.value = false
