@@ -217,8 +217,8 @@ onMounted(async () => {
   }
   .bottom-container-left {
     flex: 5;
-    background: #fff;
-    padding: 10px;
+    // background: #fff;
+    // padding: 10px;
     min-width: 0;
     overflow: hidden;
     display: flex;
@@ -233,6 +233,11 @@ onMounted(async () => {
       flex-direction: column;
       gap: 10px;
       overflow-y: auto;
+      &::-webkit-scrollbar {
+        display: none;
+      }
+      -ms-overflow-style: none;
+      scrollbar-width: none;
       .task-cell {
         // height: 60px;
         background: linear-gradient(to right, #001629, rgb(140, 140, 140));
