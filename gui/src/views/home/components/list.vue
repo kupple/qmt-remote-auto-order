@@ -23,12 +23,12 @@
               </div>
             </div>
             <div class="cell-right">
-              <div v-if="item.is_open === 0" class="cell-right-row" @click="handleEdit({ id: item.id, is_open: 1 })">
+              <div v-if="item.is_open === 0" class="cell-right-row" @click="handleEdit({ id: item.id, is_open: 1,name:item.name })">
                 <!-- <el-icon color="#fff" size="20"><VideoPlay /></el-icon> -->
                 <img src="@/assets/images/start.png" style="width: 20px; height: 20px" />
                 <span class="cell-right-row-label">开启策略</span>
               </div>
-              <div v-else class="cell-right-row" @click="handleEdit({ id: item.id, is_open: 0 })">
+              <div v-else class="cell-right-row" @click="handleEdit({ id: item.id, is_open: 0,name:item.name })">
                 <img src="@/assets/images/stop.png" style="width: 20px; height: 20px" />
                 <span class="cell-right-row-label">关闭策略</span>
               </div>
@@ -226,7 +226,7 @@ onMounted(async () => {
     gap: 10px;
     .create-task-btn {
       width: 100px;
-      align-self: flex-end;
+      // align-self: flex-end;
     }
     .task-list {
       display: flex;

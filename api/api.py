@@ -119,6 +119,15 @@ class API(System):
         return self.orm.create_task(data)
     
     def run_task(self,data):
+        st = ""
+        if data["is_open"]:
+            st = '开启'
+        else:
+            st = "关闭"
+        message = data["name"] + "任务已" + st
+        System.system_py2js(self,'remoteCallBack',  {
+            "message": message,
+        })
         return self.orm.run_task(data)
     
     def delete_task(self,data):
