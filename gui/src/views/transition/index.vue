@@ -1,27 +1,30 @@
 <template>
   <div class="transition-container">
     <div class="transition-container-content">
-      <span class="transition-container-content-title">请将聚宽代码复制到此处 <span style="margin-left:10px">任务名称（{{taskDic?.name || ''}}）</span></span>
+      <span class="transition-container-content-title"
+        >请将聚宽代码复制到此处 <span style="margin-left: 10px">任务名称（{{ taskDic?.name || '' }}）</span></span
+      >
       <div class="transition-bottom">
         <div class="transition-bottom-cell">
           <textarea class="transition-input" v-model="textarea1" type="textarea" placeholder="请将代码复制到此处" />
-          <el-button type="primary" class="copy-btn">一键复制</el-button>
+          <el-button type="primary" class="copy-btn" @click="copyAction(1)">一键复制</el-button>
         </div>
         <div class="mid-btns">
           <el-button type="primary" @click="transitionCodeAction"
             >转换<el-icon><DArrowRight /></el-icon
           ></el-button>
           <el-button @click="revertTransitionCodeAction"
-            ><el-icon><DArrowLeft /></el-icon>复原</el-button>
+            ><el-icon><DArrowLeft /></el-icon>复原</el-button
+          >
         </div>
         <div class="transition-bottom-cell">
           <textarea class="transition-input" v-model="textarea2" type="textarea" placeholder="此处为生产的代码" />
-          <el-button type="primary" class="copy-btn">一键复制</el-button>
+          <el-button type="primary" class="copy-btn" @click="copyAction(2)">一键复制</el-button>
         </div>
       </div>
     </div>
     <div class="transition-container-bottom">
-      <span style="color:red">⚠️⚠️⚠️请注意转完后的代码不要转发，发布在任务讨论上⚠️⚠️⚠️</span>
+      <span style="color: red">⚠️⚠️⚠️请注意转完后的代码不要转发，发布在任务讨论上⚠️⚠️⚠️</span>
     </div>
   </div>
 </template>
@@ -56,6 +59,19 @@ const transitionCodeAction = async () => {
 }
 const goToHome = () => {
   router.go(-1)
+}
+
+const copyAction = async (type) => {
+  try {
+    if (type === 1) {
+      await navigator.clipboard.writeText(textarea1.value)
+    } else {
+      await navigator.clipboard.writeText(textarea2.value)
+    }
+    ElMessage.success('复制成功')
+  } catch (error) {
+    ElMessage.error('复制失败')
+  }
 }
 
 onMounted(async () => {})
@@ -111,7 +127,7 @@ onMounted(async () => {})
         display: flex;
         flex-direction: column;
         height: 100%;
-        flex:1;
+        flex: 1;
         .transition-input {
           resize: none; /* 禁用调整大小 */
           flex: 1;
@@ -120,13 +136,13 @@ onMounted(async () => {})
           font-size: 14px;
           height: 100%;
         }
-        .copy-btn{
+        .copy-btn {
           margin-top: 10px;
         }
       }
     }
   }
-  .transition-container-bottom{
+  .transition-container-bottom {
     padding: 0px 20px;
   }
 }

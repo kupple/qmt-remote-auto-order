@@ -111,13 +111,17 @@ class Setting(BaseModel):
 class TaskList(BaseModel):
     '''任务列表表'''
     __tablename__ = "tasklist"
+    task_type = Column(Integer, doc='策略类型',server_default='1')
     name = Column(String(), doc='任务名称', nullable=True)
+    come_form_str=Column(String(), doc='来自', nullable=True)
+    share_secret = Column(String(), doc='分享秘钥', nullable=True)
     strategy_code = Column(String(), doc='策略代码', nullable=True)
     order_count_type = Column(Integer, doc='订单计数类型', nullable=True)
     dynamic_calculation_type = Column(Integer, doc='动态计算类型', nullable=True,server_default='1')
     strategy_amount = Column(Numeric(), doc='策略金额', nullable=True)
     position_amount = Column(Numeric(), doc='持仓额度', nullable=True)
     allocation_amount = Column(Numeric(), doc='分配金额', nullable=True)
+    can_use_amount = Column(Numeric(), doc='可用金额', nullable=True)
     accruing_amounts = Column(Numeric(), doc='累计金额', nullable=True)
     enable = Column(Integer, doc='是否启用', nullable=True, server_default='1')
     days_number = Column(Integer, doc='天数', nullable=True)
@@ -202,6 +206,7 @@ class Trades(BaseModel):
     status_msg = Column(String(), doc='状态消息', nullable=True)
     offset_flag = Column(Integer, doc='偏移标志', nullable=True)
     orders_id = Column(Integer, doc='订单ID', nullable=True)
+    task_id = Column(Integer, doc='任务ID', nullable=True)
     status = Column(Integer, doc='状态', nullable=True, server_default='0')
     backtest_id = Column(Integer, doc='回测ID', nullable=True)
     is_mock = Column(Integer, doc='是否回测', nullable=True, server_default='0',index=True)
@@ -226,6 +231,7 @@ class Backtest(BaseModel):
     __tablename__ = "backtest"
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(), doc='名称', nullable=True)
+    order_count_type = Column(Integer(), doc='订单计数类型', nullable=True) 
     service_charge = Column(Numeric(), doc='手续费', nullable=True)
     accruing_amounts = Column(Numeric(), doc='累计金额', nullable=True)
     initial_capital = Column(Numeric(), doc='起始资金', nullable=True) 
@@ -234,5 +240,6 @@ class Backtest(BaseModel):
     task_id = Column(Integer, doc='任务ID', nullable=True) 
     frequency = Column(String(), doc='频率', nullable=True)
     state = Column(String(), doc='状态', nullable=True)
+    can_use_amount = Column(Numeric(), doc='可用金额', nullable=True)
     def __str__(self):
         return f"Backtest: {self.id}"

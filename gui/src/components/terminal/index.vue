@@ -11,14 +11,25 @@
         <span class="tips" :style="{ color: item.status === 2 ? 'red' : 'white' }">{{ item.date }}-{{ item.message }}</span>
       </span>
     </div>
+    <el-button v-show="showTerminal" class="clear-btn" @click="clearAction">清除</el-button>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick,defineProps } from 'vue'
 import { useRemoteStore } from '@/store/remote.js'
 import { ArrowUp, ArrowDown } from '@element-plus/icons-vue'
 import { useCommonStore } from '@/store/common.js'
+
+const props = defineProps({
+  showTerminal: {
+    type: Boolean,
+    default: false
+  }
+})
+
+
+
 const listRef = ref(null)
 const remoteStore = useRemoteStore()
 const commonStore = useCommonStore()
@@ -32,6 +43,10 @@ const upIconClick = () => {
 const downIconClick = () => {
   commonStore.changeShowTerminal(!commonStore.showTerminal)
   listRef.value.scrollTop = listRef.value.scrollHeight
+}
+// 清除
+const clearAction = ()=>{
+  remoteStore.clearMessagesArr()
 }
 watch(
   () => messagesArr,
@@ -103,6 +118,21 @@ watch(
     top: -15px;
     cursor: pointer;
     color: #fff;
+  }
+}
+.clear-btn{
+  position: absolute;
+  bottom: 10px;
+  right: 40px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+  padding: 5px 10px;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.3s;
+  &:hover {
+    background: #fff;
+    color: #000;
   }
 }
 </style>

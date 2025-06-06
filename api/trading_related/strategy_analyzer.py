@@ -7,7 +7,7 @@ from .deal import calculate_stock_fee
 class StockPositionCalculator:
     """股票持仓计算器"""
     
-    def __init__(self, trades_data: List[Dict[str, Any]]):
+    def __init__(self, trades_data: List[Dict[str, Any]], service_charge: float = 0.0003, lower_limit_of_fees: float = 5.0  ):
         # 首先检查输入数据
         if not trades_data:
             self.trades_df = pd.DataFrame()
@@ -15,8 +15,12 @@ class StockPositionCalculator:
             self.start_date = None
             self.end_date = None
             self.all_dates = []
-            return
+
             
+        # 保存手续费相关参数
+        self.service_charge = service_charge    
+        self.lower_limit_of_fees = lower_limit_of_fees
+        
         # 转换为DataFrame
         self.trades_df = pd.DataFrame(trades_data)
         
@@ -148,7 +152,9 @@ class StockPositionCalculator:
                     commission = calculate_stock_fee(
                         'buy' if direction == 23 else 'sell',
                         price,
-                        volume
+                        volume,
+                        self.service_charge,
+                        self.lower_limit_of_fees
                     )
                     
                     # 累加当日手续费
@@ -277,161 +283,25 @@ class StockPositionCalculator:
             position_info['status'] = '持仓'
         
 
-class StrategyPerformanceAnalyzer:
-    """策略绩效分析器"""
-    
-    def __init__(self, trades: List[Dict], initial_capital: float = 100000.0):
-        """初始化策略分析器"""
-        self.trades = pd.DataFrame(trades)
-        self.trades['traded_time'] = pd.to_datetime(self.trades['traded_time'], unit='ms')
-        self.trades = self.trades.sort_values('traded_time')
-        self.initial_capital = initial_capital
-        self.daily_equity = []  # 每日权益记录
-    
-    def calculate_performance(self) -> Dict:
-        """计算策略绩效"""
-        # 初始化变量
-        cash = self.initial_capital
-        positions = {}  # 当前持仓: {stock_code: {'volume': float, 'avg_price': float}}
-        current_date = None
-        daily_equity = []
-        
-        # 处理每笔交易
-        for _, trade in self.trades.iterrows():
-            trade_date = trade['traded_time'].date()
-            stock_code = trade['stock_code']
-            volume = trade['traded_volume']
-            price = trade['traded_price']
-            direction = trade['order_type']
-            
-            # 新的一天开始，记录前一天的权益
-            if current_date is not None and trade_date != current_date:
-                portfolio_value = sum(pos['volume'] * pos['avg_price'] for pos in positions.values())
-                daily_equity.append({
-                    'date': current_date,
-                    'cash': cash,
-                    'portfolio_value': portfolio_value,
-                    'total_equity': cash + portfolio_value
-                })
-            
-            current_date = trade_date
-            
-            # 处理买入
-            if direction == 23:
-                # 计算买入手续费
-                commission = calculate_stock_fee('buy', price, volume)
-                total_cost = volume * price + commission
-                
-                if total_cost > cash:
-                    raise ValueError(f"现金不足: {trade}")
-                cash -= total_cost
-                
-                if stock_code not in positions:
-                    positions[stock_code] = {'volume': 0, 'avg_price': 0}
-                
-                # 计算新的平均成本
-                total_volume = positions[stock_code]['volume'] + volume
-                total_cost = positions[stock_code]['volume'] * positions[stock_code]['avg_price'] + volume * price
-                positions[stock_code] = {'volume': total_volume, 'avg_price': total_cost / total_volume}
-            
-            # 处理卖出
-            elif direction == 24:
-                if stock_code not in positions or positions[stock_code]['volume'] < volume:
-                    raise ValueError(f"持仓不足: {trade}")
-                
-                # 计算卖出手续费
-                commission = calculate_stock_fee('sell', price, volume)
-                total_proceed = volume * price - commission
-                cash += total_proceed
-                
-                # 更新持仓
-                positions[stock_code]['volume'] -= volume
-                if positions[stock_code]['volume'] <= 0:
-                    positions[stock_code]['volume'] = 0
-                    positions[stock_code]['avg_price'] = 0
-        
-        # 记录最后一天的权益
-        if positions:
-            portfolio_value = sum(pos['volume'] * pos['avg_price'] for pos in positions.values())
-            daily_equity.append({
-                'date': current_date,
-                'cash': cash,
-                'portfolio_value': portfolio_value,
-                'total_equity': cash + portfolio_value
-            })
-        
-        # 保存每日权益数据
-        self.daily_equity = pd.DataFrame(daily_equity)
-        
-        # 计算绩效指标
-        return self._calculate_performance_metrics()
-    
-    def _calculate_performance_metrics(self) -> Dict:
-        """计算绩效指标"""
-        if not len(self.daily_equity):
-            return {
-                '总收益率(%)': 0.0,
-                '最大回撤(%)': 0.0,
-                '最大回撤区间': '无',
-                '每日平均收益率(%)': 0.0,
-                '夏普比率': 0.0
-            }
-        
-        # 计算每日收益率
-        self.daily_equity['daily_return'] = self.daily_equity['total_equity'].pct_change()
-        
-        # 总收益率
-        total_return = (self.daily_equity['total_equity'].iloc[-1] / self.initial_capital - 1) * 100
-        
-        # 最大回撤
-        self.daily_equity['cumulative_max'] = self.daily_equity['total_equity'].cummax()
-        self.daily_equity['drawdown'] = (self.daily_equity['cumulative_max'] - self.daily_equity['total_equity']) / self.daily_equity['cumulative_max'] * 100
-        
-        # 找到最大回撤的日期
-        max_drawdown_row = self.daily_equity[self.daily_equity['drawdown'] == self.daily_equity['drawdown'].max()].iloc[0]
-        max_drawdown_date = max_drawdown_row['date']
-        max_drawdown = max_drawdown_row['drawdown']
-        
-        # 找到回撤开始的峰值日期
-        peak_df = self.daily_equity[self.daily_equity['date'] <= max_drawdown_date]
-        peak_row = peak_df[peak_df['total_equity'] == peak_df['cumulative_max']].iloc[-1]
-        peak_date = peak_row['date']
-        
-        # 找到回撤结束的谷底日期
-        trough_df = self.daily_equity[self.daily_equity['date'] >= max_drawdown_date]
-        trough_row = trough_df[trough_df['date'] == max_drawdown_date].iloc[0]
-        trough_date = max_drawdown_date
-        
-        max_drawdown_period = f"{peak_date} 至 {trough_date}"
-        
-        # 每日平均收益率
-        avg_daily_return = self.daily_equity['daily_return'].mean() * 100
-        
-        # 夏普比率 (假设无风险收益率为0)
-        risk_free_rate = 0
-        daily_risk_free = (1 + risk_free_rate) ** (1/252) - 1
-        excess_returns = self.daily_equity['daily_return'] - daily_risk_free
-        sharpe_ratio = excess_returns.mean() / excess_returns.std() * (252 ** 0.5) if excess_returns.std() != 0 else 0
-        
-        return {
-            '总收益率(%)': round(total_return, 2),
-            '最大回撤(%)': round(max_drawdown, 2),
-            '最大回撤区间': max_drawdown_period,
-            '每日平均收益率(%)': round(avg_daily_return, 4),
-            '夏普比率': round(sharpe_ratio, 2)
-        }
 
-def analyze_stock_data(trades: List[Dict], initial_capital: float = 100000.0) -> Dict:
+def analyze_stock_data(trades: List[Dict], initial_capital: float = 100000.0,
+                       service_charge: float = 0.0003,
+                       lower_limit_of_fees: float = 5.0) -> Dict:
     """分析股票交易数据并返回综合结果"""
     # 计算每日持仓（含变化量）
-    position_calculator = StockPositionCalculator(trades)
+    position_calculator = StockPositionCalculator(trades, service_charge, lower_limit_of_fees)
     daily_positions = position_calculator.calculate_daily_positions()
     
     # 将daily_positions转换为按日期排序的数组格式
     sorted_daily_positions = []
+    remaining_cash = initial_capital  # 初始化剩余现金
+    
     for date_str in sorted(daily_positions.keys()):
-        # 将持仓转换为数组格式
+        # 计算当日市值
+        market_value = 0.0
         positions_array = []
+        
+        # 计算持仓市值
         for stock, pos in daily_positions[date_str]['positions'].items():
             if pos['volume'] > 0:
                 positions_array.append({
@@ -440,20 +310,29 @@ def analyze_stock_data(trades: List[Dict], initial_capital: float = 100000.0) ->
                     'avg_price': pos['avg_price'],
                     'status': pos['status']
                 })
+                market_value += pos['volume'] * pos['avg_price']
+        
+        # 计算当日剩余现金
+        for trade in daily_positions[date_str]['trades']:
+            if trade['direction'] == '买入':
+                remaining_cash -= trade['total_amount']
+            else:  # 卖出
+                remaining_cash += trade['total_amount']
+        
+        # 计算总收益
+        total_profit = market_value + remaining_cash
         
         sorted_daily_positions.append({
             'date': date_str,
             'positions': positions_array,
             'changes': daily_positions[date_str]['changes'],
             'commission': daily_positions[date_str]['commission'],
-            'trades': daily_positions[date_str]['trades']
+            'trades': daily_positions[date_str]['trades'],
+            'market_value': market_value,
+            'remaining_cash': remaining_cash,
+            'total_profit': total_profit
         })
     
-    # 计算策略绩效
-    # performance_analyzer = StrategyPerformanceAnalyzer(trades, initial_capital)
-    # performance = performance_analyzer.calculate_performance()
     return {
-        "daily_positions": sorted_daily_positions,
-        # "performance": performance,
-        # "daily_equity": json.dumps(performance_analyzer.daily_equity.to_dict('records'), default=lambda x: x.strftime('%Y-%m-%d') if isinstance(x, datetime.date) else x)  # 提供每日权益数据
+        "daily_positions": sorted_daily_positions
     }

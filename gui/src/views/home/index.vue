@@ -4,7 +4,7 @@
       <router-view />
     </div>
     <transition name="terminal-transition">
-      <Terminal :class="showTerminal ? 'p-terminal' : 'p-terminal-hide'"/>
+      <Terminal :showTerminal="showTerminal" :class="showTerminal ? 'p-terminal' : 'p-terminal-hide'"/>
     </transition>
   </div>
 </template>

@@ -119,7 +119,7 @@ class ORM:
         dbSession = DB.session()
         with dbSession.begin():
             if 'id' not in data or data['id'] is None:
-                if 'strategy_code' not in data or not data['strategy_code']:
+                if 'strategy_code' not in data or not data['strategy_code'] and data["task_type"] is 1:
                     data['strategy_code'] = generate_random_letters()
                 task = TaskList(**data)
                 dbSession.add(task)
@@ -248,6 +248,16 @@ class ORM:
                         setattr(order, key, value)
         dbSession.close()
         return True
+    
+    def query_order_by_id(self, order_id):
+        """查询订单信息"""
+        dbSession = DB.session()
+        with dbSession.begin():
+            stmt = select(Orders).where(Orders.id == order_id)
+            order = dbSession.execute(stmt).scalar_one_or_none()
+            return order.toDict() if order else {}
+        dbSession.close()
+        return {}   
 
     def save_entrust(self, data, sub_data=None):
         """保存委托记录"""
@@ -326,17 +336,20 @@ class ORM:
     def query_position_by_task_id(self, task_id, security_code=None):
         """通过任务id查找当前持仓"""
         if not task_id:
-            return None
-        
-        dbSession = DB.session()
-        with dbSession.begin():
-            stmt = select(Positions).where(Positions.task_id == task_id).where(Positions.is_mock == 0)
-            if security_code:
-                stmt = stmt.where(Positions.security_code == security_code).where(Positions.is_mock == 0)
-            stmt = stmt.where(Positions.delete_time.is_(None))
-            result = dbSession.execute(stmt).all()
-        dbSession.close()
-        return result
+            return []
+            
+        try:
+            with DB.session() as session:
+                stmt = select(Positions).where(Positions.task_id == task_id).where(Positions.is_mock == 0)
+                if security_code:
+                    stmt = stmt.where(Positions.security_code == security_code).where(Positions.is_mock == 0)
+                
+                # 获取结果并转换为字典
+                positions = session.execute(stmt).scalars().all()
+                return [pos.toDict() for pos in positions]
+        except Exception as e:
+            print(f"查询持仓出错: {str(e)}")
+            return []
     
     def create_backtest(self, data):
         """创建回测"""
@@ -426,13 +439,6 @@ class ORM:
       dbSession.close()
       return last_id
   
-    def update_position(self, id, **kwargs):
-        """更新持仓信息"""
-        dbSession = DB.session()
-        with dbSession.begin():
-            stmt = update(Positions).where(Positions.id == id).values(**kwargs)
-            dbSession.execute(stmt)
-        return True
 
     def update_backtest_accruing_amounts(self, backtest_id, profit_loss):
         """更新回测账户的累计金额"""
@@ -448,21 +454,7 @@ class ORM:
             dbSession.execute(stmt)
         dbSession.close()
         return True
-    
-    def update_task_accruing_amounts(self, task_id, profit_loss):
-        """更新任务账户的累计金额"""
-        dbSession = DB.session()
-        with dbSession.begin():
-            # 获取当前累计金额
-            stmt = select(TaskList.accruing_amounts).where(TaskList.id == task_id)
-            result = dbSession.execute(stmt).scalar()
-            
-            # 更新累计金额
-            new_accruing_amounts = result + profit_loss if result else profit_loss
-            stmt = update(TaskList).where(TaskList.id == task_id).values(accruing_amounts=new_accruing_amounts)
-            dbSession.execute(stmt)
-        dbSession.close()
-        return True
+
   
     def query_backtest_by_task_id(self, task_id):
         """通过taskid获取回测列表"""
@@ -506,4 +498,87 @@ class ORM:
             return trades
         dbSession.close()
         return []
-            
+    
+    def update_task_can_use_amount(self,backtest_id = None,task_id = None, profit_loss = 0):
+        """更新任务账户的可用金额"""
+        dbSession = DB.session()
+        with dbSession.begin():
+            if backtest_id:
+                stmt = update(Backtest).where(Backtest.id == backtest_id).values(can_use_amount=Backtest.can_use_amount + profit_loss)
+            else:
+                stmt = update(TaskList).where(TaskList.id == task_id).values(can_use_amount=TaskList.can_use_amount + profit_loss)
+            dbSession.execute(stmt)
+        dbSession.close()
+        return True
+    
+    
+    def query_task_or_backtest(self, task_id, backtest_id):
+        dbSession = DB.session()
+        try:
+            with dbSession.begin():
+                if backtest_id:
+                    stmt = select(Backtest).where(Backtest.id == backtest_id)
+                    result = dbSession.execute(stmt).scalar_one_or_none()
+                    if result:
+                        return {c.name: getattr(result, c.name) for c in result.__table__.columns}
+                else:
+                    stmt = select(TaskList).where(TaskList.id == task_id)
+                    result = dbSession.execute(stmt).scalar_one_or_none()
+                    if result:
+                        return {c.name: getattr(result, c.name) for c in result.__table__.columns}
+            return None
+        finally:
+            dbSession.close()
+    
+
+        
+    def update_position(self, id, data):
+        """更新持仓信息"""
+        dbSession = DB.session()
+        with dbSession.begin():
+            stmt = update(Positions).where(Positions.id == id)
+            for key, value in data.items():
+                stmt = stmt.values(**{key: value})
+            dbSession.execute(stmt)
+        dbSession.close()
+        return True
+    
+    def delete_position_by_id(self, id):
+        """删除任务的持仓信息"""
+        dbSession = DB.session()
+        with dbSession.begin():
+            stmt = Positions.__table__.delete().where(Positions.id == id)
+            dbSession.execute(stmt)
+        dbSession.close()
+        return True
+    
+    def add_position(self, data):
+        """添加持仓信息"""
+        dbSession = DB.session()
+        with dbSession.begin():
+            position = Positions()
+            for key, value in data.items():
+                if hasattr(position, key):
+                    setattr(position, key, value)
+            dbSession.add(position)
+        dbSession.close()
+        return True
+    
+    # 检测持仓是否已存在
+    def check_position_exists(self, security_code, task_id):
+        dbSession = DB.session()
+        with dbSession.begin():
+            stmt = select(Positions).where(Positions.is_mock == 0).where(Positions.security_code == security_code).where(Positions.task_id == task_id)
+            result = dbSession.execute(stmt).scalar_one_or_none()
+            return result is not None
+    
+    # 获取今日成交记录
+    def query_trade_today(self, task_id):
+        dbSession = DB.session()
+        with dbSession.begin():
+            stmt = select(Trades).where(Trades.task_id == task_id).where(Trades.is_mock == 0).where(Trades.created_at >= datetime.now().date())
+            result = dbSession.execute(stmt).scalars().all()
+            return [trade.toDict() for trade in result]
+        dbSession.close()
+        
+    

@@ -84,6 +84,7 @@ npm run build
 - 接入更多平台如掘金量化，SuperMind
 - 接入easytrader
 - 按金额比例数量下单
+- 添加分红计算拆股功能
 
 ## 感谢
 

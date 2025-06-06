@@ -7,7 +7,7 @@ from pyapp.pkg.xtquant.xttrader import XtQuantTrader, XtQuantTraderCallback
 import sys
 import platform
 from api.system import System
-from .trading_related.deal import convert_stock_suffix
+from .trading_related.deal import convert_stock_suffix,calculate_stock_fee
 from datetime import datetime
 from .trading_related.additional_data import stock_xgsglb_em_on_today,bond_zh_cov
 from .trading_related.qmt_trading_simulator import QmtTradingSimulator,OrderType,PriceType
@@ -57,32 +57,42 @@ class MyXtQuantTraderCallback(XtQuantTraderCallback):
     :param asset: XtAsset对象
     :return:
     """
-    print("on asset callback")
-    print(asset.account_id, asset.cash, asset.total_asset)
+    pass
   def on_stock_trade(self, trade):
     """
     成交变动推送
     :param trade: XtTrade对象
     :return:
     """
-    print("on trade callback")
     try:
       if trade.order_remark and trade.strategy_name:
         taskId = trade.strategy_name
         orderId = trade.order_remark
+        task_or_backtest = self.orm.query_task_or_backtest(task_id=taskId, backtest_id=self.backtest_id)
+        order_count_type = task_or_backtest['order_count_type']
+        # 保存订单信息
         self.orm.save_trade(trade,{
           "orders_id": orderId,
           "backtest_id": self.backtest_id,
-          "is_mock": self.is_mock
+          "is_mock": self.is_mock,
+          "task_id": taskId
         })
+        if order_count_type == 1:
+          pass
+        else:
+          pass
+
         positions = self.orm.query_position_by_task_or_backtest_id(backtest_id=self.backtest_id,task_id=taskId)
         
         positions_dict = {position['security_code']: position for position in positions}
+        
+        # 交易金额
+        traded_amount = Decimal(trade.traded_amount)
         if trade.stock_code not in positions_dict:
           self.orm.save_position({
               "security_code": trade.stock_code,
               "volume": trade.traded_volume,
-              "amount": trade.traded_amount,
+              "amount": traded_amount,
               "backtest_id": self.backtest_id,
               "is_mock": self.is_mock,
               "task_id": taskId,
@@ -94,32 +104,36 @@ class MyXtQuantTraderCallback(XtQuantTraderCallback):
             position['volume'] += trade.traded_volume
           elif trade.order_type == OrderType.STOCK_SELL:
             position['volume'] -= trade.traded_volume
-                        
-          # 确保所有数值都使用Decimal类型
-          trade_amount = Decimal(trade.traded_amount)
-          
-          # 根据交易类型更新持仓金额
-          if trade.order_type == OrderType.STOCK_BUY:
-              position['amount'] = Decimal(position.get('amount', 0)) + trade_amount
-          elif trade.order_type == OrderType.STOCK_SELL:
-              position['amount'] = Decimal(position.get('amount', 0)) - trade_amount
           
           # 计算新的平均价格（在所有交易发生时更新）
           position['average_price'] = Decimal(position['amount']) / Decimal(position['volume']) if position['volume'] > 0 else Decimal('0')
-          
-          self.orm.update_position(position['id'],
-            volume=position['volume'],
-            backtest_id=self.backtest_id,
-            task_id=taskId,
-            average_price=position['average_price'],
-            amount=position['amount']
-          )
-          
-          # # 更新回测账户的累计金额
-          # if self.is_mock:  
-          #     self.orm.update_backtest_accruing_amounts(self.backtest_id, trade_amount if trade.order_type == OrderType.STOCK_BUY else -trade_amount)
-          # else:
-          #     self.orm.update_task_accruing_amounts(taskId, trade_amount if trade.order_type == OrderType.STOCK_BUY else -trade_amount)
+          self.orm.update_position(position['id'], {
+            'volume': position['volume'],
+            'backtest_id': self.backtest_id,
+            'task_id': taskId,
+            'average_price': position['average_price'],
+            'amount': position['amount']
+          })
+        if task_or_backtest:
+            if self.is_mock:
+              mock_service_charge = task_or_backtest['service_charge']
+              mock_lower_limit_of_fees = task_or_backtest['lower_limit_of_fees']
+            else:
+              mock_service_charge = task_or_backtest['mock_service_charge']
+              mock_lower_limit_of_fees = task_or_backtest['mock_lower_limit_of_fees']
+        # 计算手续费
+        commission = Decimal(calculate_stock_fee("buy" if trade.order_type == OrderType.STOCK_BUY else "sell",
+                                         float(trade.traded_price),
+                                         int(trade.traded_volume),
+                                         float(mock_service_charge),
+                                         float(mock_lower_limit_of_fees)))
+        # 更新任务账户的可用金额
+        if trade.order_type == OrderType.STOCK_BUY:
+          self.orm.update_task_can_use_amount(self.backtest_id,taskId, round(-(traded_amount + commission),2))
+        elif trade.order_type == OrderType.STOCK_SELL:
+          self.orm.update_task_can_use_amount(self.backtest_id,taskId, round(traded_amount - commission,2))
+        
+                
     except Exception as e:
       print("on_stock_trade error")
       print(e)
@@ -130,8 +144,7 @@ class MyXtQuantTraderCallback(XtQuantTraderCallback):
     :param position: XtPosition对象
     :return:
     """
-    print("on position callback")
-    print(position.stock_code, position.volume)
+    pass
   def on_order_error(self, order_error):
     """
     委托失败推送
@@ -154,15 +167,7 @@ class MyXtQuantTraderCallback(XtQuantTraderCallback):
     :param response: XtOrderResponse 对象
     :return:
     """
-    print("on_order_stock_async_response")
-    # 系统下的单
-    # if response.order_remark and response.strategy_name:
-    #   orderId = response.order_remark
-    #   self.orm.save_trade(response,{
-    #     "orders_id": orderId,
-    #     "backtest_id": self.backtest_id
-    #   })
-    # self.orm.update_order(orderId,status = 1,fix_result_order_id = response.order_id)
+    pass
    
 
 
@@ -226,7 +231,7 @@ class QMT:
     return self.is_connect
   
   # 购买国债逆回购
-  def buyReverseRepo(self):
+  def buy_reverse_repo(self):
     System.system_py2js(self,'remoteCallBack',  {
         "message": "正在执行自动购入国债逆回购",
     })
@@ -235,7 +240,7 @@ class QMT:
         "message": "" + text,
     })
     
-  def autoBuyNewStock(self):
+  def auto_buy_new_stock(self):
     System.system_py2js(self,'remoteCallBack',  {
         "message": "正在执行自动打新",
     })
@@ -251,7 +256,7 @@ class QMT:
       codeSt = convert_stock_suffix(code)
       self.qmt_trader.buy(codeSt,limit,price,order_remark='打新')
 
-  def autoBuyconvertibleBond(self):
+  def auto_buy_convertible_bond(self):
     System.system_py2js(self,'remoteCallBack',  {
         "message": "正在执行自动打债",
     })
@@ -267,45 +272,86 @@ class QMT:
       codeSt = convert_stock_suffix(code)
       self.qmt_trader.buy(codeSt,limit,price,order_remark='打债')
    
+  
+  def calculate_stock_returns(self,saveData,order_count_type):
+
+      if order_count_type == 1:
+        pass
+      else:
+        positions_arr = self.orm.query_position_by_task_or_backtest_id(backtest_id=saveData['backtest_id'])
+        position_total_value = 0
+        positions = json.loads(saveData['positions'])
+
+        for position in positions_arr:
+          for order_position in positions:
+            if position['security_code'] == convert_stock_suffix(order_position['security']):
+              position_total_value += position['volume'] * order_position['price']
+              continue
+        
+        backtest = self.orm.query_backtest_by_id(saveData['backtest_id'])
+        self.orm.update_backtest(saveData['backtest_id'], final_amount=position_total_value + backtest['can_use_amount']  )   
+  
+   
   #  计算配置仓位
-  def orderOnProRataBasis(self,orderDic:dict,task:dict,backtest_id:int = None)->int:
+  def order_on_pro_rata_basis(self,orderDic:dict,task:dict,backtest_id:int = None)->int:
     if task['order_count_type'] == 1:
       return orderDic['amount']
     else:
-      return orderDic['amount']
-        # # 获取当前持仓
-        # total_value = orderDic['total_value']
-        # total_amount = orderDic['total_amount']
-        # is_buy = orderDic['is_buy']
-        
-        # accruing_amounts = 0
-        # if backtest_id:
-        #   accruing_amounts = self.orm.query_backtest_by_id(backtest_id)['accruing_amounts']
-        # else:
-        #   accruing_amounts = task['accruing_amounts']
-        
-        # # 计算配置仓位
-        # allocation_amount = total_amount * accruing_amounts / total_value
-        # final_amount = 0
-        # allocation_amount = (allocation_amount // 100) * 100
-        # allocation_amount = int(allocation_amount)
-        
-        # positions = self.orm.query_position_by_task_or_backtest_id(backtest_id=backtest_id,task_id=task['id'])
-        # position = next((item for item in positions if item.get('security_code') == orderDic['security_code']), None)
-
-        # if position:
-        #   final_amount = abs(allocation_amount - position['volume'])
-        # else:
-        #   if is_buy == 1:
-        #     final_amount = allocation_amount
-        
-        
-        # print(final_amount,orderDic['amount'],accruing_amounts,total_value,orderDic['is_buy'])
-        # print("final_amount,total_amount")
-        # return final_amount
+      # 获取当前持仓
+      total_value = round(orderDic['total_value'],2)
+      is_buy = orderDic['is_buy']
+      
+      # 实际持仓
+      actual_position_volume = 0
+      positions = json.loads(orderDic['positions'])
+      actual_position_volume = next((p['total_amount'] for p in positions if convert_stock_suffix(p['security']) == orderDic['security_code']), 0)
+      if is_buy == 1:
+        actual_position_volume += orderDic['amount']
+      else:
+        actual_position_volume -= orderDic['amount']
+      
+      dynamic_calculation_type = task['dynamic_calculation_type']
+      accruing_amounts = 0
+      
+      
+      positions_arr = self.orm.query_position_by_task_or_backtest_id(backtest_id=backtest_id,task_id=task['id'])
+      position_total_value = 0
+      for position in positions_arr:
+        for order_position in positions:
+          if position['security_code'] == convert_stock_suffix(order_position['security']):
+            position_total_value += position['volume'] * order_position['price']
+            continue
+      
+      # 固定仓位模式
+      if dynamic_calculation_type == 1:
+        if backtest_id:
+          accruing_amounts = self.orm.query_backtest_by_id(backtest_id)['initial_capital']
+        else:
+          accruing_amounts = task['allocation_amount']
+      # 根据盈亏分配
+      elif dynamic_calculation_type == 2:
+        can_use_amount = 0
+        if backtest_id:
+          can_use_amount = self.orm.query_backtest_by_id(backtest_id)['can_use_amount']
+        else:
+          can_use_amount = task['can_use_amount']
+        accruing_amounts = round(can_use_amount + position_total_value,2)
+      
+      # 计算配置仓位
+      allocation_amount = round(actual_position_volume * accruing_amounts / total_value,2)
+      final_amount = 0
+      allocation_amount = (allocation_amount // 100) * 100
+      allocation_amount = int(allocation_amount)
+      
+      position = next((item for item in positions_arr if item.get('security_code') == orderDic['security_code']), None)
+      if position:
+        final_amount = abs(allocation_amount - position['volume'])
+      else:
+        if is_buy == 1:
+          final_amount = allocation_amount
+      
+      return final_amount
     
-
-
     
   # 下单协议{code:code,price:price,amount:amount,type:type}
   def manage_qmt_trader(self,data):    
@@ -370,22 +416,19 @@ class QMT:
             'final_amount':0,
             'task_id':task['id'],
             'state':state,
+            'order_count_type':order_count_type,
             'accruing_amounts':task['mock_allocation_amount'],
+            'can_use_amount':task['mock_allocation_amount']
           })
           self.orm.update_task(task['id'], backtest_id=backtest_id) 
           # 设置回测id
           self.mockCallback = MyXtQuantTraderCallback(self.orm,True,backtest_id)
           self.simulator = QmtTradingSimulator(
               self.mockCallback, # 回测环境
-              commission_rate=task['mock_service_charge'],  # 佣金率万2.5
-              initial_cash=task['mock_allocation_amount'],   # 初始资金200万
-              min_commission=task['mock_lower_limit_of_fees'],       # 最低佣金5元
-              stamp_duty_rate=0.001,    # 印花税率0.1%
-              transfer_fee_rate=0.00001, # 过户费率0.001%
-              calculate_commission=True,  # 是否计算手续费
-              is_following_mode=order_count_type == 1    # 是否跟随模式
           )
         if state == 'end':
+          saveData["backtest_id"] = task['backtest_id']
+          self.calculate_stock_returns(saveData,order_count_type)
           self.orm.update_backtest(task['backtest_id'], state=state)   
         if state == 'run':
           # 创建空订单
@@ -398,7 +441,7 @@ class QMT:
 
           # 将 datetime 对象转换为毫秒级时间戳
           timestamp_ms = int(dt.timestamp() * 1000)
-          real_amount = self.orderOnProRataBasis(saveData,task,saveData["backtest_id"])
+          real_amount = self.order_on_pro_rata_basis(saveData,task,saveData["backtest_id"])
           if real_amount == 0:
             print(f"委托数量{real_amount}小于0有问题")
             return
@@ -409,7 +452,7 @@ class QMT:
             order_type=OrderType.STOCK_BUY if is_buy == 1 else OrderType.STOCK_SELL,
             order_time=timestamp_ms,
             price_type=PriceType.LIMIT_PRICE,
-            strategy_name=task['id'],
+            strategy_name=str(task['id']),
             order_remark=orderId
           )
         
@@ -435,7 +478,7 @@ class QMT:
         
         if task['is_open'] == 1:
             order_count_type = task['order_count_type']          
-            real_amount = self.orderOnProRataBasis(saveData,task)
+            real_amount = self.order_on_pro_rata_basis(saveData,task)
             if real_amount == 0:
               print(f"委托数量{real_amount}小于0有问题")
               return
@@ -443,7 +486,7 @@ class QMT:
                                     amount=real_amount,
                                     price=price,
                                     order_type=OrderType.STOCK_BUY if is_buy == 1 else OrderType.STOCK_SELL,
-                                    strategy_name=task['id'],
+                                    strategy_name=str(task['id']),
                                     order_remark=orderId) 
         else:
           print(f"任务未开启: {strategy_code}")

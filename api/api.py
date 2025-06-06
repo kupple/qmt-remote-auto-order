@@ -21,6 +21,7 @@ import os
 import datetime
 import logging
 import sys
+from api.trading_related.deal import convert_stock_suffix
 
 
 
@@ -86,13 +87,13 @@ class API(System):
     def getSettingConfig(self):
         return self.orm.get_setting_config()
 
-    def saveConfig(self, data):
+    def save_config(self, data):
         self.orm.save_config(data)
     
-    def isProcessExist(self):
+    def is_process_exist(self):
         return self.common.is_process_exist()
     
-    def connectWs(self,server_url,ways = 2):
+    def connect_ws(self,server_url,ways = 2):
         self.orm.save_config({"server_url":server_url})
         self.thread1 = threading.Thread(target=self.remote.connect, args=(server_url,ways,))
         self.thread1.start()
@@ -102,54 +103,46 @@ class API(System):
         if self.thread1 and self.thread1.is_alive():
             self.thread1.join(timeout=1)  # Wait up to 1 second for thread to finish
         
-    def connectQMT(self,params):
+    def connect_qmt(self,params):
         result = self.qmt.connectQMT(params)
         return result
 
         
         
-    def testConnect(self,server_url):
+    def test_connect(self,server_url):
         self.remote.testConnect(server_url)
         
-    def getTaskList(self):
+    def get_task_list(self):
         return self.orm.get_task_list()
     
-    def createTask(self,data):
+    def create_task(self,data):
         return self.orm.create_task(data)
     
-    def runTask(self,data):
+    def run_task(self,data):
         return self.orm.run_task(data)
     
-    def deleteTask(self,data):
+    def delete_task(self,data):
         return self.orm.delete_task(data)
     
-    def getRemoteState(self):
+    def get_remote_state(self):
         return {"state":self.remote.is_connected,
                 "unique_id":self.remote.unique_id,
                 }
-    def getTaskDetail(self,data):
+    def get_task_detail(self,data):
         return self.orm.get_task_detail(data)
     
-    def getWsConfig(self):
-        config = self.orm.get_setting_config()
-        return {
-            "server_url":config['server_url'],
-            "unique_id":self.remote.unique_id,
-            "is_connected":self.remote.is_connected,
-        }
     
-    
-    def transitionCode(self,data,taskDic):
+    def transition_code(self,data,taskDic):
         return self.common.transition_code(data,taskDic)
     
-    def revertTransitionCode(self,data):
+    def revert_transition_code(self,data):
         return self.common.revert_transition_code(data)
     
     
-    def getOrderList(self,data):
+    def get_order_list(self,data):
         return self.orm.get_order_list(data)
     
-    def testQMTConnect(self,path):
+    def test_qmt_connect(self,path):
         return self.qmt.test_connect(path)
 
     def cancel_daily_task(self):
@@ -201,5 +194,29 @@ class API(System):
         backtest = self.orm.query_backtest_by_id(backtest_id)
         
         # 假设 trades 是你的交易数据列表
-        result = analyze_stock_data(sample_trades, initial_capital=backtest['initial_capital'])
+        result = analyze_stock_data(sample_trades, initial_capital=backtest['initial_capital'],
+                                    service_charge=backtest['service_charge'],
+                                    lower_limit_of_fees=backtest['lower_limit_of_fees'])
         return result
+
+    def get_position_by_task_id(self, task_id):
+        return self.orm.query_position_by_task_id(task_id)
+    
+    def delete_position_by_id(self, id):
+        return self.orm.delete_position_by_id(id)
+    
+    def update_position(self, id, params):
+        return self.orm.update_position(id, params)
+    
+    def add_position(self, params):
+        params['security_code'] = convert_stock_suffix(params['security_code'])
+        return self.orm.add_position(params)
+    
+    def check_position_exists(self, security_code, task_id):
+        return self.orm.check_position_exists(convert_stock_suffix(security_code), task_id)    
+    
+    def update_task(self,task_id, can_use_amount):
+        return self.orm.update_task(task_id,can_use_amount=can_use_amount)
+    
+    def query_trade_today(self, task_id):
+        return self.orm.query_trade_today(task_id)

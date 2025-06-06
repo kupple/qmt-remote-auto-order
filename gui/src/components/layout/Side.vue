@@ -1,6 +1,6 @@
 <template>
   <el-aside width="200px" class="side-container">
-    <img src="@/assets/images/logo.png" :class="['logo', { 'rotating-logo': isWSConnectedState && isQMTProcessExit }]" style="width:80px;height:80px">
+    <img src="@/assets/images/logo.png" :class="['logo']" style="width:80px;height:80px">
     <el-menu
       active-text-color="#ffd04b"
       background-color="#545c64"

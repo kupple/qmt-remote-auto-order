@@ -93,6 +93,7 @@ def qmt_auto_orders(method_name, *args, **kwargs):
             'amount':orderInfo.amount,
             'avg_cost':orderInfo.avg_cost,
             'is_buy':orderInfo.is_buy,
+            'state':'run',
             'add_time':orderInfo.add_time.strftime("%Y-%m-%d %H:%M:%S")
         }}
     }})
@@ -260,9 +261,21 @@ def qmt_auto_orders(method_name, *args, **kwargs):
         # 在代码末尾添加on_strategy_end函数
         data = data + F"""
 def on_strategy_end(context):
+    positions = [
+        {{
+            'security': v.security,
+            'price': v.price,
+            'total_amount': v.total_amount,
+            'avg_cost': v.avg_cost,
+            'positions':positions,
+
+        }}
+        for v in g.context.portfolio.positions.values()
+    ]
     jsonDic = json.dumps({{
         'run_params': g.run_params,
         'strategy_code':'{strategy_code}',
+        'positions':positions,
         'state':'end'
     }})
     url = "{server_url}/send_message"

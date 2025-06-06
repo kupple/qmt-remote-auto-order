@@ -126,7 +126,7 @@ class TaskScheduler:
             "national_debt",
             hour,
             minute,
-            self.qmt.buyReverseRepo
+            self.qmt.buy_reverse_repo
         )
     
     def schedule_new_stock(self, hour: int = 10, minute: int = 10) -> bool:
@@ -144,7 +144,7 @@ class TaskScheduler:
             "new_stock",
             hour,
             minute,
-            self.qmt.autoBuyNewStock
+            self.qmt.auto_buy_new_stock
         )
     
     def schedule_new_bond(self, hour: int = 10, minute: int = 10) -> bool:
@@ -162,7 +162,7 @@ class TaskScheduler:
             "new_bond",
             hour,
             minute,
-            self.qmt.autoBuyconvertibleBond
+            self.qmt.auto_buy_convertible_bond
         )
     
     def cancel_task(self, task_type: str) -> bool:

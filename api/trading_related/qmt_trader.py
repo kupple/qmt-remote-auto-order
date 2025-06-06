@@ -101,6 +101,7 @@ class qmt_trader:
                 order_volume=order_volume, price_type=price_type,
                 price=price, strategy_name=strategy_name, order_remark=order_remark)
    print('交易类型{} 代码{} 价格{} 数量{} 订单编号{}'.format(order_type,stock_code,price,order_volume,fix_result_order_id))
+  #  fix_result_order_id - 1有问题
    return fix_result_order_id
   else:
    print('卖出 标的{} 价格{} 委托数量{}小于0有问题'.format(stock_code,price,order_volume))   

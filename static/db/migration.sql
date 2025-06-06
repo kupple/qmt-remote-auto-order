@@ -385,3 +385,53 @@ ALTER TABLE orders ADD COLUMN positions VARCHAR;
 
 UPDATE alembic_version SET version_num='61f020288394' WHERE alembic_version.version_num = '895b0cf90a97';
 
+-- Running upgrade 61f020288394 -> e4f130d89eb8
+
+ALTER TABLE backtest ADD COLUMN can_use_amount NUMERIC;
+
+ALTER TABLE tasklist ADD COLUMN can_use_amount NUMERIC;
+
+UPDATE alembic_version SET version_num='e4f130d89eb8' WHERE alembic_version.version_num = '61f020288394';
+
+-- Running upgrade e4f130d89eb8 -> d358634f863f
+
+UPDATE alembic_version SET version_num='d358634f863f' WHERE alembic_version.version_num = 'e4f130d89eb8';
+
+-- Running upgrade d358634f863f -> 0cd5bf054f8d
+
+UPDATE alembic_version SET version_num='0cd5bf054f8d' WHERE alembic_version.version_num = 'd358634f863f';
+
+-- Running upgrade 0cd5bf054f8d -> 549dea92950f
+
+ALTER TABLE backtest ADD COLUMN order_count_type INTEGER;
+
+UPDATE alembic_version SET version_num='549dea92950f' WHERE alembic_version.version_num = '0cd5bf054f8d';
+
+-- Running upgrade 549dea92950f -> c973f5f9682c
+
+UPDATE alembic_version SET version_num='c973f5f9682c' WHERE alembic_version.version_num = '549dea92950f';
+
+-- Running upgrade c973f5f9682c -> 09f54fab8f5b
+
+ALTER TABLE trades ADD COLUMN task_id INTEGER;
+
+UPDATE alembic_version SET version_num='09f54fab8f5b' WHERE alembic_version.version_num = 'c973f5f9682c';
+
+-- Running upgrade 09f54fab8f5b -> bd9f4edc43f0
+
+ALTER TABLE tasklist ADD COLUMN task_type INTEGER DEFAULT '1';
+
+UPDATE alembic_version SET version_num='bd9f4edc43f0' WHERE alembic_version.version_num = '09f54fab8f5b';
+
+-- Running upgrade bd9f4edc43f0 -> a5f04056d6dd
+
+ALTER TABLE tasklist ADD COLUMN share_secret VARCHAR;
+
+UPDATE alembic_version SET version_num='a5f04056d6dd' WHERE alembic_version.version_num = 'bd9f4edc43f0';
+
+-- Running upgrade a5f04056d6dd -> 250b87dde449
+
+ALTER TABLE tasklist ADD COLUMN come_form_str VARCHAR;
+
+UPDATE alembic_version SET version_num='250b87dde449' WHERE alembic_version.version_num = 'a5f04056d6dd';
+

@@ -3,33 +3,71 @@
     <div class="detail-container-content">
       <div class="bottom-container-left">
         <div class="cur-position">
-          <span class="section-title">当前持仓</span>
+          <div style="display: flex; flex-direction: row; align-items: center; justify-content: space-between">
+            <span class="section-title">当前持仓</span>
+            <el-button v-if="taskDic.order_count_type == 2" size="small" type="primary" @click="addPositionAction">手动添加</el-button>
+          </div>
           <el-table :data="currentPositionList" stripe style="width: 100%; margin-top: 10px" size="small" height="100%">
-            <el-table-column prop="date" label="股票代码" width="180" />
-            <el-table-column prop="name" label="数量" width="180" />
-            <el-table-column prop="address" label="现价" />
+            <el-table-column align="center" prop="security_code" label="股票代码" />
+            <el-table-column align="center" label="数量" width="150">
+              <template #default="{ row }">
+                <span v-if="!row.is_edit">{{ row.volume }}</span>
+                <el-input-number size="small" v-else v-model="row.volume" :min="0" @change="handleChange" />
+              </template>
+            </el-table-column>
+            <el-table-column align="center" label="股价(仅参考)" width="150">
+              <template #default="{ row }">
+                {{ row.average_price.toFixed(2) }}
+              </template>
+            </el-table-column>
+            <el-table-column align="center" label="市值">
+              <template #default="{ row }">
+                {{ (row.average_price * row.volume).toFixed(2) }}
+              </template>
+            </el-table-column>
+            <el-table-column fixed="right" label="操作" align="center" width="200" v-if="taskDic.order_count_type == 2">
+              <template #default="{ row }">
+                <el-button v-if="!row.is_edit" @click="editPosition(row)" type="primary" size="small">编辑</el-button>
+                <div v-else style="display: flex; align-items: center">
+                  <el-button @click="savePosition(row)" type="success" size="small">保存</el-button>
+                  <el-button @click="editPosition(row)" type="info" size="small">取消</el-button>
+                  <el-button @click="deletePosition(row)" type="danger" size="small">删除</el-button>
+                </div>
+              </template>
+            </el-table-column>
           </el-table>
+          <div class="task-detail" v-if="taskDic.order_count_type == 2">
+            <span>估算总收益: {{ total_amount }}</span>
+            <div style="display: flex; align-items: center">
+              <span>可用资金: {{ taskDic.can_use_amount }}</span>
+              <el-button @click="openAdjustmentModal()" style="margin-left: 10px" size="small" type="primary">编辑</el-button>
+            </div>
+          </div>
         </div>
         <div class="place-orders">
           <div style="display: flex; flex-direction: row; align-items: center">
             <span class="section-title">今日委托</span>
-            <el-radio-group v-model="run_params" size="small" @change="switchEntrustedTodayList">
-              <el-radio-button label="模拟盘/实盘下单" value="sim_trade" />
-              <el-radio-button label="回测" value="simple_backtest" />
-            </el-radio-group>
           </div>
-          <el-table stripe :data="entrustedTodayList" size="small" height="100%">
-            <el-table-column prop="created_at" label="委托时间" />
-            <el-table-column prop="security_code" label="股票代码" />
-            <el-table-column prop="price" label="价格" />
-            <el-table-column prop="volume" label="数量" />
-            <el-table-column prop="is_buy" label="方向" width="60">
+          <el-table stripe :data="todayTradeList" size="small" height="100%">
+            <el-table-column prop="created_at" label="时间" />
+            <el-table-column prop="stock_code" label="股票代码" />
+            <el-table-column label="价格">
               <template #default="{ row }">
-                <el-tag :type="row.is_buy === 1 ? 'success' : 'danger'" size="small">{{ row.is_buy === 1 ? '买入' : '卖出' }}</el-tag>
+                {{ row.traded_price.toFixed(2) }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="traded_volume" label="数量" />
+            <el-table-column label="金额">
+              <template #default="{ row }">
+                {{ row.traded_amount.toFixed(2) }}
+              </template>
+            </el-table-column>
+            <el-table-column label="方向">
+              <template #default="{ row }">
+                <el-tag :type="row.order_type === 23 ? 'success' : 'danger'" size="small">{{ row.order_type === 23 ? '买入' : '卖出' }}</el-tag>
               </template>
             </el-table-column>
           </el-table>
-          <el-pagination size="small" v-model="entrustedTodayPageInfo.page" :page-sizes="[100, 200, 300, 400]" style="margin-top: 10px" :page-size="entrustedTodayPageInfo.pageSize" :pager-count="11" layout="total, prev, pager, next" :total="entrustedTodayPageInfo.total" @current-change="changeEntrustedTodayPage" />
         </div>
       </div>
       <div class="bottom-container-right">
@@ -47,78 +85,85 @@
         </div>
       </div>
     </div>
-    <ListModal ref="listModalRef" />
+    <ListModal ref="listModalRef" @callBack="getTaskDetailAction" />
+    <AddPosition ref="addPositionRef" @callBack="getCurrentPositionList" />
+    <AdjustmentModal ref="adjustmentModalRef" @callBack="getTaskDetailAction" />
   </div>
 </template>
 
 <script setup>
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { useRouter, useRoute } from 'vue-router'
+import AdjustmentModal from './adjustmentModal.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import ListModal from './listModal.vue'
-import { getOrderList, deleteTask, getTaskDetail, copyRequestCode } from '@/api/comm_tube'
-
-import { ref, onMounted, reactive } from 'vue'
+import { getOrderList, deleteTask, getTaskDetail, getPositionByTaskId, deletePositionById, updatePosition, queryTradeToday } from '@/api/comm_tube'
+import AddPosition from './addPosition.vue'
+import { ref, onMounted, reactive, computed } from 'vue'
 const router = useRouter()
 const route = useRoute()
 const listModalRef = ref(null)
 const run_params = ref('sim_trade')
 // 今日委托
-const entrustedTodayList = ref([])
+const todayTradeList = ref([])
 // 当前持仓
 const currentPositionList = ref([])
+const addPositionRef = ref(null)
+const adjustmentModalRef = ref(null)
 
-const entrustedTodayPageInfo = reactive({
-  page: 1,
-  pageSize: 100,
-  total: 0
-})
-const currentPositionPageInfo = reactive({
-  page: 1,
-  pageSize: 100,
-  total: 0
-})
-onMounted(async () => {
-  const taskId = route.query.id
-  const res = await getTaskDetail({ id: taskId })
-  taskDic.value = res
-  await getEntrustedTodayList()
-  // await getCurrentPositionList()
+const total_amount = computed(() => {
+  let total = 0
+  for (const item of currentPositionList.value) {
+    total += item.volume * item.average_price
+  }
+  return (taskDic.value.can_use_amount + total).toFixed(2)
 })
 
-const changeEntrustedTodayPage = (page) => {
-  entrustedTodayPageInfo.page = page
-  getEntrustedTodayList()
-}
-
-const switchEntrustedTodayList = () => {
-  entrustedTodayPageInfo.page = 1
-  getEntrustedTodayList()
-}
-
-const getEntrustedTodayList = async () => {
-  const orderDic = await getOrderList({
-    strategy_code: taskDic.value.strategy_code,
-    run_params: run_params.value,
-    page: entrustedTodayPageInfo.page,
-    pageSize: entrustedTodayPageInfo.pageSize
+const openAdjustmentModal = () => {
+  adjustmentModalRef.value.showModal({
+    ...taskDic.value
   })
-  entrustedTodayList.value = orderDic.data
-  entrustedTodayPageInfo.total = orderDic.total
+}
+
+const getTaskDetailAction = async () => {
+  const taskId = route.query.id
+  const res = await getTaskDetail({ id: route.query.id })
+  taskDic.value = res
+}
+onMounted(async () => {
+  await getTaskDetailAction()
+  await queryTradeTodayAction()
+  await getCurrentPositionList()
+})
+
+const queryTradeTodayAction = async () => {
+  const list = await queryTradeToday(taskDic.value.id)
+  console.log(list)
+  todayTradeList.value = list
+}
+const editPosition = (row) => {
+  currentPositionList.value = currentPositionList.value.map((item) => {
+    if (item.security_code === row.security_code) {
+      return {
+        ...item,
+        is_edit: !item.is_edit
+      }
+    }
+    return item
+  })
 }
 const getCurrentPositionList = async () => {
-  const orderDic = await getOrderList({
-    strategy_code: taskDic.value.strategy_code,
-    run_params: run_params.value,
-    page: currentPositionPageInfo.page,
-    pageSize: currentPositionPageInfo.pageSize
-  })
-  currentPositionList.value = orderDic.data.filter((item) => item.date === new Date().toLocaleDateString())
-  currentPositionPageInfo.total = orderDic.total
+  const positions = await getPositionByTaskId(taskDic.value.id)
+  currentPositionList.value = positions
+    .filter((item) => item.volume > 0)
+    .map((item) => {
+      return {
+        ...item,
+        is_edit: false
+      }
+    })
 }
-const goToHome = () => {
-  router.go(-1)
-}
+
 const taskDic = ref({})
 const deleteStock = () => {
   ElMessageBox.prompt(`请输入任务名"${taskDic.value.name}"以确认删除`, '确认删除', {
@@ -147,20 +192,33 @@ const deleteStock = () => {
       })
     })
 }
-const copyRequestCodeAction = async () => {
-  const res = await copyRequestCode(taskDic.value)
-  if (res) {
-    ElMessage({
-      type: 'success',
-      message: '复制成功'
-    })
-  }
-}
+
 const convertToCodeAction = async () => {
   router.push(`/transition?id=${taskDic.value.id}`)
 }
 const editTask = async () => {
   listModalRef.value.showModal(taskDic.value)
+}
+const savePosition = async (row) => {
+  await updatePosition(row.id, {
+    volume: row.volume
+  })
+  await getCurrentPositionList()
+  ElMessage({
+    type: 'success',
+    message: '保存成功'
+  })
+}
+const addPositionAction = () => {
+  addPositionRef.value.showModal(taskDic.value.id)
+}
+const deletePosition = async (row) => {
+  await deletePositionById(row.id)
+  await getCurrentPositionList()
+  ElMessage({
+    type: 'success',
+    message: '删除成功'
+  })
 }
 </script>
 
@@ -216,10 +274,21 @@ const editTask = async () => {
         background: #fff;
         flex: 1;
         padding: 7px;
+        padding-bottom: 0;
         min-height: 0;
         .el-table {
           flex: 1;
           overflow: hidden;
+        }
+        .task-detail {
+          display: flex;
+          // padding: 5px;
+          font-size: 13px;
+          height: 30px;
+          align-items: center;
+          color: #434343;
+          justify-content: space-between;
+          // background: red;
         }
       }
       .place-orders {

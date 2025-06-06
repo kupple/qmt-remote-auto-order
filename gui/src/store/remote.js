@@ -21,6 +21,9 @@ export const useRemoteStore = defineStore('remote', {
         changeClientId(params) {
             this.clientId = params
         },
+        clearMessagesArr(){
+            this.messagesArr = []
+        },
         async setRemoteStore(params){
             if(params.type === 'test'){
 

@@ -115,7 +115,7 @@ def WebViewApp(ifCef=False):
     # 程序窗口大小
     initWidth = int(width * 2 / 3)
     initHeight = int(height * 4 / 5)
-    minWidth = int(initWidth / 2)
+    minWidth = int(initWidth / 1)
     minHeight = int(initHeight / 2)
 
     global window, icon
