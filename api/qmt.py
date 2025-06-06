@@ -218,7 +218,7 @@ class QMT:
     return result
     
     
-  def connectQMT(self,params):
+  def connect_qmt(self,params):
     if sys.platform.startswith('darwin'):
       self.is_connect = True
       return True

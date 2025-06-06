@@ -28,3 +28,12 @@ export function updateUserInfo(data) {
 export function resetPassword(data){
   return post('/api/v1/users/reset-password', data)
 }
+
+export function getStrategyKeyByStrategyCode(strategy_code){
+  return get(`/api/v1/strategy-keys?strategy_code=${strategy_code}`)
+}
+
+export function createStrategyKey(data){
+  return post(`/api/v1/strategy-keys`, data)
+}
+    

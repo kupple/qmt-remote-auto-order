@@ -67,6 +67,17 @@ export const routes = [
     }
   },
   {
+    path: '/share',
+    name: 'Share',
+    chName: '分享策略',
+    show: false,
+    component: () => import('../views/share/index.vue'),
+    meta: {
+      title: '分享设置',
+      showBack: true
+    }
+  },
+  {
     path: '/backtest',
     name: 'Backtest',
     chName: '回测',

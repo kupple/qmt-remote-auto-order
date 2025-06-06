@@ -142,8 +142,8 @@ const convertToCodeAction = async (row) => {
   router.push(`/transition?id=${row.id}`)
 }
 
-const shareAction = ()=>{
-  ElMessage.info("正在开发敬请期待")
+const shareAction = (row)=>{
+  router.push(`/share?strategy_code=${row.strategy_code}`)
   return
 }
 

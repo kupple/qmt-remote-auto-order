@@ -94,6 +94,7 @@ class API(System):
         return self.common.is_process_exist()
     
     def connect_ws(self,server_url,ways = 2):
+        server_url = "ws://127.0.0.1:8080/ws"
         self.orm.save_config({"server_url":server_url})
         self.thread1 = threading.Thread(target=self.remote.connect, args=(server_url,ways,))
         self.thread1.start()
@@ -104,7 +105,7 @@ class API(System):
             self.thread1.join(timeout=1)  # Wait up to 1 second for thread to finish
         
     def connect_qmt(self,params):
-        result = self.qmt.connectQMT(params)
+        result = self.qmt.connect_qmt(params)
         return result
 
         
