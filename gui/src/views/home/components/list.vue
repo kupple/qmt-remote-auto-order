@@ -2,13 +2,19 @@
   <div class="home-container">
     <div class="bottom-container">
       <div class="bottom-container-left">
-        <el-button type="primary" class="create-task-btn" @click="openModal">新建任务</el-button>
-        <div class="task-list">
+        <div v-if="taskList.length == 0" style="text-align: center; margin-top: 20px">
+          <el-empty description="暂无策略任务" >
+            <el-button type="primary" @click="openModal">创建一个跟随策略任务</el-button>
+          </el-empty>
+        </div>
+        <el-button v-else type="primary" class="create-task-btn" @click="openModal">新建任务</el-button>
+        <div class="task-list" v-else>
           <div v-for="(item, idx) in taskList" :key="idx" :class="{ 'task-cell': true, 'task-cell-activate': item.is_open == 1 }">
             <div class="cell-left">
               <div class="task-name">
                 {{ item.name }}
                 <span v-if="item.is_open == 1" style="margin-left: 10px">(运行中)</span>
+                <!-- <span v-else style="margin-left: 10px">(未运行)</span> -->
               </div>
               <div class="strategy_code" >
                 <span >{{ item.strategy_code }}</span>
@@ -25,12 +31,12 @@
             <div class="cell-right">
               <div v-if="item.is_open === 0" class="cell-right-row" @click="handleEdit({ id: item.id, is_open: 1,name:item.name })">
                 <!-- <el-icon color="#fff" size="20"><VideoPlay /></el-icon> -->
-                <img src="@/assets/images/start.png" style="width: 20px; height: 20px" />
-                <span class="cell-right-row-label">开启策略</span>
+                <img src="@/assets/images/start.png" style="width: 30px; height: 30px" />
+                <span class="cell-right-row-label" style="font-size: 12px;margin-right: 5px">开启策略</span>
               </div>
               <div v-else class="cell-right-row" @click="handleEdit({ id: item.id, is_open: 0,name:item.name })">
-                <img src="@/assets/images/stop.png" style="width: 20px; height: 20px" />
-                <span class="cell-right-row-label">关闭策略</span>
+                <img src="@/assets/images/stop.png" style="width: 30px; height: 30px" />
+                <span class="cell-right-row-label" style="font-size: 12px;margin-right: 5px">关闭策略</span>
               </div>
               <div class="cell-right-row" @click="goToDetail(item)">
                 <el-icon color="#fff" size="20"><Setting /></el-icon>
@@ -44,7 +50,7 @@
                 <el-icon color="#fff" size="20"><Refresh /></el-icon>
                 <span class="cell-right-row-label">代码转换</span>
               </div>
-              <div class="cell-right-row" @click="shareAction(item)" v-if="!item.strategy_keys_id">
+              <div class="cell-right-row" @click="shareAction(item)" v-if="!item.strategy_keys_id && form.run_model_type == 2">
                 <el-icon color="#fff" size="20"><Promotion /></el-icon>
                 <span class="cell-right-row-label">分享策略</span>
               </div>
@@ -96,6 +102,7 @@ import { getSettingConfig, runTask, getTaskList, saveConfig, setAutomatically } 
 const router = useRouter() // 使用useRouter函数创建router实例
 const route = useRoute()
 
+
 // 自动逆回购
 const autoAutomaticReverseAtion = async (type, e) => {
   let subDic = {}
@@ -119,7 +126,8 @@ const autoAutomaticReverseAtion = async (type, e) => {
 const form = reactive({
   auto_national_debt: true,
   auto_buy_stock_ipo: true,
-  auto_buy_purchase_ipo: true
+  auto_buy_purchase_ipo: true,
+  run_model_type:1
 })
 
 const getConfig = async () => {
@@ -128,6 +136,7 @@ const getConfig = async () => {
   form.auto_buy_stock_ipo = res.auto_buy_stock_ipo == 1 ? true : false
   form.auto_buy_purchase_ipo = res.auto_buy_purchase_ipo == 1 ? true : false
   form.auto_startup = res.auto_startup == 1 ? true : false
+  form.run_model_type = res.run_model_type
 }
 
 const taskList = computed(() => {
@@ -278,7 +287,7 @@ onMounted(async () => {
         .cell-right {
           display: flex;
           // background: red;
-          margin-top: 50px;
+          margin-top: 30px;
           flex: 1;
           justify-content: flex-end;
           .cell-right-row {
@@ -286,6 +295,7 @@ onMounted(async () => {
             flex-direction: column;
             // justify-content: center;
             align-items: center;
+            justify-content: flex-end;
             color: #fff;
             margin-left: 10px;
             cursor: pointer;

@@ -133,3 +133,6 @@ api/__pycache__/qmt.cpython-39.pyc
 api/tools/__pycache__/sysConfig.cpython-39.pyc
 pyapp/config/__pycache__/config.cpython-39.pyc
 *.pyc
+
+
+.env

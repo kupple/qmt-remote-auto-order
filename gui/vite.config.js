@@ -10,6 +10,7 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   },
+  envDir: '../', // 指定环境文件在上一级目录
   build: {
     sourcemap: false,
     chunkSizeWarningLimit: 1500, // 块大小警告的限制（以 kbs 为单位）

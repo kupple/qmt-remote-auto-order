@@ -96,7 +96,8 @@ class Common:
         else:
             unique_id = get_system_unique_id()
             plaintext = {
-                "u": unique_id            
+                "u": unique_id,
+                "p":'local'
             }
             token = generate_token(plaintext,config['salt'])
         if taskDic['order_count_type'] == 1:

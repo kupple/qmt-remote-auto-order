@@ -22,8 +22,15 @@ import datetime
 import logging
 import sys
 from api.trading_related.deal import convert_stock_suffix
+from dotenv import load_dotenv
+load_dotenv()
 
 
+# 是否自动连接ws 开发模式不需要连接很麻烦
+AUTO_CONNECTION_WS = int(os.getenv('AUTO_CONNECTION_WS',1))
+# 是否使用固定ws地址
+USE_FIXED_WS_URL = int(os.getenv('USE_FIXED_WS_URL',0))
+WS_URL_FIXED = os.getenv('WS_URL_FIXED')
 
 class API(System):
     def __init__(self):
@@ -94,10 +101,13 @@ class API(System):
         return self.common.is_process_exist()
     
     def connect_ws(self,server_url,ways = 2):
-        # server_url = "ws://193.112.151.98:8080/ws"
-        self.orm.save_config({"server_url":server_url})
-        self.thread1 = threading.Thread(target=self.remote.connect, args=(server_url,ways,))
-        self.thread1.start()
+        if AUTO_CONNECTION_WS == 1:
+            if USE_FIXED_WS_URL == 1:
+                server_url = WS_URL_FIXED   
+            self.orm.save_config({"server_url":server_url})
+            self.thread1 = threading.Thread(target=self.remote.connect, args=(server_url,ways,))
+            self.thread1.start()
+        
     
     def disconnect(self):
         self.remote.close_ws()

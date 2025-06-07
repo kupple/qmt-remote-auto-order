@@ -1,4 +1,4 @@
-import { get, post } from '@/utils/api'
+import { get, post, put } from '@/utils/api'
 
 // 发送验证码
 export function sendVerificationCode(email,purpose) {
@@ -43,4 +43,16 @@ export function bindStrategyKey(data){
 
 export function unbindStrategyKey(data){
   return post(`/api/v1/strategy-keys/unbind`, data)
+}
+
+export function getBindPeopleList(data){
+  return get(`/api/v1/strategy-keys/users`,data)
+}
+
+export function updateBindPeople(data){
+  return put(`/api/v1/strategy-mappings`,data)
+}
+
+export function updateStrategyKey(data){
+    return put(`/api/v1/strategy-keys`,data)
 }

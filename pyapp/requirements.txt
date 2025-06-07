@@ -17,3 +17,5 @@ cryptography
 PyJWT
 pystray
 Pillow
+python-dotenv
+
