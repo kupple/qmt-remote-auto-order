@@ -355,7 +355,6 @@ class QMT:
     
   # 下单协议{code:code,price:price,amount:amount,type:type}
   def manage_qmt_trader(self,data):    
-    # print(data)
     try:    
       strategy_code = data['strategy_code']
       run_params = data['run_params']

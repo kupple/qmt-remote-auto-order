@@ -11,14 +11,14 @@
                 <span v-if="item.is_open == 1" style="margin-left: 10px">(运行中)</span>
               </div>
               <div class="strategy_code" >
-                <span v-if="item.task_type == 1">{{ item.strategy_code }}</span>
-                <span v-else>from:{{item.host_user_email}}</span>
+                <span >{{ item.strategy_code }}</span>
+                <!-- <span v-if="item.task_type == 2">from:{{item.host_user_email}}</span> -->
               </div>
               <div class="cell-order_count_type">
                 <el-tag effect="dark" disable-transitions v-if="item.order_count_type == 1" type="success">跟随策略</el-tag>
                 <el-tag effect="dark"   disable-transitions v-else type="primary">动态调整</el-tag>
-                <el-tag type="warning" style="margin-left: 10px" disable-transitions v-if="item.dynamic_calculation_type == 1">固定仓位</el-tag>
-                <el-tag type="danger" hit style="margin-left: 10px" disable-transitions v-if="item.dynamic_calculation_type == 2">同步仓位</el-tag>
+                <el-tag type="warning" style="margin-left: 10px" disable-transitions v-if="item.dynamic_calculation_type == 1 && item.order_count_type == 2">固定仓位</el-tag>
+                <el-tag type="danger" hit style="margin-left: 10px" disable-transitions v-if="item.dynamic_calculation_type == 2 && item.order_count_type == 2">同步仓位</el-tag>
                 <!-- <span class="order_count_amount" v-if="item.order_count_type == 2"> 起始金额:{{ item.allocation_amount }} </span> -->
               </div>
             </div>
@@ -40,11 +40,11 @@
                 <el-icon color="#fff" size="20"><Odometer /></el-icon>
                 <span class="cell-right-row-label">查看回测</span>
               </div>
-              <div class="cell-right-row" @click="convertToCodeAction(item)">
+              <div class="cell-right-row" @click="convertToCodeAction(item)" v-if="!item.strategy_keys_id">
                 <el-icon color="#fff" size="20"><Refresh /></el-icon>
                 <span class="cell-right-row-label">代码转换</span>
               </div>
-              <div class="cell-right-row" @click="shareAction(item)">
+              <div class="cell-right-row" @click="shareAction(item)" v-if="!item.strategy_keys_id">
                 <el-icon color="#fff" size="20"><Promotion /></el-icon>
                 <span class="cell-right-row-label">分享策略</span>
               </div>
@@ -261,6 +261,9 @@ onMounted(async () => {
             margin-top: 8px;
             font-size: 14px;
             cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            // gap: 2px;
           }
           .cell-order_count_type {
             margin-top: 10px;

@@ -4,20 +4,20 @@
       <el-form-item label="任务名称" required>
         <el-input style="width: 50%" v-model="form.name" placeholder="请输入任务名称" />
       </el-form-item>
-      <el-form-item label="创建类型" required>
-        <el-radio-group v-model="form.task_type" :disabled="editDic != null">
+      <el-form-item label="创建类型" required v-if="isEdit == false">
+        <el-radio-group v-model="form.task_type">
           <el-radio-button label="创建策略" :value="1" />
           <el-radio-button label="导入他人分享策略" :value="2" />
         </el-radio-group>
       </el-form-item>
-      <el-form-item label="任务编号" v-if="form.task_type == 1">
-        <el-input style="width: 50%" v-model="form.strategy_code" placeholder="请输入任务编号" maxlength="6" />
+      <el-form-item label="任务编号" v-if="form.task_type == 1 && isEdit == false" >
+        <el-input  style="width: 50%" v-model="form.strategy_code" placeholder="请输入任务编号" maxlength="5" />
       </el-form-item>
-      <el-form-item label="分享码" v-if="form.task_type == 2" >
-        <el-input style="width: 50%" v-model="form.share_secret" placeholder="请输入分享秘钥" :disabled="editDic != null"/>
+      <el-form-item label="分享码" v-if="form.task_type == 2 && isEdit == false" >
+        <el-input style="width: 50%" v-model="form.share_secret" placeholder="请输入分享秘钥" maxlength="6"/>
       </el-form-item>
-      <el-form-item label="下单类型">
-        <el-radio-group v-model="form.order_count_type" :disabled="editDic != null">
+      <el-form-item label="下单类型" v-if="isEdit == false">
+        <el-radio-group v-model="form.order_count_type">
           <el-radio style="margin-right: 5px" :value="1">仓位跟随策略</el-radio>
           <el-tooltip effect="dark" content="仓位分配完全跟随端策略，优点简单快速" placement="top">
             <el-icon style="color: #999; font-size: 18px; margin-right: 40px"><QuestionFilled /></el-icon>
@@ -162,20 +162,21 @@ const handleSubmit = async () => {
   }
   let host_user_email = ""
   let strategy_keys_id = null
+  let strategy_code = form.strategy_code
   if(form.task_type == 2){
     const res = await bindStrategyKey({secret_key: form.share_secret})
     if(res.code != 200){
       ElMessage.error(res.message)
       return
     }
-    console.log(res.data)
     host_user_email = res.data.host_user_email
     strategy_keys_id = res.data.id
+    strategy_code = res.data.strategy_code
   }
   let dic = {
     id: editDic.value?.id || undefined,
     name: form.name,
-    strategy_code: form.strategy_code,
+    strategy_code: strategy_code,
     order_count_type: form.order_count_type,
     dynamic_calculation_type: form.dynamic_calculation_type,
     strategy_amount: form.strategy_amount,

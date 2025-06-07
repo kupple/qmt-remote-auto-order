@@ -48,8 +48,8 @@ def generate_random_letters():
     # 使用时间戳作为随机数生成器的种子
     secrets_generator = secrets.SystemRandom(time_seed)
     
-    # 生成6位随机字母
-    random_letters = ''.join(secrets_generator.choice(alphabet) for _ in range(6))
+    # 生成5位随机字母
+    random_letters = ''.join(secrets_generator.choice(alphabet) for _ in range(5))
     
     return random_letters
 

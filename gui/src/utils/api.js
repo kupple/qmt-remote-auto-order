@@ -1,7 +1,8 @@
 import { getToken } from '@/api/auth'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
-const baseUrl = 'http://127.0.0.1:8080' // 这里设置您想要的固定基础URL
+// const baseUrl = 'http://127.0.0.1:8080' // 这里设置您想要的固定基础URL
+const baseUrl = 'http://193.112.151.98:8080' // 这里设置您想要的固定基础URL
 // 创建 axios 实例
 const service = axios.create({
   baseURL: baseUrl,

@@ -94,7 +94,7 @@ class API(System):
         return self.common.is_process_exist()
     
     def connect_ws(self,server_url,ways = 2):
-        server_url = "ws://127.0.0.1:8080/ws"
+        # server_url = "ws://193.112.151.98:8080/ws"
         self.orm.save_config({"server_url":server_url})
         self.thread1 = threading.Thread(target=self.remote.connect, args=(server_url,ways,))
         self.thread1.start()
