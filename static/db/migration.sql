@@ -435,3 +435,33 @@ ALTER TABLE tasklist ADD COLUMN come_form_str VARCHAR;
 
 UPDATE alembic_version SET version_num='250b87dde449' WHERE alembic_version.version_num = 'a5f04056d6dd';
 
+-- Running upgrade 250b87dde449 -> 04bb63621bf1
+
+ALTER TABLE tasklist ADD COLUMN strategy_keys_id INTEGER;
+
+UPDATE alembic_version SET version_num='04bb63621bf1' WHERE alembic_version.version_num = '250b87dde449';
+
+-- Running upgrade 04bb63621bf1 -> 21145e871673
+
+UPDATE alembic_version SET version_num='21145e871673' WHERE alembic_version.version_num = '04bb63621bf1';
+
+-- Running upgrade 21145e871673 -> 1a94dda4fa31
+
+ALTER TABLE tasklist ADD COLUMN host_user_email VARCHAR;
+
+ALTER TABLE tasklist ADD COLUMN strategy_key_id INTEGER;
+
+ALTER TABLE tasklist DROP COLUMN come_form_str;
+
+ALTER TABLE tasklist DROP COLUMN strategy_keys_id;
+
+UPDATE alembic_version SET version_num='1a94dda4fa31' WHERE alembic_version.version_num = '21145e871673';
+
+-- Running upgrade 1a94dda4fa31 -> eebf0c1055d1
+
+ALTER TABLE tasklist ADD COLUMN strategy_keys_id INTEGER;
+
+ALTER TABLE tasklist DROP COLUMN strategy_key_id;
+
+UPDATE alembic_version SET version_num='eebf0c1055d1' WHERE alembic_version.version_num = '1a94dda4fa31';
+

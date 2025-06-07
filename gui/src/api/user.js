@@ -37,3 +37,10 @@ export function createStrategyKey(data){
   return post(`/api/v1/strategy-keys`, data)
 }
     
+export function bindStrategyKey(data){
+  return post(`/api/v1/strategy-keys/bind`, data)
+}
+
+export function unbindStrategyKey(data){
+  return post(`/api/v1/strategy-keys/unbind`, data)
+}

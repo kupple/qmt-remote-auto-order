@@ -12,7 +12,7 @@
               </div>
               <div class="strategy_code" >
                 <span v-if="item.task_type == 1">{{ item.strategy_code }}</span>
-                <span v-else>from:{{item.come_form_str}}</span>
+                <span v-else>from:{{item.host_user_email}}</span>
               </div>
               <div class="cell-order_count_type">
                 <el-tag effect="dark" disable-transitions v-if="item.order_count_type == 1" type="success">跟随策略</el-tag>

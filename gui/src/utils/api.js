@@ -84,7 +84,7 @@ service.interceptors.response.use(
     const res = response.data
 
     // 这里可以根据后端的响应结构定制
-    if (res.code !== 200) {
+    if (res.code !== 201 && res.code !== 200) {
       ElMessage.error(res.message || '请求失败')
       return Promise.reject(new Error(res.message || '请求失败'))
     }

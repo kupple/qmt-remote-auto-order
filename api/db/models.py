@@ -113,8 +113,9 @@ class TaskList(BaseModel):
     __tablename__ = "tasklist"
     task_type = Column(Integer, doc='策略类型',server_default='1')
     name = Column(String(), doc='任务名称', nullable=True)
-    come_form_str=Column(String(), doc='来自', nullable=True)
+    host_user_email=Column(String(), doc='来自', nullable=True)
     share_secret = Column(String(), doc='分享秘钥', nullable=True)
+    strategy_keys_id = Column(Integer(), doc='策略密钥ID', nullable=True)
     strategy_code = Column(String(), doc='策略代码', nullable=True)
     order_count_type = Column(Integer, doc='订单计数类型', nullable=True)
     dynamic_calculation_type = Column(Integer, doc='动态计算类型', nullable=True,server_default='1')

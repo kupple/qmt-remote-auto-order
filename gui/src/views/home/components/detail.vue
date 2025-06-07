@@ -100,6 +100,7 @@ import ListModal from './listModal.vue'
 import { getOrderList, deleteTask, getTaskDetail, getPositionByTaskId, deletePositionById, updatePosition, queryTradeToday } from '@/api/comm_tube'
 import AddPosition from './addPosition.vue'
 import { ref, onMounted, reactive, computed } from 'vue'
+import { unbindStrategyKey } from '@/api/user'
 const router = useRouter()
 const route = useRoute()
 const listModalRef = ref(null)
@@ -164,14 +165,21 @@ const getCurrentPositionList = async () => {
     })
 }
 
+const goToHome = () => {
+  router.go(-1)
+}
+
 const taskDic = ref({})
 const deleteStock = () => {
   ElMessageBox.prompt(`请输入任务名"${taskDic.value.name}"以确认删除`, '确认删除', {
     confirmButtonText: '是',
     cancelButtonText: '否'
   })
-    .then(({ value }) => {
+    .then(async ({ value }) => {
       if (value === taskDic.value.name) {
+        if (taskDic.value.task_type == 2) {
+          await unbindStrategyKey({ strategy_keys_id: taskDic.value.strategy_keys_id })
+        }
         deleteTask({ id: taskDic.value.id })
         ElMessage({
           type: 'success',
