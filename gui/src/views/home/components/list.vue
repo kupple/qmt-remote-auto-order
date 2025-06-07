@@ -7,8 +7,8 @@
             <el-button type="primary" @click="openModal">创建一个跟随策略任务</el-button>
           </el-empty>
         </div>
-        <el-button v-else type="primary" class="create-task-btn" @click="openModal">新建任务</el-button>
-        <div class="task-list" v-else>
+        <el-button v-if="taskList.length > 0" type="primary" class="create-task-btn" @click="openModal">新建任务</el-button>
+        <div class="task-list" v-if="taskList.length > 0">
           <div v-for="(item, idx) in taskList" :key="idx" :class="{ 'task-cell': true, 'task-cell-activate': item.is_open == 1 }">
             <div class="cell-left">
               <div class="task-name">
