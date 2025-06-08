@@ -15,7 +15,7 @@ from api.system import System
 class TaskScheduler:
     """定时任务调度器，用于管理所有交易相关的定时任务"""
     
-    def __init__(self, qmt, orm):
+    def __init__(self, qmt, G):
         """
         初始化任务调度器
         
@@ -24,7 +24,7 @@ class TaskScheduler:
             orm: 数据库操作实例
         """
         self.qmt = qmt
-        self.orm = orm
+        self.G = G
         self.timers = {}  # 存储所有定时器
         self.logger = logging.getLogger(__name__)
         
@@ -57,7 +57,7 @@ class TaskScheduler:
         Returns:
             bool: 是否满足执行条件
         """
-        config = self.orm.get_setting_config()
+        config = self.G.orm.get_setting_config()
         base_conditions = (
             config["client_id"] != "" and 
             config["mini_qmt_path"] != "" and 

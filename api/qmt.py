@@ -13,13 +13,12 @@ from .trading_related.additional_data import stock_xgsglb_em_on_today,bond_zh_co
 from .trading_related.qmt_trading_simulator import QmtTradingSimulator,OrderType,PriceType
 from decimal import Decimal
 import json
-from .tools.sysConfig import get_system_unique_id
 
   
 class MyXtQuantTraderCallback(XtQuantTraderCallback):
  
-  def __init__(self,orm,is_mock,backtest_id=None) -> None:
-    self.orm = orm
+  def __init__(self,G,is_mock,backtest_id=None) -> None:
+    self.G = G
     self.is_mock = is_mock
     self.backtest_id = backtest_id 
     super().__init__()
@@ -48,7 +47,7 @@ class MyXtQuantTraderCallback(XtQuantTraderCallback):
     # 系统下的单
     if order.order_remark and order.strategy_name:
       orderId = order.order_remark
-      self.orm.save_entrust(order,{
+      self.G.orm.save_entrust(order,{
         "orders_id": orderId,
         "backtest_id": self.backtest_id,
         "is_mock": self.is_mock
@@ -70,10 +69,10 @@ class MyXtQuantTraderCallback(XtQuantTraderCallback):
       if trade.order_remark and trade.strategy_name:
         taskId = trade.strategy_name
         orderId = trade.order_remark
-        task_or_backtest = self.orm.query_task_or_backtest(task_id=taskId, backtest_id=self.backtest_id)
+        task_or_backtest = self.G.orm.query_task_or_backtest(task_id=taskId, backtest_id=self.backtest_id)
         order_count_type = task_or_backtest['order_count_type']
         # 保存订单信息
-        self.orm.save_trade(trade,{
+        self.G.orm.save_trade(trade,{
           "orders_id": orderId,
           "backtest_id": self.backtest_id,
           "is_mock": self.is_mock,
@@ -81,14 +80,14 @@ class MyXtQuantTraderCallback(XtQuantTraderCallback):
         })
         
 
-        positions = self.orm.query_position_by_task_or_backtest_id(backtest_id=self.backtest_id,task_id=taskId)
+        positions = self.G.orm.query_position_by_task_or_backtest_id(backtest_id=self.backtest_id,task_id=taskId)
         
         positions_dict = {position['security_code']: position for position in positions}
         
         # 交易金额
         traded_amount = Decimal(trade.traded_amount)
         if trade.stock_code not in positions_dict:
-          self.orm.save_position({
+          self.G.orm.save_position({
               "security_code": trade.stock_code,
               "volume": trade.traded_volume,
               "amount": traded_amount,
@@ -106,7 +105,7 @@ class MyXtQuantTraderCallback(XtQuantTraderCallback):
           
           # 计算新的平均价格（在所有交易发生时更新）
           position['average_price'] = Decimal(position['amount']) / Decimal(position['volume']) if position['volume'] > 0 else Decimal('0')
-          self.orm.update_position(position['id'], {
+          self.G.orm.update_position(position['id'], {
             'volume': position['volume'],
             'backtest_id': self.backtest_id,
             'task_id': taskId,
@@ -133,9 +132,9 @@ class MyXtQuantTraderCallback(XtQuantTraderCallback):
                                           float(mock_lower_limit_of_fees)))
         # 更新任务账户的可用金额
         if trade.order_type == OrderType.STOCK_BUY:
-          self.orm.update_task_can_use_amount(self.backtest_id,taskId, round(-(traded_amount + commission),2))
+          self.G.orm.update_task_can_use_amount(self.backtest_id,taskId, round(-(traded_amount + commission),2))
         elif trade.order_type == OrderType.STOCK_SELL:
-          self.orm.update_task_can_use_amount(self.backtest_id,taskId, round(traded_amount - commission,2))
+          self.G.orm.update_task_can_use_amount(self.backtest_id,taskId, round(traded_amount - commission,2))
         
                 
     except Exception as e:
@@ -176,11 +175,11 @@ class MyXtQuantTraderCallback(XtQuantTraderCallback):
 
 
 class QMT:
-  def __init__(self,orm):
+  def __init__(self,G):
+    self.G = G
     self.qmt_trader = None
-    self.orm = orm
-    self.callback = MyXtQuantTraderCallback(orm,False)
-    self.unique_id = get_system_unique_id()
+    self.callback = MyXtQuantTraderCallback(self.G,False)
+    
     
     self.is_connect = False
     self.simulator = None
@@ -282,7 +281,7 @@ class QMT:
       if order_count_type == 1:
         pass
       else:
-        positions_arr = self.orm.query_position_by_task_or_backtest_id(backtest_id=saveData['backtest_id'])
+        positions_arr = self.G.orm.query_position_by_task_or_backtest_id(backtest_id=saveData['backtest_id'])
         position_total_value = 0
         positions = json.loads(saveData['positions'])
 
@@ -292,8 +291,8 @@ class QMT:
               position_total_value += position['volume'] * order_position['price']
               continue
         
-        backtest = self.orm.query_backtest_by_id(saveData['backtest_id'])
-        self.orm.update_backtest(saveData['backtest_id'], final_amount=position_total_value + backtest['can_use_amount']  )   
+        backtest = self.G.orm.query_backtest_by_id(saveData['backtest_id'])
+        self.G.orm.update_backtest(saveData['backtest_id'], final_amount=position_total_value + backtest['can_use_amount']  )   
   
    
   #  计算配置仓位
@@ -318,7 +317,7 @@ class QMT:
       accruing_amounts = 0
       
       
-      positions_arr = self.orm.query_position_by_task_or_backtest_id(backtest_id=backtest_id,task_id=task['id'])
+      positions_arr = self.G.orm.query_position_by_task_or_backtest_id(backtest_id=backtest_id,task_id=task['id'])
       position_total_value = 0
       for position in positions_arr:
         for order_position in positions:
@@ -329,14 +328,14 @@ class QMT:
       # 固定仓位模式
       if dynamic_calculation_type == 1:
         if backtest_id:
-          accruing_amounts = self.orm.query_backtest_by_id(backtest_id)['initial_capital']
+          accruing_amounts = self.G.orm.query_backtest_by_id(backtest_id)['initial_capital']
         else:
           accruing_amounts = task['allocation_amount']
       # 根据盈亏分配
       elif dynamic_calculation_type == 2:
         can_use_amount = 0
         if backtest_id:
-          can_use_amount = self.orm.query_backtest_by_id(backtest_id)['can_use_amount']
+          can_use_amount = self.G.orm.query_backtest_by_id(backtest_id)['can_use_amount']
         else:
           can_use_amount = task['can_use_amount']
         accruing_amounts = round(can_use_amount + position_total_value,2)
@@ -359,6 +358,7 @@ class QMT:
     
   # 下单协议{code:code,price:price,amount:amount,type:type}
   def manage_qmt_trader(self,data):    
+    print(data)
     try:    
       strategy_code = data['strategy_code']
       run_params = data['run_params']
@@ -398,7 +398,13 @@ class QMT:
         'total_value':total_value
       }
       
-      task = next((item for item in self.orm.get_task_list() if item.get('strategy_code') == strategy_code), None)
+      if self.G.run_model_type == 2:
+        user_id = self.G.user_id
+      else:
+        user_id = self.G.unique_id
+        
+      taskList =  self.G.orm.get_task_list({user_id:user_id})
+      task = next((item for item in taskList if item.get('strategy_code') == strategy_code), None)
       if not task:
         print(f"任务不存在: {strategy_code}")
         return
@@ -411,7 +417,7 @@ class QMT:
         #####################     回测环境     ###########################
         if state == 'begin':
           # 创建一个回测
-          backtest_id = self.orm.create_backtest({
+          backtest_id = self.G.orm.create_backtest({
             'name':strategy_code,
             'service_charge':task['mock_service_charge'],
             'initial_capital':task['mock_allocation_amount'],
@@ -423,20 +429,20 @@ class QMT:
             'accruing_amounts':task['mock_allocation_amount'],
             'can_use_amount':task['mock_allocation_amount']
           })
-          self.orm.update_task(task['id'], backtest_id=backtest_id) 
+          self.G.orm.update_task(task['id'], backtest_id=backtest_id) 
           # 设置回测id
-          self.mockCallback = MyXtQuantTraderCallback(self.orm,True,backtest_id)
+          self.mockCallback = MyXtQuantTraderCallback(self.G.orm,True,backtest_id)
           self.simulator = QmtTradingSimulator(
               self.mockCallback, # 回测环境
           )
         if state == 'end':
           saveData["backtest_id"] = task['backtest_id']
           self.calculate_stock_returns(saveData,order_count_type)
-          self.orm.update_backtest(task['backtest_id'], state=state)   
+          self.G.orm.update_backtest(task['backtest_id'], state=state)   
         if state == 'run':
           # 创建空订单
           saveData["backtest_id"] = task['backtest_id']
-          orderId = self.orm.save_order(saveData)
+          orderId = self.G.orm.save_order(saveData)
           orderId = str(orderId)
           
           # 将字符串转换为 datetime 对象
@@ -465,7 +471,7 @@ class QMT:
         if self.is_connect == False:
           return 
         # 创建空订单
-        orderId = self.orm.save_order(saveData)
+        orderId = self.G.orm.save_order(saveData)
         # 判断交易时间
         now = datetime.now()
         if now.hour < 9 or (now.hour == 15 and now.minute > 30) or now.hour > 15:

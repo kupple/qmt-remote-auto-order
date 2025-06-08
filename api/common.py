@@ -8,12 +8,11 @@ import sys
 from api.db.orm import ORM
 import json
 import re
-from api.tools.sysConfig import get_system_unique_id,ws_to_http
 from api.tools.tokenManager import generate_token,verify_token
 from api.tools.template import get_template_order_count_type_1,get_template_order_count_type_2
 class Common:
-    def __init__(self,orm) -> None:
-        self.orm = orm
+    def __init__(self,G) -> None:
+        self.G = G
         
     def is_process_exist(self):
         app_name = "XtMiniQmt.exe"
@@ -67,6 +66,9 @@ class Common:
             # 移除g.context赋值行（如果存在）
             data = re.sub(r'^\s+g\.context\s*=\s*context\n', '', data, flags=re.M)
             
+            # 移除g.run_params赋值行
+            data = re.sub(r'^\s+g\.run_params\s*=\s*context\.run_params\.type\n', '', data, flags=re.M)
+            
             # 还原请求头中的TOKEN引用
             data = re.sub(r"'Authorization':\s+'Bearer\s*'\+\s*TOKEN", r"'Authorization': 'Bearer {token}'", data)
             
@@ -88,13 +90,13 @@ class Common:
 
     # 转译代码 
     def transition_code(self,data,taskDic):
-        config =  self.orm.get_setting_config()
+        config =  self.G.orm.get_setting_config()
         run_model_type = config['run_model_type']
 
         if run_model_type == 2:
-            token = self.orm.getStorageVar('qmt_token')
+            token = self.G.orm.getStorageVar('qmt_token')
         else:
-            unique_id = get_system_unique_id()
+            unique_id = self.G.unique_id
             plaintext = {
                 "u": unique_id,
                 "p":'local'

@@ -15,12 +15,12 @@ from api.tools.tokenManager import generate_token
 
 class Remote:
     
-    def __init__(self,qmt, orm):
+    def __init__(self,qmt,G):
         self.stop_event = asyncio.Event()
         self.qmt = qmt
+        self.G = G
         self.ways = 1
         self.is_connected = False
-        self.orm = orm
         self.ws = None
         self.is_login = False
         self.unique_id = get_system_unique_id()
@@ -128,9 +128,9 @@ class Remote:
         try:
             TOKEN = None
             if self.ways == 2:
-                TOKEN = self.orm.getStorageVar('qmt_token')
+                TOKEN = self.G.orm.getStorageVar('qmt_token')
             else:
-                config = self.orm.get_setting_config()
+                config = self.G.orm.get_setting_config()
                 unique_id = get_system_unique_id()
                 plaintext = {
                     "u": unique_id            
