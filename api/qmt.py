@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from .trading_related.qmt_trader import qmt_trader
-from .db.orm import ORM
 from pyapp.pkg.xtquant.xttrader import XtQuantTrader, XtQuantTraderCallback
 import sys
 import platform
@@ -358,7 +357,6 @@ class QMT:
     
   # 下单协议{code:code,price:price,amount:amount,type:type}
   def manage_qmt_trader(self,data):    
-    print(data)
     try:    
       strategy_code = data['strategy_code']
       run_params = data['run_params']
@@ -431,7 +429,7 @@ class QMT:
           })
           self.G.orm.update_task(task['id'], backtest_id=backtest_id) 
           # 设置回测id
-          self.mockCallback = MyXtQuantTraderCallback(self.G.orm,True,backtest_id)
+          self.mockCallback = MyXtQuantTraderCallback(self.G,True,backtest_id)
           self.simulator = QmtTradingSimulator(
               self.mockCallback, # 回测环境
           )
@@ -500,6 +498,7 @@ class QMT:
         else:
           print(f"任务未开启: {strategy_code}")
     except Exception as e:
+        print("manage_qmt_trader error")
         print(e)
 
     

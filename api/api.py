@@ -52,7 +52,7 @@ class API(System):
         self.thread1 = None
         
         # 初始化任务调度器
-        self.task_scheduler = TaskScheduler(self.qmt, self.G.orm)
+        self.task_scheduler = TaskScheduler(self.qmt, self.G)
         
         # 启动定时任务
         self.task_scheduler.schedule_national_debt(hour=15, minute=10)

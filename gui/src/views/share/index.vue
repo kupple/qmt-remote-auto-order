@@ -132,6 +132,11 @@ const editExpireTimeAction = () => {
   dateSettingModalRef.value.showModal(strategyKeyDic.value)
 }
 
+const copyStrategyKey = async() => {
+  await navigator.clipboard.writeText(strategyKeyDic.value.secret_key)
+  ElMessage.success("复制成功,创建任务时选择导入他人分享策略则可同步下单")
+}
+
 const editRemarkAction = (row) => {
   ElMessageBox.prompt(`请输入备注`, '修改备注', {
     confirmButtonText: '是',
