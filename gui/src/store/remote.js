@@ -43,13 +43,12 @@ export const useRemoteStore = defineStore('remote', {
         if (params.type === 'login') {
           this.connectState = 1
         }
-        if(params.type == 'loss'){
+        if (params.type == 'loss') {
           this.connectState = 2
         }
-        if(params.type == 'exit'){
+        if (params.type == 'exit') {
           this.connectState = 0
         }
-        
       }
       // 模拟盘 回测 信号单
       if (params.data) {
@@ -66,13 +65,14 @@ export const useRemoteStore = defineStore('remote', {
       } else {
         this.clientId = params.unique_id
       }
-      // console.log(params.message)
-      params.date = dayjs().format('MM-DD HH:mm:ss')
-      this.messagesArr.push({
-        message: params.message,
-        status: params.status || 1,
-        date: params.date
-      })
+      if (params.message && params.message.length > 2) {
+        params.date = dayjs().format('MM-DD HH:mm:ss')
+        this.messagesArr.push({
+          message: params.message,
+          status: params.status || 1,
+          date: params.date
+        })
+      }
     }
   }
 })

@@ -53,7 +53,7 @@
           <el-descriptions-item>
             <template #label> 用户数量限制 </template>
             <div class="descriptions-item-section">
-              <span>{{ strategyKeyDic.max_users || 0 }}</span>
+              <span>{{ strategyKeyDic.max_users == 0 ? '无限制' : strategyKeyDic.max_users }}</span>
               <el-button style="margin-left: 10px" link type="primary" @click="editUserCountAction">修改</el-button>
             </div>
           </el-descriptions-item>
