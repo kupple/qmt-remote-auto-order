@@ -62,8 +62,9 @@ class AppUpdate:
             # 3秒后连接超时，3秒后读取超时
             r = httpx.get(Config.appUpdateUrl, timeout=(3, 3))
             resJson = r.json()
-            version = resJson['name']    # 版本号
-            htmlUrl = resJson['html_url']    # 下载页面
+            # print(resJson)
+            version = resJson['tag_name']    # 版本号
+            htmlUrl = "https://gitee.com/bobibobi/qmt-remote-auto-order/releases/tag/" + version,
             assets = resJson['assets']    # 下载资源
             body = resJson['body']    # 版本介绍
             return {
@@ -104,7 +105,7 @@ class AppUpdate:
             name = assets['name']
             ext = os.path.splitext(name)[-1]
             if ext == appExt:
-                size = assets['size']
+                size = 15987160
                 url = assets['browser_download_url']
                 downloadPath = os.path.join(Config.downloadDir, name)
                 # 超时重连3次

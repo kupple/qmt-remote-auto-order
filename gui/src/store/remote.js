@@ -49,6 +49,10 @@ export const useRemoteStore = defineStore('remote', {
         if (params.type == 'exit') {
           this.connectState = 0
         }
+        if (params.type == 'logout') {
+          this.connectState = 0
+        }
+        
       }
       // 模拟盘 回测 信号单
       if (params.data) {

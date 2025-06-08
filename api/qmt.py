@@ -402,6 +402,7 @@ class QMT:
         user_id = self.G.unique_id
         
       taskList =  self.G.orm.get_task_list({user_id:user_id})
+      print(taskList)
       task = next((item for item in taskList if item.get('strategy_code') == strategy_code), None)
       if not task:
         print(f"任务不存在: {strategy_code}")

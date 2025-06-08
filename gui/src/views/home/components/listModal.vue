@@ -11,7 +11,7 @@
         </el-radio-group>
       </el-form-item>
       <el-form-item label="任务编号" v-if="form.task_type == 1 && isEdit == false">
-        <el-input style="width: 50%" v-model="form.strategy_code" placeholder="请输入任务编号" maxlength="5" />
+        <el-input style="width: 50%" v-model="form.strategy_code" placeholder="请输入任务编号" maxlength="6" />
       </el-form-item>
       <el-form-item label="分享码" v-if="form.task_type == 2 && isEdit == false">
         <el-input style="width: 50%" v-model="form.share_secret" placeholder="请输入分享秘钥" maxlength="6" />

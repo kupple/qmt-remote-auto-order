@@ -122,7 +122,7 @@ const onCheckUpdate = (init = false) => {
 
 // 手动更新
 const onOpenLink = () => {
-  // console.log(state.htmlUrl)
+  console.log(state.htmlUrl)
   window.pywebview.api.system_pyOpenFile(state.htmlUrl)
   state.checkVisible = false
 }
