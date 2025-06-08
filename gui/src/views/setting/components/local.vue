@@ -147,10 +147,10 @@ const saveAction = async () => {
       salt: params.salt,
       run_model_type: 1
     })
-    ElMessage({
-      message: '连接成功',
-      type: 'success'
-    })
+    // ElMessage({
+    //   message: '连接成功',
+    //   type: 'success'
+    // })
     useRemoteStore().changeConnectState(2)
     await connectQMT({ mini_qmt_path: params.qmtPath, client_id: params.clientId })
     await connectWs(params.server_url,1)

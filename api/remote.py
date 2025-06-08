@@ -14,20 +14,19 @@ from datetime import datetime,timezone
 from api.tools.tokenManager import generate_token
 
 class Remote:
-    is_connected = False
-    unique_id = None
-    server_url = None
-    RECONNECT_INTERVAL = 5  # seconds
     
     def __init__(self,qmt, orm):
         self.stop_event = asyncio.Event()
         self.qmt = qmt
         self.ways = 1
+        self.is_connected = False
         self.orm = orm
         self.ws = None
+        self.unique_id = get_system_unique_id()
         self.reconnect_count = 0
-        self.should_reconnect = True
+        self.should_reconnect = False
         self.loop = None  # 初始化为 None
+        self.RECONNECT_INTERVAL = 2
 
     async def handle_messages(self):
         try:
@@ -42,9 +41,14 @@ class Remote:
                     "id": data.get("id", ""),
                     "timestamp": int(time.time() * 1000)  # 转换为毫秒级整数时间戳
                 }))
+                
+                if "type" in content and content["type"] == "login":
+                    self.is_connected = True
+                    self.should_reconnect = True
 
+                
                 # 如果是退出登录
-                if "type" in content and content["type"] == "logout":
+                elif "type" in content and content["type"] == "logout":
                     System.system_py2js(self,'remoteCallBack',  {
                         "state": 0,
                         "message": "其他地方已登录断开连接请重新登录",
@@ -52,23 +56,22 @@ class Remote:
                     })
                     self.close_ws()
                     continue
-                
-
-                # 发送信息 写法没错
-                System.system_py2js(self,'remoteCallBack',  {
-                    "state": 1,
-                    "message": "",
-                    "data":content,
-                })
-                
-                if self.qmt.is_connect == False :
+                else:             
+                    # 发送信息 写法没错
                     System.system_py2js(self,'remoteCallBack',  {
                         "state": 1,
                         "message": "",
-                        "status": "2",
-                        "data":"请先在个人页面配置好qmt路径和资金账号",
+                        "data":content,
                     })
-                self.qmt.manage_qmt_trader(content)
+                    
+                    if self.qmt.is_connect == False :
+                        System.system_py2js(self,'remoteCallBack',  {
+                            "state": 1,
+                            "message": "",
+                            "status": "2",
+                            "data":"请先在个人页面配置好qmt路径和资金账号",
+                        })
+                    self.qmt.manage_qmt_trader(content)
 
         except websockets.exceptions.ConnectionClosed:
             print('Connection closed')
@@ -76,7 +79,7 @@ class Remote:
                 "state": 0,
                 "message": "已断开服务器连接",
             })
-            Remote.is_connected = False
+            self.is_connected = False
             if self.should_reconnect:
                 await self.reconnect()
 
@@ -101,14 +104,14 @@ class Remote:
                     "state": 0,
                     "message": "已断开服务器连接",
                 })
-                Remote.is_connected = False
+                self.is_connected = False
         except Exception as e:
             print(f'Error during disconnect: {e}')
             System.system_py2js(self,'remoteCallBack',  {
                 "state": 0,
                 "message": "断开服务器连接时出错",
             })
-            Remote.is_connected = False
+            self.is_connected = False
         
     def testConnect(self):
         url = f"{self.server_url}/send_message"
@@ -151,7 +154,7 @@ class Remote:
                 "message": "已连接到服务器",
                 "data":None
             })
-            Remote.is_connected = True
+            self.is_connected = True
             self.reconnect_count = 0  # Reset reconnect count on successful connection
             
             print("Starting handle_messages...")
@@ -161,6 +164,8 @@ class Remote:
             print(f"Error connecting to server: {e}")
             System.system_py2js(self,'remoteCallBack',  {
                 "state": 0,
+                "show": True,
+                "showType": "error",
                 "message": "服务端访问失败",
             })
             if self.should_reconnect:
@@ -169,7 +174,6 @@ class Remote:
 
     def connect(self, server_url,ways):
         print("Starting connect method...")
-        self.should_reconnect = True
         self.reconnect_count = 0
         self.stop_event.clear()
         
@@ -198,6 +202,8 @@ class Remote:
                 future.result()  # 等待断开连接完成
             except Exception as e:
                 print(f'Error during close_ws: {e}')
+
+                
         self.loop = None  # 清理事件循环
         self.stop_event.clear()
 
