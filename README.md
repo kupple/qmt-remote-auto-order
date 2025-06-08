@@ -105,6 +105,10 @@ git clone https://github.com/kupple/qmt-remote-auto-order
 3. 初始化/运行/打包
 
 ```bash
+
+# 新建.env 
+mv .example.env .env
+
 # 安装依赖
 npm run init
 
