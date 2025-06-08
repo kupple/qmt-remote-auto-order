@@ -138,13 +138,10 @@ npm run build
 
 如有问题或建议，请提交 Issue 或 Pull Request。 
 
-<!-- 加入量化讨论群 （不是群主仅作为友情链接邀请）
+<!-- 加入量化讨论群 （不是群主仅作为友情链接邀请） -->
 
-开通qmt权限(无门槛/低佣金)可添加
-
-有偿搭建私有服务器支持可联系
+开通qmt权限(无门槛/低佣金)可添加(申明：仅做推荐与本人暂无任何利益关系！)
+<!-- 有偿搭建私有服务器支持可联系 -->
 
 <img src="resources/WechatIMG.jpg" width="300"  alt="Logo"/>
 
-数据库文件路径
-/Users/zhao/Library/Application Support/qmt.auto.order.qmt_auto_order/static/db/base.db -->
