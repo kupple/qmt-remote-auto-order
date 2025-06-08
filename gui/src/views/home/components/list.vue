@@ -21,12 +21,12 @@
                 <span >{{ item.strategy_code }}<span style="margin-left: 6px" v-if="item.task_type == 2">from:{{item.host_user_email}}</span></span>
               </div>
               <div class="cell-order_count_type">
-                <el-tag effect="dark" disable-transitions v-if="item.task_type == 1" color="#A9AE42">自建策略</el-tag>
-                <el-tag effect="dark"   disable-transitions v-else color="#FE68AD" type="primary">他人策略</el-tag>
-                <el-tag effect="dark" style="margin-left: 10px" disable-transitions v-if="item.order_count_type == 1" type="success">跟随策略</el-tag>
-                <el-tag effect="dark"   style="margin-left: 10px" disable-transitions v-else type="primary">动态调整</el-tag>
-                <el-tag type="warning" style="margin-left: 10px" disable-transitions v-if="item.dynamic_calculation_type == 1 && item.order_count_type == 2">固定仓位</el-tag>
-                <el-tag type="danger" hit style="margin-left: 10px" disable-transitions v-if="item.dynamic_calculation_type == 2 && item.order_count_type == 2">同步仓位</el-tag>
+                <el-tag round effect="plain" disable-transitions v-if="item.task_type == 1" >自建策略</el-tag>
+                <el-tag round effect="plain"   disable-transitions v-else  type="danger">他人策略</el-tag>
+                <el-tag round effect="plain" style="margin-left: 10px" disable-transitions v-if="item.order_count_type == 1" type="success">跟随策略</el-tag>
+                <el-tag round effect="plain"   style="margin-left: 10px" disable-transitions v-else type="primary">动态调整</el-tag>
+                <el-tag round effect="plain" type="warning" style="margin-left: 10px" disable-transitions v-if="item.dynamic_calculation_type == 1 && item.order_count_type == 2">固定仓位</el-tag>
+                <el-tag round effect="plain" type="danger" hit style="margin-left: 10px" disable-transitions v-if="item.dynamic_calculation_type == 2 && item.order_count_type == 2">同步仓位</el-tag>
                 <!-- <span class="order_count_amount" v-if="item.order_count_type == 2"> 起始金额:{{ item.allocation_amount }} </span> -->
               </div>
             </div>
