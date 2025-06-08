@@ -115,3 +115,7 @@ export const updateTaskCanUseAmount = (task_id, can_use_amount) => {
 export const queryTradeToday = (task_id) => {
   return window.pywebview.api.query_trade_today(task_id)
 }
+
+export const system_getAppInfo = ()=>{
+  return window.pywebview.api.system_getAppInfo()
+}

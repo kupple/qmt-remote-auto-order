@@ -1,6 +1,7 @@
 <template>
   <div>
-    <el-button key="plain"  link @click="onCheckUpdate(false)" type="danger"> 检测更新 </el-button>
+    <span style="margin-right: 0px;color: #fff;font-size:14px">版本：{{ appInfo?.version }}</span>
+    <el-button key="plain" link @click="onCheckUpdate(false)" type="danger"> 检测更新 </el-button>
     <el-dialog v-model="state.checkVisible" title="检测更新" top="30vh" draggable destroy-on-close :close-on-click-modal="false" :close-on-press-escape="false" :show-close="false" :center="false">
       <div>
         <SvgIcon v-if="state.code == 1" name="ele-SuccessFilled" :size="18" color="#67C23A" style="top: 4px"></SvgIcon>
@@ -47,8 +48,9 @@
 
 <script setup>
 import { ElMessage } from 'element-plus'
-import { reactive, onMounted, onUnmounted } from 'vue'
+import { reactive, onMounted, onUnmounted, ref } from 'vue'
 import SvgIcon from '@/components/SvgIcon/index.vue'
+import { system_getAppInfo } from '@/api/comm_tube'
 const state = reactive({
   checkVisible: false,
   btnLoading: false,
@@ -63,14 +65,19 @@ const state = reactive({
   timer: ''
 })
 
-onMounted(() => {
-  setPy2Js() // 来自py的调用
+const appInfo = reactive({
+  version:"未知"
+})
 
-  state.timer = setInterval(() => {
+onMounted(async () => {
+  setPy2Js() // 来自py的调用
+  state.timer = setInterval(async () => {
     if (window.pywebview != undefined) {
       onCheckUpdate(true) // 程序第一次打开，自动检测更新
       clearInterval(state.timer)
       state.timer = ''
+      const res = await system_getAppInfo()
+      appInfo.version = res.appVersion
     }
   }, 300)
 })

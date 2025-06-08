@@ -23,9 +23,9 @@ class Config:
     ##
     # 程序基础配置信息
     ##
-    appName = 'QMT自动下单'  # 应用名称
+    appName = 'QMT自动跟单'  # 应用名称
     appNameEN = 'qmt_auto_order'    # 应用名称-英文（用于生成缓存文件夹，必须是英文）
-    appVersion = "V0.0.1"  # 应用版本号
+    appVersion = "V0.8.9"  # 应用版本号
     appDeveloper = "mubin"  # 应用开发者
     appBlogs = "https://blog.pangao.vip"  # 个人博客
     appPackage = 'qmt.auto.order'    
