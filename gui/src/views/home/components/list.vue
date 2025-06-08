@@ -10,6 +10,7 @@
         <el-button v-if="taskList.length > 0" type="primary" class="create-task-btn" @click="openModal">新建任务</el-button>
         <div class="task-list" v-if="taskList.length > 0">
           <div v-for="(item, idx) in taskList" :key="idx" :class="{ 'task-cell': true, 'task-cell-activate': item.is_open == 1 }">
+          
             <div class="cell-left">
               <div class="task-name">
                 {{ item.name }}
@@ -17,12 +18,13 @@
                 <!-- <span v-else style="margin-left: 10px">(未运行)</span> -->
               </div>
               <div class="strategy_code" >
-                <span >{{ item.strategy_code }}</span>
-                <!-- <span v-if="item.task_type == 2">from:{{item.host_user_email}}</span> -->
+                <span >{{ item.strategy_code }}<span style="margin-left: 6px" v-if="item.task_type == 2">from:{{item.host_user_email}}</span></span>
               </div>
               <div class="cell-order_count_type">
-                <el-tag effect="dark" disable-transitions v-if="item.order_count_type == 1" type="success">跟随策略</el-tag>
-                <el-tag effect="dark"   disable-transitions v-else type="primary">动态调整</el-tag>
+                <el-tag effect="dark" disable-transitions v-if="item.task_type == 1" color="#A9AE42">自建策略</el-tag>
+                <el-tag effect="dark"   disable-transitions v-else color="#FE68AD" type="primary">他人策略</el-tag>
+                <el-tag effect="dark" style="margin-left: 10px" disable-transitions v-if="item.order_count_type == 1" type="success">跟随策略</el-tag>
+                <el-tag effect="dark"   style="margin-left: 10px" disable-transitions v-else type="primary">动态调整</el-tag>
                 <el-tag type="warning" style="margin-left: 10px" disable-transitions v-if="item.dynamic_calculation_type == 1 && item.order_count_type == 2">固定仓位</el-tag>
                 <el-tag type="danger" hit style="margin-left: 10px" disable-transitions v-if="item.dynamic_calculation_type == 2 && item.order_count_type == 2">同步仓位</el-tag>
                 <!-- <span class="order_count_amount" v-if="item.order_count_type == 2"> 起始金额:{{ item.allocation_amount }} </span> -->
@@ -39,19 +41,19 @@
                 <span class="cell-right-row-label" style="font-size: 12px;margin-right: 5px">关闭策略</span>
               </div>
               <div class="cell-right-row" @click="goToDetail(item)">
-                <el-icon color="#fff" size="20"><Setting /></el-icon>
+                <el-icon color="#fff" size="18"><Setting /></el-icon>
                 <span class="cell-right-row-label">详情/设置</span>
               </div>
               <div class="cell-right-row" @click="backtestAction(item)">
-                <el-icon color="#fff" size="20"><Odometer /></el-icon>
+                <el-icon color="#fff" size="18"><Odometer /></el-icon>
                 <span class="cell-right-row-label">查看回测</span>
               </div>
               <div class="cell-right-row" @click="convertToCodeAction(item)" v-if="!item.strategy_keys_id">
-                <el-icon color="#fff" size="20"><Refresh /></el-icon>
+                <el-icon color="#fff" size="18"><Refresh /></el-icon>
                 <span class="cell-right-row-label">代码转换</span>
               </div>
               <div class="cell-right-row" @click="shareAction(item)" v-if="!item.strategy_keys_id && form.run_model_type == 2">
-                <el-icon color="#fff" size="20"><Promotion /></el-icon>
+                <el-icon color="#fff" size="18"><Promotion /></el-icon>
                 <span class="cell-right-row-label">分享策略</span>
               </div>
             </div>
@@ -252,9 +254,13 @@ onMounted(async () => {
         background: linear-gradient(to right, #001629, rgb(140, 140, 140));
         border-radius: 10px;
         padding: 16px;
+        padding-bottom: 6px;
         display: flex;
         justify-content: space-between;
-
+        position: relative;
+        overflow: hidden;
+        min-height: 90px;
+      
         .cell-left {
           display: flex;
           flex-direction: column;
@@ -272,13 +278,13 @@ onMounted(async () => {
             cursor: pointer;
             display: flex;
             flex-direction: column;
+            // margin-bottom: 6px;
             // gap: 2px;
           }
           .cell-order_count_type {
             margin-top: 10px;
-            position: absolute;
-            bottom: 0px;
             display: flex;
+            margin-bottom: 6px;
           }
           .order_count_amount {
             font-size: 12px;
@@ -297,14 +303,14 @@ onMounted(async () => {
             align-items: center;
             justify-content: flex-end;
             color: #fff;
-            margin-left: 10px;
+            margin-left: 6px;
             cursor: pointer;
             // gap:10px;
             span {
               margin-top: 5px;
             }
             .cell-right-row-label {
-              font-size: 11px;
+              font-size: 10px;
               font-weight: bold;
             }
           }
