@@ -22,6 +22,7 @@ class Remote:
         self.is_connected = False
         self.orm = orm
         self.ws = None
+        self.is_login = False
         self.unique_id = get_system_unique_id()
         self.reconnect_count = 0
         self.should_reconnect = False
@@ -45,14 +46,16 @@ class Remote:
                 if "type" in content and content["type"] == "login":
                     self.is_connected = True
                     self.should_reconnect = True
+                    self.is_login = False
                     System.system_py2js(self,'remoteCallBack',  {
                         "type": "login",
                         "message": "登录成功",
                     })
 
-                
                 # 如果是退出登录
                 elif "type" in content and content["type"] == "logout":
+                    self.is_connected = False
+                    self.should_reconnect = False
                     System.system_py2js(self,'remoteCallBack',  {
                         "state": 0,
                         "message": "其他地方已登录断开连接请重新登录",

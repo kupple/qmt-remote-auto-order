@@ -13,6 +13,8 @@ from .trading_related.additional_data import stock_xgsglb_em_on_today,bond_zh_co
 from .trading_related.qmt_trading_simulator import QmtTradingSimulator,OrderType,PriceType
 from decimal import Decimal
 import json
+from .tools.sysConfig import get_system_unique_id
+
   
 class MyXtQuantTraderCallback(XtQuantTraderCallback):
  
@@ -178,7 +180,7 @@ class QMT:
     self.qmt_trader = None
     self.orm = orm
     self.callback = MyXtQuantTraderCallback(orm,False)
-    
+    self.unique_id = get_system_unique_id()
     
     self.is_connect = False
     self.simulator = None
