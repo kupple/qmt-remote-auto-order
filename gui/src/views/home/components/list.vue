@@ -3,42 +3,43 @@
     <div class="bottom-container">
       <div class="bottom-container-left">
         <div v-if="taskList.length == 0" style="text-align: center; margin-top: 20px">
-          <el-empty description="暂无策略任务" >
+          <el-empty description="暂无策略任务">
             <el-button type="primary" @click="openModal">创建一个跟随策略任务</el-button>
           </el-empty>
         </div>
         <el-button v-if="taskList.length > 0" type="primary" class="create-task-btn" @click="openModal">新建任务</el-button>
         <div class="task-list" v-if="taskList.length > 0">
           <div v-for="(item, idx) in taskList" :key="idx" :class="{ 'task-cell': true, 'task-cell-activate': item.is_open == 1 }">
-          
             <div class="cell-left">
               <div class="task-name">
                 {{ item.name }}
                 <span v-if="item.is_open == 1" style="margin-left: 10px">(运行中)</span>
                 <!-- <span v-else style="margin-left: 10px">(未运行)</span> -->
               </div>
-              <div class="strategy_code" >
-                <span >{{ item.strategy_code }}<span style="margin-left: 6px" v-if="item.task_type == 2">from:{{item.host_user_email}}</span></span>
+              <div class="strategy_code">
+                <span
+                  >{{ item.strategy_code }}<span style="margin-left: 6px" v-if="item.task_type == 2">from:{{ item.host_user_email }}</span></span
+                >
               </div>
               <div class="cell-order_count_type">
-                <el-tag round effect="plain" disable-transitions v-if="item.task_type == 1" >自建策略</el-tag>
-                <el-tag round effect="plain"   disable-transitions v-else  type="danger">他人策略</el-tag>
+                <el-tag round effect="plain" disable-transitions v-if="item.task_type == 1">自建策略</el-tag>
+                <el-tag round effect="plain" disable-transitions v-else type="danger">他人策略</el-tag>
                 <el-tag round effect="plain" style="margin-left: 10px" disable-transitions v-if="item.order_count_type == 1" type="success">跟随策略</el-tag>
-                <el-tag round effect="plain"   style="margin-left: 10px" disable-transitions v-else type="primary">动态调整</el-tag>
+                <el-tag round effect="plain" style="margin-left: 10px" disable-transitions v-else type="primary">动态调整</el-tag>
                 <el-tag round effect="plain" type="warning" style="margin-left: 10px" disable-transitions v-if="item.dynamic_calculation_type == 1 && item.order_count_type == 2">固定仓位</el-tag>
                 <el-tag round effect="plain" type="danger" hit style="margin-left: 10px" disable-transitions v-if="item.dynamic_calculation_type == 2 && item.order_count_type == 2">同步仓位</el-tag>
                 <!-- <span class="order_count_amount" v-if="item.order_count_type == 2"> 起始金额:{{ item.allocation_amount }} </span> -->
               </div>
             </div>
             <div class="cell-right">
-              <div v-if="item.is_open === 0" class="cell-right-row" @click="handleEdit({ id: item.id, is_open: 1,name:item.name })">
+              <div v-if="item.is_open === 0" class="cell-right-row" @click="handleEdit({ id: item.id, is_open: 1, name: item.name })">
                 <!-- <el-icon color="#fff" size="20"><VideoPlay /></el-icon> -->
                 <img src="@/assets/images/start.png" style="width: 30px; height: 30px" />
-                <span class="cell-right-row-label" style="font-size: 12px;margin-right: 5px">开启策略</span>
+                <span class="cell-right-row-label" style="font-size: 12px; margin-right: 5px">开启策略</span>
               </div>
-              <div v-else class="cell-right-row" @click="handleEdit({ id: item.id, is_open: 0,name:item.name })">
+              <div v-else class="cell-right-row" @click="handleEdit({ id: item.id, is_open: 0, name: item.name })">
                 <img src="@/assets/images/stop.png" style="width: 30px; height: 30px" />
-                <span class="cell-right-row-label" style="font-size: 12px;margin-right: 5px">关闭策略</span>
+                <span class="cell-right-row-label" style="font-size: 12px; margin-right: 5px">关闭策略</span>
               </div>
               <div class="cell-right-row" @click="goToDetail(item)">
                 <el-icon color="#fff" size="18"><Setting /></el-icon>
@@ -97,13 +98,13 @@ import ListModal from './listModal.vue'
 import { ref, computed, watch, nextTick, onMounted, onUnmounted, reactive } from 'vue'
 import { QuestionFilled, Setting, VideoPlay, VideoPause, Odometer, Refresh, Promotion } from '@element-plus/icons-vue'
 import { useCommonStore } from '@/store/common.js'
+import { getUserInfo } from '@/api/auth'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter, useRoute } from 'vue-router'
 import { getSettingConfig, runTask, getTaskList, saveConfig, setAutomatically } from '@/api/comm_tube'
 
 const router = useRouter() // 使用useRouter函数创建router实例
 const route = useRoute()
-
 
 // 自动逆回购
 const autoAutomaticReverseAtion = async (type, e) => {
@@ -129,7 +130,7 @@ const form = reactive({
   auto_national_debt: true,
   auto_buy_stock_ipo: true,
   auto_buy_purchase_ipo: true,
-  run_model_type:1
+  run_model_type: 1
 })
 
 const getConfig = async () => {
@@ -153,7 +154,7 @@ const convertToCodeAction = async (row) => {
   router.push(`/transition?id=${row.id}`)
 }
 
-const shareAction = (row)=>{
+const shareAction = (row) => {
   router.push(`/share?strategy_code=${row.strategy_code}`)
   return
 }
@@ -190,7 +191,17 @@ const openModal = () => {
 }
 
 const getTaskListAction = async () => {
-  const res = await getTaskList()
+  let user_id = undefined
+  const config = await getSettingConfig()
+  if (config.run_model_type === 2) {
+    const userInfo = await getUserInfo()
+    user_id = userInfo.id
+  } else {
+    user_id = config.client_id
+  }
+  const res = await getTaskList({
+    user_id
+  })
   useCommonStore().setTaskList(res)
 }
 
@@ -260,7 +271,7 @@ onMounted(async () => {
         position: relative;
         overflow: hidden;
         min-height: 90px;
-      
+
         .cell-left {
           display: flex;
           flex-direction: column;

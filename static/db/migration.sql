@@ -465,3 +465,9 @@ ALTER TABLE tasklist DROP COLUMN strategy_key_id;
 
 UPDATE alembic_version SET version_num='eebf0c1055d1' WHERE alembic_version.version_num = '1a94dda4fa31';
 
+-- Running upgrade eebf0c1055d1 -> fb407105710b
+
+ALTER TABLE tasklist ADD COLUMN user_id VARCHAR;
+
+UPDATE alembic_version SET version_num='fb407105710b' WHERE alembic_version.version_num = 'eebf0c1055d1';
+

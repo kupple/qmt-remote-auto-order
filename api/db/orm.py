@@ -104,11 +104,18 @@ class ORM:
                 dbSession.add(setting)
         dbSession.close()
 
-    def get_task_list(self):
+    def get_task_list(self,data):
         """获取任务列表"""
         dbSession = DB.session()
         with dbSession.begin():
+            # 构建基础查询
             stmt = select(TaskList).where(TaskList.delete_time.is_(None))
+            
+            # 根据传入的data参数动态添加查询条件
+            for key, value in data.items():
+                if hasattr(TaskList, key):
+                    stmt = stmt.where(getattr(TaskList, key) == value)
+            
             result = dbSession.execute(stmt).scalars().all()
             return [task.toDict() for task in result]
         dbSession.close()

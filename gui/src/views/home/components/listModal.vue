@@ -10,11 +10,11 @@
           <el-radio-button label="导入他人分享策略" :value="2" />
         </el-radio-group>
       </el-form-item>
-      <el-form-item label="任务编号" v-if="form.task_type == 1 && isEdit == false" >
-        <el-input  style="width: 50%" v-model="form.strategy_code" placeholder="请输入任务编号" maxlength="5" />
+      <el-form-item label="任务编号" v-if="form.task_type == 1 && isEdit == false">
+        <el-input style="width: 50%" v-model="form.strategy_code" placeholder="请输入任务编号" maxlength="5" />
       </el-form-item>
-      <el-form-item label="分享码" v-if="form.task_type == 2 && isEdit == false" >
-        <el-input style="width: 50%" v-model="form.share_secret" placeholder="请输入分享秘钥" maxlength="6"/>
+      <el-form-item label="分享码" v-if="form.task_type == 2 && isEdit == false">
+        <el-input style="width: 50%" v-model="form.share_secret" placeholder="请输入分享秘钥" maxlength="6" />
       </el-form-item>
       <el-form-item label="下单类型" v-if="isEdit == false">
         <el-radio-group v-model="form.order_count_type">
@@ -80,7 +80,8 @@
 import { ref, computed, onMounted, reactive } from 'vue'
 import { useCommonStore } from '@/store/common.js'
 import { QuestionFilled } from '@element-plus/icons-vue'
-import { createTask, checkStrategyCodeExists } from '@/api/comm_tube'
+import { createTask, checkStrategyCodeExists, getSettingConfig } from '@/api/comm_tube'
+import { getUserInfo } from '@/api/auth'
 import { bindStrategyKey } from '@/api/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 const taskList = computed(() => useCommonStore().taskList)
@@ -145,6 +146,9 @@ const showModal = (dic) => {
     form.mock_allocation_amount = 100000
     form.mock_service_charge = 0.00025
     form.mock_lower_limit_of_fees = 5
+    form.service_charge = 0.00025
+    form.lower_limit_of_fees = 5
+    form.allocation_amount = 100000
   }
 }
 const handleSubmit = async () => {
@@ -160,18 +164,26 @@ const handleSubmit = async () => {
       if (!confirm) return
     }
   }
-  let host_user_email = ""
+  let host_user_email = ''
   let strategy_keys_id = null
   let strategy_code = form.strategy_code
-  if(form.task_type == 2){
-    const res = await bindStrategyKey({secret_key: form.share_secret})
-    if(res.code != 200){
+  if (form.task_type == 2) {
+    const res = await bindStrategyKey({ secret_key: form.share_secret })
+    if (res.code != 200) {
       ElMessage.error(res.message)
       return
     }
     host_user_email = res.data.host_user_email
     strategy_keys_id = res.data.id
     strategy_code = res.data.strategy_code
+  }
+  let user_id = undefined
+  const config = await getSettingConfig()
+  if(config.run_model_type === 2){
+    const  userInfo = await getUserInfo()
+    user_id = userInfo.id
+  }else{
+    user_id = config.client_id
   }
   let dic = {
     id: editDic.value?.id || undefined,
@@ -186,7 +198,8 @@ const handleSubmit = async () => {
     task_type: form.task_type,
     share_secret: form.share_secret,
     host_user_email: host_user_email,
-    strategy_keys_id: strategy_keys_id
+    strategy_keys_id: strategy_keys_id,
+    user_id: user_id
   }
   if (dic.id === undefined) {
     dic.mock_allocation_amount = 100000

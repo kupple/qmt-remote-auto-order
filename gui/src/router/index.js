@@ -133,7 +133,7 @@ export const routes = [
         component: () => import('../views/setting/components/local.vue'),
         meta: {
           title: '自建服务器模式',
-          showBack: true
+          showBack: false
         }
       },
       {

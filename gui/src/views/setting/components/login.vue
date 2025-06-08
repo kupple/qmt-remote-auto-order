@@ -88,8 +88,6 @@ const handleLogin =  async() => {
     // 连接websocket
     await connectWs(res.data.user.server_url,2)
 
-
-    
     ElMessage.success('登录成功')
     // 跳转到用户明细页面
     router.push({ name: 'SettingUserDetail' })

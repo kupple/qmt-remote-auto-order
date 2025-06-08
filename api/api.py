@@ -91,7 +91,7 @@ class API(System):
         '''设置存储变量'''
         self.orm.setStorageVar(key, val)
 
-    def getSettingConfig(self):
+    def get_setting_config(self):
         return self.orm.get_setting_config()
 
     def save_config(self, data):
@@ -100,12 +100,12 @@ class API(System):
     def is_process_exist(self):
         return self.common.is_process_exist()
     
-    def connect_ws(self,server_url,ways = 2):
+    def connect_ws(self,server_url,ways = 2,is_login = False):
         if AUTO_CONNECTION_WS == 1:
             if USE_FIXED_WS_URL == 1:
                 server_url = WS_URL_FIXED   
             self.orm.save_config({"server_url":server_url})
-            self.thread1 = threading.Thread(target=self.remote.connect, args=(server_url,ways,))
+            self.thread1 = threading.Thread(target=self.remote.connect, args=(server_url,ways,is_login))
             self.thread1.start()
         
     
@@ -118,13 +118,10 @@ class API(System):
         result = self.qmt.connect_qmt(params)
         return result
 
+
         
-        
-    def test_connect(self,server_url):
-        self.remote.testConnect(server_url)
-        
-    def get_task_list(self):
-        return self.orm.get_task_list()
+    def get_task_list(self,data):
+        return self.orm.get_task_list(data)
     
     def create_task(self,data):
         return self.orm.create_task(data)
@@ -210,14 +207,16 @@ class API(System):
     def count_strategy_analyzer(self,task_id,backtest_id):
         sample_trades = self.orm.count_strategy_analyzer(task_id,backtest_id)
         
-        
         backtest = self.orm.query_backtest_by_id(backtest_id)
         
-        # 假设 trades 是你的交易数据列表
-        result = analyze_stock_data(sample_trades, initial_capital=backtest['initial_capital'],
-                                    service_charge=backtest['service_charge'],
-                                    lower_limit_of_fees=backtest['lower_limit_of_fees'])
-        return result
+        if len(sample_trades)>0:
+            # 假设 trades 是你的交易数据列表
+            result = analyze_stock_data(sample_trades, initial_capital=backtest['initial_capital'],
+                                        service_charge=backtest['service_charge'],
+                                        lower_limit_of_fees=backtest['lower_limit_of_fees'])
+            return result
+        else:
+            return None
 
     def get_position_by_task_id(self, task_id):
         return self.orm.query_position_by_task_id(task_id)

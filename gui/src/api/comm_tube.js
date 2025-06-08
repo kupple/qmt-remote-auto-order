@@ -3,7 +3,7 @@ import { useCommonStore } from '@/store/common.js'
 export const getSettingConfig = async () => {
   const settingConfig = useCommonStore().settingConfig
   if(settingConfig === null || Object.keys(settingConfig).length <= 1){
-    const res = await window.pywebview.api.getSettingConfig()
+    const res = await window.pywebview.api.get_setting_config()
     await saveConfig(res)
     return res
   }
@@ -13,8 +13,8 @@ export const saveConfig = (params) => {
   useCommonStore().setSettingConfig(params)
   return window.pywebview.api.save_config(params)
 }
-export const getTaskList = () => {
-  return window.pywebview.api.get_task_list()
+export const getTaskList = (params) => {
+  return window.pywebview.api.get_task_list(params)
 }
 export const getTaskDetail = (params) => {
   return window.pywebview.api.get_task_detail(params)
@@ -34,8 +34,8 @@ export const revertTransitionCode = (data) => {
 }
 
 
-export const connectWs = (params,ways=2) => {
-  return window.pywebview.api.connect_ws(params,ways)
+export const connectWs = (params,ways=2,is_login = false) => {
+  return window.pywebview.api.connect_ws(params,ways,is_login)
 }
 
 export const connectQMT = async(params) => {
@@ -48,10 +48,6 @@ export const disconnect = () => {
   return window.pywebview.api.disconnect()
 }
 
-
-export const testConnect = (params) => {
-  return window.pywebview.api.test_connect(params)
-}
 
 export const isProcessExist = () => {
   return window.pywebview.api.is_process_exist()

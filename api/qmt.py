@@ -77,10 +77,7 @@ class MyXtQuantTraderCallback(XtQuantTraderCallback):
           "is_mock": self.is_mock,
           "task_id": taskId
         })
-        if order_count_type == 1:
-          pass
-        else:
-          pass
+        
 
         positions = self.orm.query_position_by_task_or_backtest_id(backtest_id=self.backtest_id,task_id=taskId)
         
@@ -114,19 +111,24 @@ class MyXtQuantTraderCallback(XtQuantTraderCallback):
             'average_price': position['average_price'],
             'amount': position['amount']
           })
-        if task_or_backtest:
-            if self.is_mock:
-              mock_service_charge = task_or_backtest['service_charge']
-              mock_lower_limit_of_fees = task_or_backtest['lower_limit_of_fees']
-            else:
-              mock_service_charge = task_or_backtest['mock_service_charge']
-              mock_lower_limit_of_fees = task_or_backtest['mock_lower_limit_of_fees']
-        # 计算手续费
-        commission = Decimal(calculate_stock_fee("buy" if trade.order_type == OrderType.STOCK_BUY else "sell",
-                                         float(trade.traded_price),
-                                         int(trade.traded_volume),
-                                         float(mock_service_charge),
-                                         float(mock_lower_limit_of_fees)))
+          
+        if order_count_type == 1:
+          commission = 0  
+        else:
+          if task_or_backtest:
+              if self.is_mock == False:
+                mock_service_charge = task_or_backtest['service_charge']
+                mock_lower_limit_of_fees = task_or_backtest['lower_limit_of_fees']
+              else:
+                mock_service_charge = task_or_backtest['mock_service_charge']
+                mock_lower_limit_of_fees = task_or_backtest['mock_lower_limit_of_fees']
+                
+          # 计算手续费
+          commission = Decimal(calculate_stock_fee("buy" if trade.order_type == OrderType.STOCK_BUY else "sell",
+                                          float(trade.traded_price),
+                                          int(trade.traded_volume),
+                                          float(mock_service_charge),
+                                          float(mock_lower_limit_of_fees)))
         # 更新任务账户的可用金额
         if trade.order_type == OrderType.STOCK_BUY:
           self.orm.update_task_can_use_amount(self.backtest_id,taskId, round(-(traded_amount + commission),2))

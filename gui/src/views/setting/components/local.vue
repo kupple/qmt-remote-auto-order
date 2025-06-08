@@ -49,6 +49,7 @@
       <el-button v-else-if="isWSConnectedState === 2" class="save-btn" type="primary" disabled>正在连接</el-button>
       <el-button v-else class="save-btn" @click="disconnectAction" type="danger">断开连接</el-button>
       <el-button v-if="isWSConnectedState === 0" class="save-btn" @click="backAction">返回上一页</el-button>
+      <el-button v-if="isWSConnectedState === 2" class="save-btn" @click="disconnectAction" type="danger" >取消</el-button>
     </div>
   </div>
 </template>
@@ -59,7 +60,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRemoteStore } from '@/store/remote.js'
 import { useRoute, useRouter } from 'vue-router'
 const router = useRouter()
-import { getSettingConfig, saveConfig, connectWs, disconnect, getRemoteState, chooseDirectory,connectQMT } from '@/api/comm_tube'
+import { getSettingConfig, saveConfig, connectWs, disconnect, getRemoteState, chooseDirectory, connectQMT } from '@/api/comm_tube'
 import { QuestionFilled } from '@element-plus/icons-vue'
 import { useCommonStore } from '@/store/common.js'
 import { CircleCheckFilled, CircleCloseFilled } from '@element-plus/icons-vue'
@@ -147,13 +148,9 @@ const saveAction = async () => {
       salt: params.salt,
       run_model_type: 1
     })
-    // ElMessage({
-    //   message: '连接成功',
-    //   type: 'success'
-    // })
-    useRemoteStore().changeConnectState(2)
+
     await connectQMT({ mini_qmt_path: params.qmtPath, client_id: params.clientId })
-    await connectWs(params.server_url,1)
+    await connectWs(params.server_url, 1, true)
   } catch (error) {
     console.log(error)
     ElMessage({
@@ -207,9 +204,9 @@ const disconnectAction = () => {
         run_model_type: 0
       })
       disconnect().then((res) => {
-        console.log(res)
         ElMessage.success('断开连接成功')
       })
+      useRemoteStore().changeConnectState(0)
     })
     .catch(() => {
       // 用户点击取消，不做任何操作

@@ -135,7 +135,7 @@ class TaskList(BaseModel):
     mock_service_charge = Column(Numeric(), doc='回测手续费', nullable=True)
     mock_lower_limit_of_fees = Column(Numeric(), doc='回测手续费下限', nullable=True)
     mock_allocation_amount = Column(Numeric(), doc='回测分配金额', nullable=True)
-    
+    user_id = Column(String(), doc='用户id', nullable=True)
 
     def __str__(self):
         return f"Task: {self.name}"

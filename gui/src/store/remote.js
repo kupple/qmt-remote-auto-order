@@ -2,7 +2,6 @@
 import router from '@/router/index.js'
 import dayjs from 'dayjs'
 import { ElMessage } from 'element-plus'
-
 import { defineStore } from 'pinia'
 
 import { clearAuth } from '@/api/auth'
@@ -27,26 +26,30 @@ export const useRemoteStore = defineStore('remote', {
         if (params.showType) {
           ElMessage({
             message: params.message,
-            type: params.showType,
+            type: params.showType
           })
         } else {
           ElMessage.info(params.message)
         }
       }
-      if (params.type === 'test') {
-      } else {
-        if (params.state != undefined || params.state != null) {
-          this.connectState = params.state
-        }
-      }
-      if (params.code) {
-        console.log(params.code)
 
-        if (params.code == '-101') {
+      // 事件处理
+      if (params.type) {
+        if (params.type == 'logout') {
           await clearAuth()
           ElMessage.error('已有账号在其他地方登录')
           router.push('/setting/login')
         }
+        if (params.type === 'login') {
+          this.connectState = 1
+        }
+        if(params.type == 'loss'){
+          this.connectState = 2
+        }
+        if(params.type == 'exit'){
+          this.connectState = 0
+        }
+        
       }
       // 模拟盘 回测 信号单
       if (params.data) {

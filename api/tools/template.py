@@ -84,6 +84,7 @@ def qmt_auto_orders(method_name, *args, **kwargs):
     jsonDic = json.dumps({{
         'method': method_name,
         'run_params': g.run_params,
+        'state':'run',
         'strategy_code':'{strategy_code}',
         'params': {{
             'security':security,
@@ -93,7 +94,6 @@ def qmt_auto_orders(method_name, *args, **kwargs):
             'amount':orderInfo.amount,
             'avg_cost':orderInfo.avg_cost,
             'is_buy':orderInfo.is_buy,
-            'state':'run',
             'add_time':orderInfo.add_time.strftime("%Y-%m-%d %H:%M:%S")
         }}
     }})

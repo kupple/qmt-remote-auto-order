@@ -45,6 +45,10 @@ class Remote:
                 if "type" in content and content["type"] == "login":
                     self.is_connected = True
                     self.should_reconnect = True
+                    System.system_py2js(self,'remoteCallBack',  {
+                        "type": "login",
+                        "message": "登录成功",
+                    })
 
                 
                 # 如果是退出登录
@@ -52,7 +56,7 @@ class Remote:
                     System.system_py2js(self,'remoteCallBack',  {
                         "state": 0,
                         "message": "其他地方已登录断开连接请重新登录",
-                        "code":"-101"
+                        "type": "logout",
                     })
                     self.close_ws()
                     continue
@@ -102,6 +106,7 @@ class Remote:
                 self.ws = None
                 System.system_py2js(self,'remoteCallBack',  {
                     "state": 0,
+                    "type":"exit",
                     "message": "已断开服务器连接",
                 })
                 self.is_connected = False
@@ -113,23 +118,7 @@ class Remote:
             })
             self.is_connected = False
         
-    def testConnect(self):
-        url = f"{self.server_url}/send_message"
-        unique_id = get_system_unique_id()
-        payload = json.dumps({
-            "message": "Hello, specific client!",
-            "client_id": unique_id
-        })
-        headers = {
-            'Content-Type': 'application/json'
-        }
-        response = requests.request("POST", url, headers=headers, data=payload)
-        if response.status_code == 200:
-            System.system_py2js(self,'remoteCallBack',  {
-                "state": 2,
-                "type": 'test',
-                "message": "测试-通信正常",
-            })
+
     
     async def connect_ws(self):
         print("Starting connect_ws...",self.server_url,self.ways)
@@ -162,17 +151,22 @@ class Remote:
             await self.handle_messages()
         except Exception as e:
             print(f"Error connecting to server: {e}")
+            type = 'loss'
+            print(self.is_login)
+            if self.is_login:
+                type = 'exit'
             System.system_py2js(self,'remoteCallBack',  {
                 "state": 0,
                 "show": True,
                 "showType": "error",
                 "message": "服务端访问失败",
+                "type": type
             })
             if self.should_reconnect:
                 print("Attempting to reconnect...")
                 await self.reconnect()
 
-    def connect(self, server_url,ways):
+    def connect(self, server_url,ways,is_login):
         print("Starting connect method...")
         self.reconnect_count = 0
         self.stop_event.clear()
@@ -185,6 +179,7 @@ class Remote:
             try:
                 self.server_url = server_url
                 self.ways = ways
+                self.is_login = is_login
                 await self.connect_ws()
             except Exception as e:
                 print(f"Error in connect_ws: {e}")
