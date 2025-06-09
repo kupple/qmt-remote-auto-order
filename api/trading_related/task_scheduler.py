@@ -10,12 +10,15 @@ import datetime
 import logging
 from typing import Optional, Callable
 from api.system import System
+from api.trading_related import ak_data
+from api.trading_related.ak_data import save_all_data,save_st_data
+from ..global_params import G
 
 
 class TaskScheduler:
     """定时任务调度器，用于管理所有交易相关的定时任务"""
     
-    def __init__(self, qmt, G):
+    def __init__(self, qmt):
         """
         初始化任务调度器
         
@@ -24,7 +27,6 @@ class TaskScheduler:
             orm: 数据库操作实例
         """
         self.qmt = qmt
-        self.g = G
         self.timers = {}  # 存储所有定时器
         self.logger = logging.getLogger(__name__)
         
@@ -52,12 +54,12 @@ class TaskScheduler:
         检查任务配置是否满足执行条件
         
         Args:
-            task_type: 任务类型，可选值：'national_debt', 'new_stock', 'new_bond'
+            task_type: 任务类型，可选值：'national_debt', 'new_stock', 'new_bond', 'save_all_data'
             
         Returns:
             bool: 是否满足执行条件
         """
-        config = self.g.orm.get_setting_config()
+        config = G.orm.get_setting_config()
         base_conditions = (
             config["client_id"] != "" and 
             config["mini_qmt_path"] != "" and 
@@ -70,6 +72,9 @@ class TaskScheduler:
             return base_conditions and config["auto_buy_stock_ipo"] == 1
         elif task_type == "new_bond":
             return base_conditions and config["auto_buy_purchase_ipo"] == 1
+        elif task_type == "save_all_data":
+            # 保存股票数据不需要额外的配置检查
+            return True
         return False
     
     def _schedule_task(self, task_type: str, hour: int, minute: int, task_func: Callable) -> bool:
@@ -193,3 +198,27 @@ class TaskScheduler:
             self.cancel_task(task_type)
         self.logger.info("所有定时任务已取消")
         return True 
+    
+    def schedule_save_all_data(self, hour: int = 17, minute: int = 10) -> bool:
+        """
+        调度保存所有股票数据任务
+        
+        Args:
+            hour: 执行小时，默认10
+            minute: 执行分钟，默认10
+            
+        Returns:
+            bool: 调度是否成功
+        """
+        return self._schedule_task(
+            "save_all_data",
+            hour,
+            minute,
+            self.get_stocks_data
+        )
+        
+    def get_stocks_data(self):
+       sync_data_stocks_data()
+       
+            
+        

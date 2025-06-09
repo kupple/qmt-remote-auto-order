@@ -1,11 +1,12 @@
 from datetime import datetime
 from api.db.models import (
-    PPXStorageVar, Setting, TaskList, Orders, Entrusts, Trades, Backtest,Positions,Logger    
+    PPXStorageVar, Setting, TaskList, Orders, Entrusts, 
+    Trades, Backtest,Positions,Logger,
+    DATA_TABLE_RECORD,DATA_ALL_STOCKS,DATA_ST_STOCKS,DATA_TRADE_DATE_HIST
 )
 from pyapp.db.db import DB
 from sqlalchemy import select, update, insert, and_, or_, desc, func
 from api.tools.sysConfig import generate_random_letters
-
 class ORM:
     '''操作数据库类'''
 
@@ -110,7 +111,7 @@ class ORM:
         dbSession = DB.session()
         with dbSession.begin():
             if 'id' not in data or data['id'] is None:
-                if 'strategy_code' not in data or not data['strategy_code'] and data["task_type"] is 1:
+                if 'strategy_code' not in data or not data['strategy_code'] and data["task_type"] == 1:
                     data['strategy_code'] = generate_random_letters()
                 task = TaskList(**data)
                 dbSession.add(task)
@@ -275,6 +276,25 @@ class ORM:
         dbSession.close()
         return last_id
 
+    def add_log(self, log_data):
+        """添加日志记录"""
+        dbSession = DB.session()
+        with dbSession.begin():
+            log = Logger(
+                timestamp=log_data['timestamp'],
+                logger_name=log_data['logger_name'],
+                level=log_data['level'],
+                message=log_data['message'],
+                module=log_data['module'],
+                func_name=log_data['func_name'],
+                line_num=log_data['line_num'],
+                exception=str(log_data['exception']) if log_data['exception'] else None,
+                user_id=log_data['user_id']
+            )
+            dbSession.add(log)
+        dbSession.close()
+        return True
+
     def save_trade(self, data, sub_data=None):
         """保存成交记录"""
         if not data:
@@ -338,7 +358,7 @@ class ORM:
                 positions = session.execute(stmt).scalars().all()
                 return [pos.toDict() for pos in positions]
         except Exception as e:
-            self.g.logger.error(f"查询持仓出错: {str(e)}")
+            # G.logger.error(f"查询持仓出错: {str(e)}")
             return []
     
     def create_backtest(self, data):
@@ -572,7 +592,6 @@ class ORM:
         dbSession.close()
         
     
-    
     def add_log(self, data):
         """添加日志记录"""
         dbSession = DB.session()
@@ -612,3 +631,74 @@ class ORM:
             dbSession.execute(stmt)
         dbSession.close()
         return True
+    
+    def list_data_table_record(self):
+        """列出数据表记录"""
+        dbSession = DB.session()
+        with dbSession.begin():
+            stmt = select(DATA_TABLE_RECORD)
+            result = dbSession.execute(stmt).scalars().all()
+            data_list = [record.toDict() for record in result]
+        dbSession.close()
+        return data_list
+    
+    
+    def add_data_table_record(self, table_name):
+        """添加数据表记录"""
+        dbSession = DB.session()
+        record_time = datetime.now().timestamp()
+        record_type = 1
+        record_content = ''
+        with dbSession.begin():
+            stmt = select(DATA_TABLE_RECORD).where(DATA_TABLE_RECORD.table_name == table_name)
+            result = dbSession.execute(stmt).scalar_one_or_none()
+            if result is not None:
+                # update
+                result.record_type = record_type
+                result.record_time = record_time
+                result.record_content = record_content
+            else:
+                # insert
+                data = DATA_TABLE_RECORD(
+                    table_name=table_name,
+                    record_type=record_type,
+                    record_time=record_time,
+                    record_content=record_content
+                )
+                dbSession.add(data)
+        dbSession.close()
+        return True
+    
+    
+    def get_data_table_record(self, table_name):
+        """获取数据表记录"""
+        record = None
+        dbSession = DB.session()
+        with dbSession.begin():
+            stmt = select(DATA_TABLE_RECORD).where(DATA_TABLE_RECORD.table_name == table_name)
+            result = dbSession.execute(stmt).scalar_one_or_none()
+            if result:
+                record = {
+                    'table_name': result.table_name,
+                    'record_type': result.record_type,
+                    'record_time': result.record_time,
+                    'record_content': result.record_content
+                }
+        return record
+    
+
+    def get_all_stock_data(self):
+        with DB.session() as dbSession:
+            return [stock.toDict() for stock in dbSession.query(DATA_ALL_STOCKS).all()]
+        
+        
+    def get_st_stock_data(self):
+        with DB.session() as dbSession:
+            return [code.code for code in dbSession.query(DATA_ST_STOCKS.code).all()]
+        
+        
+    def get_trade_date_list(self):
+        with DB.session() as dbSession:
+            return [date.trade_date for date in dbSession.query(DATA_TRADE_DATE_HIST.trade_date).all()]
+    
+

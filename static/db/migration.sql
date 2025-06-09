@@ -505,3 +505,153 @@ ALTER TABLE logger ADD COLUMN task_id INTEGER;
 
 UPDATE alembic_version SET version_num='af741b58d30c' WHERE alembic_version.version_num = 'fee48e19d19f';
 
+-- Running upgrade af741b58d30c -> 0added726d5e
+
+CREATE TABLE stockdata_all_stocks (
+    id INTEGER NOT NULL, 
+    code VARCHAR, 
+    name VARCHAR, 
+    latest_price NUMERIC, 
+    change_rate NUMERIC, 
+    change_amount NUMERIC, 
+    volume NUMERIC, 
+    turnover NUMERIC, 
+    amplitude NUMERIC, 
+    highest NUMERIC, 
+    lowest NUMERIC, 
+    open NUMERIC, 
+    close NUMERIC, 
+    volume_ratio NUMERIC, 
+    turnover_ratio NUMERIC, 
+    pe_dynamic NUMERIC, 
+    pb NUMERIC, 
+    created_at DATETIME DEFAULT (DATETIME(CURRENT_TIMESTAMP, 'localtime')), 
+    updated_at DATETIME DEFAULT (DATETIME(CURRENT_TIMESTAMP, 'localtime')), 
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE stockdata_st_stocks (
+    id INTEGER NOT NULL, 
+    code VARCHAR, 
+    name VARCHAR, 
+    latest_price NUMERIC, 
+    change_rate NUMERIC, 
+    change_amount NUMERIC, 
+    volume NUMERIC, 
+    turnover NUMERIC, 
+    amplitude NUMERIC, 
+    highest NUMERIC, 
+    lowest NUMERIC, 
+    open NUMERIC, 
+    close NUMERIC, 
+    volume_ratio NUMERIC, 
+    turnover_ratio NUMERIC, 
+    pe_dynamic NUMERIC, 
+    pb NUMERIC, 
+    created_at DATETIME DEFAULT (DATETIME(CURRENT_TIMESTAMP, 'localtime')), 
+    updated_at DATETIME DEFAULT (DATETIME(CURRENT_TIMESTAMP, 'localtime')), 
+    PRIMARY KEY (id)
+);
+
+UPDATE alembic_version SET version_num='0added726d5e' WHERE alembic_version.version_num = 'af741b58d30c';
+
+-- Running upgrade 0added726d5e -> 99e6760588e6
+
+CREATE TABLE data_all_stocks (
+    id INTEGER NOT NULL, 
+    code VARCHAR, 
+    name VARCHAR, 
+    latest_price NUMERIC, 
+    change_rate NUMERIC, 
+    change_amount NUMERIC, 
+    volume NUMERIC, 
+    turnover NUMERIC, 
+    amplitude NUMERIC, 
+    highest NUMERIC, 
+    lowest NUMERIC, 
+    open NUMERIC, 
+    close NUMERIC, 
+    volume_ratio NUMERIC, 
+    turnover_ratio NUMERIC, 
+    pe_dynamic NUMERIC, 
+    pb NUMERIC, 
+    created_at DATETIME DEFAULT (DATETIME(CURRENT_TIMESTAMP, 'localtime')), 
+    updated_at DATETIME DEFAULT (DATETIME(CURRENT_TIMESTAMP, 'localtime')), 
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE data_st_stocks (
+    id INTEGER NOT NULL, 
+    code VARCHAR, 
+    name VARCHAR, 
+    latest_price NUMERIC, 
+    change_rate NUMERIC, 
+    change_amount NUMERIC, 
+    volume NUMERIC, 
+    turnover NUMERIC, 
+    amplitude NUMERIC, 
+    highest NUMERIC, 
+    lowest NUMERIC, 
+    open NUMERIC, 
+    close NUMERIC, 
+    volume_ratio NUMERIC, 
+    turnover_ratio NUMERIC, 
+    pe_dynamic NUMERIC, 
+    pb NUMERIC, 
+    created_at DATETIME DEFAULT (DATETIME(CURRENT_TIMESTAMP, 'localtime')), 
+    updated_at DATETIME DEFAULT (DATETIME(CURRENT_TIMESTAMP, 'localtime')), 
+    PRIMARY KEY (id)
+);
+
+DROP TABLE stockdata_all_stocks;
+
+DROP TABLE stockdata_st_stocks;
+
+UPDATE alembic_version SET version_num='99e6760588e6' WHERE alembic_version.version_num = '0added726d5e';
+
+-- Running upgrade 99e6760588e6 -> 99e3e584e08e
+
+CREATE TABLE data_table_record (
+    id INTEGER NOT NULL, 
+    table_name VARCHAR, 
+    record_id INTEGER, 
+    record_type INTEGER, 
+    record_time INTEGER, 
+    record_content VARCHAR, 
+    created_at DATETIME DEFAULT (DATETIME(CURRENT_TIMESTAMP, 'localtime')), 
+    updated_at DATETIME DEFAULT (DATETIME(CURRENT_TIMESTAMP, 'localtime')), 
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE data_trade_date_hist (
+    id INTEGER NOT NULL, 
+    trade_date VARCHAR, 
+    created_at DATETIME DEFAULT (DATETIME(CURRENT_TIMESTAMP, 'localtime')), 
+    updated_at DATETIME DEFAULT (DATETIME(CURRENT_TIMESTAMP, 'localtime')), 
+    PRIMARY KEY (id)
+);
+
+ALTER TABLE data_all_stocks ADD COLUMN total_market_value NUMERIC;
+
+ALTER TABLE data_all_stocks ADD COLUMN circulating_market_value NUMERIC;
+
+ALTER TABLE data_all_stocks ADD COLUMN rise_speed NUMERIC;
+
+ALTER TABLE data_all_stocks ADD COLUMN five_minute_change NUMERIC;
+
+ALTER TABLE data_all_stocks ADD COLUMN sixty_days_change NUMERIC;
+
+ALTER TABLE data_all_stocks ADD COLUMN year_to_date_change NUMERIC;
+
+UPDATE alembic_version SET version_num='99e3e584e08e' WHERE alembic_version.version_num = '99e6760588e6';
+
+-- Running upgrade 99e3e584e08e -> d6609cc360f8
+
+ALTER TABLE data_table_record DROP COLUMN record_id;
+
+UPDATE alembic_version SET version_num='d6609cc360f8' WHERE alembic_version.version_num = '99e3e584e08e';
+
+-- Running upgrade d6609cc360f8 -> f8a587fd9552
+
+UPDATE alembic_version SET version_num='f8a587fd9552' WHERE alembic_version.version_num = 'd6609cc360f8';
+

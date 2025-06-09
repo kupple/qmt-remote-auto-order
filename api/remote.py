@@ -12,18 +12,18 @@ import time
 from .tools.sysConfig import get_system_unique_id
 from datetime import datetime,timezone
 from api.tools.tokenManager import generate_token
+from .global_params import G
 
 class Remote:
     
-    def __init__(self,qmt,G):
+    def __init__(self,qmt):
         self.stop_event = asyncio.Event()
         self.qmt = qmt
-        self.g = G
         self.ways = 1
         self.is_connected = False
         self.ws = None
         self.is_login = False
-        self.unique_id = get_system_unique_id()
+        self.unique_id = G.unique_id
         self.reconnect_count = 0
         self.should_reconnect = False
         self.loop = None  # 初始化为 None
@@ -70,13 +70,13 @@ class Remote:
                     })
                     
                     if self.qmt.is_connect == False :
-                        self.g.logger.warning("请先在个人页面配置好qmt路径和资金账号",extra={
+                        G.logger.warning("请先在个人页面配置好qmt路径和资金账号",extra={
                             "showMessage": True
                         })
                     self.qmt.manage_qmt_trader(content)
 
         except websockets.exceptions.ConnectionClosed:
-            self.g.logger.warning("已断开服务器连接",extra={
+            G.logger.warning("已断开服务器连接",extra={
                 "showMessage": True
             })
             self.is_connected = False
@@ -85,7 +85,7 @@ class Remote:
 
     async def reconnect(self):
         self.reconnect_count += 1
-        self.g.logger.warning(f"正在尝试重连... (第{self.reconnect_count}次) - {time.strftime('%Y-%m-%d %H:%M:%S')}",extra={
+        G.logger.warning(f"正在尝试重连... (第{self.reconnect_count}次) - {time.strftime('%Y-%m-%d %H:%M:%S')}",extra={
             "showMessage": True
         })
         await asyncio.sleep(self.RECONNECT_INTERVAL)
@@ -103,38 +103,38 @@ class Remote:
                 })
                 self.is_connected = False
         except Exception as e:
-            self.g.logger.error("断开服务器连接时出错" + str(e))
+            G.logger.error("断开服务器连接时出错" + str(e))
             self.is_connected = False
         
 
     
     async def connect_ws(self):
-        self.g.logger.info("正在连接到服务器地址是：" + str(self.server_url) + "方式是：" + str(self.ways),extra={
+        G.logger.info("正在连接到服务器",extra={
             "showMessage": True
         })
         try:
             TOKEN = None
             if self.ways == 2:
-                TOKEN = self.g.orm.getStorageVar('qmt_token')
+                TOKEN = G.orm.getStorageVar('qmt_token')
             else:
-                config = self.g.orm.get_setting_config()
+                config = G.orm.get_setting_config()
                 unique_id = get_system_unique_id()
                 plaintext = {
                     "u": unique_id            
                 }
                 TOKEN = generate_token(plaintext,config['salt'])
             
-            self.g.logger.info("正在连接到WebSocket...")
+            G.logger.info("正在连接到WebSocket...")
             self.ws = await websockets.connect(self.server_url, additional_headers={"Authorization": f"Bearer {TOKEN}"})
-            self.g.logger.info("WebSocket连接成功!")
+            G.logger.info("WebSocket连接成功!")
 
-            self.g.logger.info("已连接到服务器",extra={
+            G.logger.info("已连接到服务器",extra={
                 "showMessage": True
             })
             self.is_connected = True
             self.reconnect_count = 0  # Reset reconnect count on successful connection
             
-            self.g.logger.info("正在处理消息...")
+            G.logger.info("正在处理消息...")
             # Start message handling
             await self.handle_messages()
         except Exception as e:
@@ -147,13 +147,13 @@ class Remote:
                 "message": "服务端访问失败",
                 "type": type
             })
-            self.g.logger.error("服务端访问失败" + str(e))
+            G.logger.error("服务端访问失败" + str(e))
             if self.should_reconnect:
-                self.g.logger.warning("正在尝试重新连接...")
+                G.logger.warning("正在尝试重新连接...")
                 await self.reconnect()
 
     def connect(self, server_url,ways,is_login):
-        self.g.logger.info("正在连接服务器...")
+        G.logger.info("正在连接服务器...")
         self.reconnect_count = 0
         self.stop_event.clear()
         
@@ -168,7 +168,7 @@ class Remote:
                 self.is_login = is_login
                 await self.connect_ws()
             except Exception as e:
-                self.g.logger.error("连接服务器失败" + str(e))
+                G.logger.error("连接服务器失败" + str(e))
         
         # 直接在当前线程的事件循环中运行
         self.loop.run_until_complete(start_connection())
@@ -182,7 +182,7 @@ class Remote:
                 future = asyncio.run_coroutine_threadsafe(self.disconnect(), self.loop)
                 future.result()  # 等待断开连接完成
             except Exception as e:
-                self.g.logger.error("断开连接失败" + str(e))
+                G.logger.error("断开连接失败" + str(e))
 
                 
         self.loop = None  # 清理事件循环

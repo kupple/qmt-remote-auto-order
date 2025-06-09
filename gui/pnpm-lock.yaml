@@ -14,9 +14,6 @@ dependencies:
   dayjs:
     specifier: ^1.11.10
     version: 1.11.13
-  dotenv:
-    specifier: ^16.5.0
-    version: 16.5.0
   element-plus:
     specifier: ^2.3.4
     version: 2.10.1(vue@3.5.16)
@@ -468,11 +465,6 @@ packages:
   /delayed-stream@1.0.0:
     resolution: {integrity: sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ==}
     engines: {node: '>=0.4.0'}
-    dev: false
-
-  /dotenv@16.5.0:
-    resolution: {integrity: sha512-m/C+AwOAr9/W1UOIZUo232ejMNnJAJtYQjUbHoNTBNTJSvqzzDh7vnrei3o3r3m9blf6ZoDkvcw0VmozNRFJxg==}
-    engines: {node: '>=12'}
     dev: false
 
   /dunder-proto@1.0.1:

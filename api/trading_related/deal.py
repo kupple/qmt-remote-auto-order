@@ -1,6 +1,6 @@
 from pyapp.pkg.xtquant import xtconstant
 import re
-
+from api.global_params import G
 
 def calculate_stock_fee(
     transaction_type: str,  # 'buy' 或 'sell'
@@ -73,10 +73,32 @@ def convert_stock_suffix(stock_code: str) -> str:
         return stock_code  # 非目标交易所，返回原代码
 
 
-def get_qmt_price_type(security, order_style_str):
+# 拼装股票代码
+def stockcode_mapping_dic(security):
+    stockDic = {
+        "security":security,
+        "is_st":security in G.stock_map["st_stock_code"]    
+    }
+    return stockDic
+
+def get_qmt_price_type(security, order_style_str, order_type='buy'):
     # 提取交易所代码
     exchange = security.split('.')[-1]
-    is_kcb = security.startswith('688') and exchange == 'SH'  # 是否为科创板
+    cleanCode = security.split('.')[0]
+    stockDic = stockcode_mapping_dic(cleanCode)
+    # 是否为科创板
+    is_kcb = security.startswith('688') and exchange == 'SH'  
+    # 是否为普通主板
+    is_zhishu = exchange == 'SH' and security[0] == '6' and security[1:3] != '88'
+    
+    #是否为ST
+    is_st = stockDic['is_st'] 
+    
+    # 如果是ST股票，且是卖出类型 且是上海股票
+    if is_st and order_type == 'sell' and is_zhishu:
+        G.logger.warning("ST股票，且是卖出类型 且是上海股票，最新价报单")
+        return xtconstant.LATEST_PRICE
+    
     
     # 解析订单类型字符串
     if not order_style_str:

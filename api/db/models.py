@@ -261,3 +261,73 @@ class Logger(BaseModel):
     task_id = Column(Integer(), doc='任务ID', nullable=True)
     def __str__(self):
         return f"Logger: {self.id}"
+    
+    
+    
+class DATA_ST_STOCKS(BaseModel):
+    __tablename__ = "data_st_stocks"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    code = Column(String(), doc='代码', nullable=True)
+    name = Column(String(), doc='名称', nullable=True)
+    latest_price = Column(Numeric(), doc='最新价', nullable=True)
+    change_rate = Column(Numeric(), doc='涨跌幅', nullable=True)
+    change_amount = Column(Numeric(), doc='涨跌额', nullable=True)
+    volume = Column(Numeric(), doc='成交量', nullable=True)
+    turnover = Column(Numeric(), doc='成交额', nullable=True)
+    amplitude = Column(Numeric(), doc='振幅', nullable=True)
+    highest = Column(Numeric(), doc='最高', nullable=True)
+    lowest = Column(Numeric(), doc='最低', nullable=True)
+    open = Column(Numeric(), doc='今开', nullable=True)
+    close = Column(Numeric(), doc='昨收', nullable=True)
+    volume_ratio = Column(Numeric(), doc='量比', nullable=True)
+    turnover_ratio = Column(Numeric(), doc='换手率', nullable=True)
+    pe_dynamic = Column(Numeric(), doc='市盈率-动态', nullable=True)
+    pb = Column(Numeric(), doc='市净率', nullable=True)
+    def __str__(self):
+        return f"STOCKDATA_ST_STOCKS: {self.id}"
+    
+    
+class DATA_ALL_STOCKS(BaseModel):
+    __tablename__ = "data_all_stocks"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    code = Column(String(), doc='代码', nullable=True)
+    name = Column(String(), doc='名称', nullable=True)
+    latest_price = Column(Numeric(), doc='最新价', nullable=True)
+    change_rate = Column(Numeric(), doc='涨跌幅', nullable=True)
+    change_amount = Column(Numeric(), doc='涨跌额', nullable=True)
+    volume = Column(Numeric(), doc='成交量', nullable=True)
+    turnover = Column(Numeric(), doc='成交额', nullable=True)
+    amplitude = Column(Numeric(), doc='振幅', nullable=True)
+    highest = Column(Numeric(), doc='最高', nullable=True)
+    lowest = Column(Numeric(), doc='最低', nullable=True)
+    open = Column(Numeric(), doc='今开', nullable=True)
+    close = Column(Numeric(), doc='昨收', nullable=True)
+    volume_ratio = Column(Numeric(), doc='量比', nullable=True)
+    turnover_ratio = Column(Numeric(), doc='换手率', nullable=True)
+    pe_dynamic = Column(Numeric(), doc='市盈率-动态', nullable=True)
+    pb = Column(Numeric(), doc='市净率', nullable=True)
+    total_market_value = Column(Numeric(), doc='总市值', nullable=True)
+    circulating_market_value = Column(Numeric(), doc='流通市值', nullable=True)
+    rise_speed = Column(Numeric(), doc='涨速', nullable=True)
+    five_minute_change = Column(Numeric(), doc='5分钟涨跌', nullable=True)
+    sixty_days_change = Column(Numeric(), doc='60日涨跌幅', nullable=True)
+    year_to_date_change = Column(Numeric(), doc='年初至今涨跌幅', nullable=True)
+    def __str__(self):
+        return f"STOCKDATA_ALL_STOCKS: {self.id}"
+    
+class DATA_TRADE_DATE_HIST(BaseModel):
+    __tablename__ = "data_trade_date_hist"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    trade_date = Column(String(), doc='交易日', nullable=True)
+    def __str__(self):
+        return f"DATA_TRADE_DATE_HIST: {self.id}"
+
+class DATA_TABLE_RECORD(BaseModel):
+    __tablename__ = "data_table_record"
+    table_name = Column(String(), doc='表名', nullable=True)
+    record_type = Column(Integer(), doc='记录类型', nullable=True)
+    record_time = Column(Integer(), doc='记录时间', nullable=True)
+    record_content = Column(String(), doc='记录内容', nullable=True)
+    def __str__(self):
+        return f"DATA_TABLE_RECORD: {self.id}"
+    
