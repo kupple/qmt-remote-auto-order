@@ -101,7 +101,7 @@ import { useCommonStore } from '@/store/common.js'
 import { getUserInfo } from '@/api/auth'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter, useRoute } from 'vue-router'
-import { getSettingConfig, runTask, getTaskList, saveConfig, setAutomatically } from '@/api/comm_tube'
+import { getSettingConfig, runTask, getTaskList, saveConfig, setAutomatically,getUniqueID } from '@/api/comm_tube'
 
 const router = useRouter() // 使用useRouter函数创建router实例
 const route = useRoute()
@@ -197,7 +197,7 @@ const getTaskListAction = async () => {
     const userInfo = await getUserInfo()
     user_id = userInfo.id
   } else {
-    user_id = config.client_id
+    user_id = await getUniqueID()
   }
   const res = await getTaskList({
     user_id

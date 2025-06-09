@@ -73,7 +73,6 @@ export const useRemoteStore = defineStore('remote', {
         params.date = dayjs().format('MM-DD HH:mm:ss')
         this.messagesArr.push({
           message: params.message,
-          status: params.status || 1,
           date: params.date
         })
       }

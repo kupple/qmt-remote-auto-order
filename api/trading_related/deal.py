@@ -35,21 +35,6 @@ def calculate_stock_fee(
     # 返回总费用
     return commission + stamp_duty
 
-# 示例用法
-if __name__ == "__main__":
-    # 买入示例：单价10元，买入1000股，佣金率0.03%
-    buy_result = calculate_stock_fee('buy', 10, 1000)
-    print("买入费用计算结果:")
-    for key, value in buy_result.items():
-        print(f"{key}: {value:.2f}" if isinstance(value, float) else f"{key}: {value}")
-    
-    print("\n------------------------\n")
-    
-    # 卖出示例：单价15元，卖出1000股，佣金率0.03%
-    sell_result = calculate_stock_fee('sell', 15, 1000)
-    print("卖出费用计算结果:")
-    for key, value in sell_result.items():
-        print(f"{key}: {value:.2f}" if isinstance(value, float) else f"{key}: {value}")
 
 # 将聚宽代码转成qmt
 def convert_stock_suffix(stock_code: str) -> str:

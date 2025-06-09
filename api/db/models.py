@@ -244,3 +244,20 @@ class Backtest(BaseModel):
     can_use_amount = Column(Numeric(), doc='可用金额', nullable=True)
     def __str__(self):
         return f"Backtest: {self.id}"
+    
+    
+class Logger(BaseModel):
+    __tablename__ = "logger"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    timestamp = Column(String(), doc='时间戳', nullable=True)
+    logger_name = Column(String(), doc='日志名称', nullable=True)
+    level = Column(String(), doc='日志级别', nullable=True)
+    message = Column(String(), doc='日志消息', nullable=True)
+    module = Column(String(), doc='模块', nullable=True)
+    func_name = Column(String(), doc='函数名称', nullable=True)
+    line_num = Column(Integer(), doc='行号', nullable=True)
+    exception = Column(String(), doc='异常信息', nullable=True)
+    user_id = Column(String(), doc='用户ID', nullable=True)
+    task_id = Column(Integer(), doc='任务ID', nullable=True)
+    def __str__(self):
+        return f"Logger: {self.id}"

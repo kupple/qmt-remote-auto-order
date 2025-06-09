@@ -55,6 +55,17 @@ export const routes = [
     }
   },
   {
+    path: '/logging',
+    name: 'Logging',
+    chName: '查看日志',
+    icon: 'InfoFilled',
+    component: () => import('../views/logging/index.vue'),
+    meta: {
+      title: '日志功能',
+      showBack: false
+    }
+  },
+  {
     path: '/transition',
     name: 'Transition',
     chName: '一键转换',

@@ -119,3 +119,15 @@ export const queryTradeToday = (task_id) => {
 export const system_getAppInfo = ()=>{
   return window.pywebview.api.system_getAppInfo()
 }
+export const queryLogList = (params) => {
+  return window.pywebview.api.query_log_list(params)
+}
+
+export const clearLog = () => {
+  return window.pywebview.api.clear_log()
+}
+
+export const getUniqueID = () => {
+  return window.pywebview.api.get_unique_id()
+}
+  

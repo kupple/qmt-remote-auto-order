@@ -1,22 +1,6 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-'''
-Author: 潘高
-LastEditors: 潘高
-Date: 2023-03-12 20:08:30
-LastEditTime: 2024-01-22 17:08:27
-Description: 操作数据库类
-usage:
-    from api.db.orm import ORM
-
-    orm = ORM()    # 操作数据库类
-    author = self.orm.getStorageVar('author')    # 获取储存变量
-    print('author', author)
-'''
-
 from datetime import datetime
 from api.db.models import (
-    PPXStorageVar, Setting, TaskList, Orders, Entrusts, Trades, Backtest,Positions
+    PPXStorageVar, Setting, TaskList, Orders, Entrusts, Trades, Backtest,Positions,Logger    
 )
 from pyapp.db.db import DB
 from sqlalchemy import select, update, insert, and_, or_, desc, func
@@ -234,7 +218,6 @@ class ORM:
             total = dbSession.execute(count_stmt).scalar()
 
         dbSession.close()
-        print(data_list)
         return {
             'data': data_list,
             'total': total
@@ -355,7 +338,7 @@ class ORM:
                 positions = session.execute(stmt).scalars().all()
                 return [pos.toDict() for pos in positions]
         except Exception as e:
-            print(f"查询持仓出错: {str(e)}")
+            self.g.logger.error(f"查询持仓出错: {str(e)}")
             return []
     
     def create_backtest(self, data):
@@ -589,3 +572,43 @@ class ORM:
         dbSession.close()
         
     
+    
+    def add_log(self, data):
+        """添加日志记录"""
+        dbSession = DB.session()
+        with dbSession.begin():
+            log = Logger(**data)
+            dbSession.add(log)
+        dbSession.close()
+        return True
+    
+    def query_log_list(self, query_data: dict, page=1, page_size=50):
+        """
+        :param query_data: 字典形式的查询参数
+        :param page: 页码
+        :param page_size: 每页大小
+        :return: 日志记录列表
+        """
+        offset = (page - 1) * page_size
+        dbSession = DB.session()
+        with dbSession.begin():
+            stmt = select(Logger)
+            for key, value in query_data.items():
+                if hasattr(Logger, key):
+                    stmt = stmt.where(getattr(Logger, key) == value)
+            stmt = stmt.order_by(desc(Logger.created_at))
+            result = dbSession.execute(stmt).scalars().all()
+            data_list = [log.toDict() for log in result[offset:offset+page_size]]
+            
+        dbSession.close()
+        return {
+            'data': data_list,
+        }
+    def clear_log(self):
+        """清除日志"""
+        dbSession = DB.session()
+        with dbSession.begin():
+            stmt = Logger.__table__.delete()
+            dbSession.execute(stmt)
+        dbSession.close()
+        return True

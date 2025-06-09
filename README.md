@@ -80,13 +80,20 @@
   
 ## 下载
 
-[widnow 安装包](https://github.com/kupple/qmt-remote-auto-order/releases)
+[点击下载widnow 安装](https://github.com/kupple/qmt-remote-auto-order/releases)
 
-[本地服务端](https://github.com/kupple/qmt-remote-auto-order/releases)
+[点击下载go本地服务端下载](https://github.com/kupple/qmt-remote-auto-order/releases)
 
 **若无法打开程序/白屏请下载webview2** 后重新打开
 
 [webview2下载地址](https://developer.microsoft.com/zh-cn/microsoft-edge/webview2/)
+
+## 本地部署服务端说明
+
+1. 从上面下载已打包的go文件，名字为qmt-auto-order-server-linux-amd64 目前只支持linux-amd64 架构如需其他架构请联系可帮忙编译。
+2. 下载config.yaml放置于qmt-auto-order-server-linux-amd64同一目录下 
+3. 设置config.yaml 注意：security.token_salt的值 请与客户端填写的加密盐保持一致
+4. 运行命令 `nohup ./qmt-auto-order-server-linux-amd64 &` 开启服务端
 
 ## 开发说明
 

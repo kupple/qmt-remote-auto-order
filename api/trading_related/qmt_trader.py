@@ -10,15 +10,14 @@ from .deal import get_qmt_price_type
 
 
 
-
-
 class qmt_trader:
  def __init__(self,path= r'D:/国金QMT交易端模拟/userdata_mini',
-    account='55009640',account_type='STOCK',
+    account='55009640',g=None,account_type='STOCK',
     is_slippage=True,slippage=0.01) -> None:
   self.xt_trader=''
   self.acc=''
   self.path=path
+  self.g=g
   self.session_id=int(self.random_session_id())
   self.account=account
   self.account_type=account_type
@@ -100,11 +99,15 @@ class qmt_trader:
    fix_result_order_id = self.xt_trader.order_stock(account=self.acc,stock_code=stock_code, order_type=order_type,
                 order_volume=order_volume, price_type=price_type,
                 price=price, strategy_name=strategy_name, order_remark=order_remark)
-   print('交易类型{} 代码{} 价格{} 数量{} 订单编号{}'.format(order_type,stock_code,price,order_volume,fix_result_order_id))
+   self.g.logger.info("交易类型{} 代码{} 价格{} 数量{} 订单编号{}".format(order_type,stock_code,price,order_volume,fix_result_order_id),extra={
+      "showMessage": True
+    })
   #  fix_result_order_id - 1有问题
    return fix_result_order_id
   else:
-   print('卖出 标的{} 价格{} 委托数量{}小于0有问题'.format(stock_code,price,order_volume))   
+   self.g.logger.error("卖出 标的{} 价格{} 委托数量{}小于0有问题".format(stock_code,price,order_volume),extra={
+      "showMessage": True
+    })   
  
  def place_order(self,security='600031.SH',
      amount=100,price=20,order_type=xtconstant.STOCK_BUY,order_style_str='',strategy_name='',order_remark=''):
@@ -141,10 +144,14 @@ class qmt_trader:
    fix_result_order_id = self.xt_trader.order_stock_async(account=self.acc,stock_code=stock_code, order_type=order_type,
                 order_volume=order_volume, price_type=price_type,
                 price=price, strategy_name=strategy_name, order_remark=order_remark)
-   print('交易类型{} 代码{} 价格{} 数量{} 订单编号{}'.format(order_type,stock_code,price,order_volume,fix_result_order_id))
+   self.g.logger.info("交易类型{} 代码{} 价格{} 数量{} 订单编号{}".format(order_type,stock_code,price,order_volume,fix_result_order_id),extra={
+      "showMessage": True
+    })
    return fix_result_order_id
   else:
-   print('买入 标的{} 价格{} 委托数量{}小于0有问题'.format(stock_code,price,order_volume))
+   self.g.logger.error("买入 标的{} 价格{} 委托数量{}小于0有问题".format(stock_code,price,order_volume),extra={
+      "showMessage": True
+    })
   
  def connect(self,callback):
   '''
@@ -154,7 +161,9 @@ class qmt_trader:
   account账户,
   account_type账户内类型
   '''
-  print('链接qmt')
+  self.g.logger.info("正在连接QMT",extra={
+      "showMessage": True
+    })
   # path为mini qmt客户端安装目录下userdata_mini路径
   path = self.path
   # session_id为会话编号，策略使用方对于不同的Python策略需要使用不同的会话编号

@@ -9,6 +9,7 @@ from api.system import System
 from api.db.orm import ORM
 from api.common import Common
 from api.remote import Remote
+import json
 from api.qmt import QMT
 from api.trading_related.task_scheduler import TaskScheduler
 from api.trading_related.strategy_analyzer import analyze_stock_data
@@ -25,7 +26,7 @@ from api.trading_related.deal import convert_stock_suffix
 from dotenv import load_dotenv
 load_dotenv()
 from .tools.sysConfig import get_system_unique_id
-
+from .tools.loggerHandler import setup_logger
 
 # 是否自动连接ws 开发模式不需要连接很麻烦
 AUTO_CONNECTION_WS = int(os.getenv('AUTO_CONNECTION_WS',1))
@@ -41,18 +42,19 @@ class GlobalParams():
         self.is_wx_connected = False
         self.unique_id = get_system_unique_id()
         self.orm = ORM()
+        self.logger = setup_logger(self)
 
 class API(System):
     def __init__(self):
-        self.G = GlobalParams()
+        self.g = GlobalParams()
         # 创建一个qmt对象
-        self.common = Common(self.G)
-        self.qmt = QMT(self.G)
-        self.remote = Remote(self.qmt, self.G)
+        self.common = Common(self.g)
+        self.qmt = QMT(self.g)
+        self.remote = Remote(self.qmt, self.g)
         self.thread1 = None
         
         # 初始化任务调度器
-        self.task_scheduler = TaskScheduler(self.qmt, self.G)
+        self.task_scheduler = TaskScheduler(self.qmt, self.g)
         
         # 启动定时任务
         self.task_scheduler.schedule_national_debt(hour=15, minute=10)
@@ -84,35 +86,34 @@ class API(System):
             
             if enable:
                 winreg.SetValueEx(key, app_name, 0, winreg.REG_SZ, sys.executable)
-                print(f"已启用自启动: {app_name}")
+                self.g.logger.info(f"已启用自启动: {app_name}")
             else:
                 winreg.DeleteValue(key, app_name)
-                print(f"已禁用自启动: {app_name}")
+                self.g.logger.info(f"已禁用自启动: {app_name}")
                 
             winreg.CloseKey(key)
         except WindowsError as e:
-            print(f"注册表操作失败: {e}")        
+            self.g.logger.error(f"注册表操作失败: {e}")        
 
     def storage_get(self, key):
-        value = self.G.orm.getStorageVar(key)
+        value = self.g.orm.getStorageVar(key)
         if key == 'qmt_user_info':
-            self.G.user_id = value
-            
-            
+            self.g.user_id = json.loads(value)['id'] if value else None
+
         '''获取存储变量'''
         return  value
 
     def storage_set(self, key, val):
         '''设置存储变量'''
-        self.G.orm.setStorageVar(key, val)
+        self.g.orm.setStorageVar(key, val)
 
     def get_setting_config(self):
-        config = self.G.orm.get_setting_config()
-        self.G.run_model_type = config['run_model_type']
+        config = self.g.orm.get_setting_config()
+        self.g.run_model_type = config['run_model_type']
         return config
 
     def save_config(self, data):
-        self.G.orm.save_config(data)
+        self.g.orm.save_config(data)
     
     def is_process_exist(self):
         return self.common.is_process_exist()
@@ -121,7 +122,7 @@ class API(System):
         if AUTO_CONNECTION_WS == 1:
             if USE_FIXED_WS_URL == 1:
                 server_url = WS_URL_FIXED   
-            self.G.orm.save_config({"server_url":server_url})
+            self.g.orm.save_config({"server_url":server_url})
             self.thread1 = threading.Thread(target=self.remote.connect, args=(server_url,ways,is_login))
             self.thread1.start()
         
@@ -138,10 +139,10 @@ class API(System):
 
         
     def get_task_list(self,data):
-        return self.G.orm.get_task_list(data)
+        return self.g.orm.get_task_list(data)
     
     def create_task(self,data):
-        return self.G.orm.create_task(data)
+        return self.g.orm.create_task(data)
     
     def run_task(self,data):
         st = ""
@@ -150,20 +151,25 @@ class API(System):
         else:
             st = "关闭"
         message = data["name"] + "任务已" + st
-        System.system_py2js(self,'remoteCallBack',  {
-            "message": message,
+        
+        self.g.logger.info(message,extra={
+            "showMessage": True
         })
-        return self.G.orm.run_task(data)
+        return self.g.orm.run_task(data)
     
     def delete_task(self,data):
-        return self.G.orm.delete_task(data)
+        return self.g.orm.delete_task(data)
     
     def get_remote_state(self):
         return {"state":self.remote.is_connected,
-                "unique_id":self.remote.unique_id,
+                "unique_id":self.g.unique_id,
                 }
+    
+    def get_unique_id(self):
+        return self.g.unique_id
+        
     def get_task_detail(self,data):
-        return self.G.orm.get_task_detail(data)
+        return self.g.orm.get_task_detail(data)
     
     
     def transition_code(self,data,taskDic):
@@ -174,17 +180,15 @@ class API(System):
     
     
     def get_order_list(self,data):
-        return self.G.orm.get_order_list(data)
+        return self.g.orm.get_order_list(data)
     
-    def test_qmt_connect(self,path):
-        return self.qmt.test_connect(path)
 
     def cancel_daily_task(self):
         """取消所有定时任务"""
         return self.task_scheduler.cancel_all_tasks()
     
     def check_strategy_code_exists(self,strategy_code):
-        return self.G.orm.check_strategy_code_exists(strategy_code)
+        return self.g.orm.check_strategy_code_exists(strategy_code)
 
     def open_directory_dialog(self):
         """打开系统目录选择对话框（跨平台）"""
@@ -215,16 +219,16 @@ class API(System):
             return None        
         
     def create_backtest(self,data):
-        return self.G.orm.create_backtest(data)   
+        return self.g.orm.create_backtest(data)   
     
     def query_backtest_by_task_id(self, task_id):
-        result = self.G.orm.query_backtest_by_task_id(task_id)
+        result = self.g.orm.query_backtest_by_task_id(task_id)
         return result
     
     def count_strategy_analyzer(self,task_id,backtest_id):
-        sample_trades = self.G.orm.count_strategy_analyzer(task_id,backtest_id)
+        sample_trades = self.g.orm.count_strategy_analyzer(task_id,backtest_id)
         
-        backtest = self.G.orm.query_backtest_by_id(backtest_id)
+        backtest = self.g.orm.query_backtest_by_id(backtest_id)
         
         if len(sample_trades)>0:
             # 假设 trades 是你的交易数据列表
@@ -236,23 +240,29 @@ class API(System):
             return None
 
     def get_position_by_task_id(self, task_id):
-        return self.G.orm.query_position_by_task_id(task_id)
+        return self.g.orm.query_position_by_task_id(task_id)
     
     def delete_position_by_id(self, id):
-        return self.G.orm.delete_position_by_id(id)
+        return self.g.orm.delete_position_by_id(id)
     
     def update_position(self, id, params):
-        return self.G.orm.update_position(id, params)
+        return self.g.orm.update_position(id, params)
     
     def add_position(self, params):
         params['security_code'] = convert_stock_suffix(params['security_code'])
-        return self.G.orm.add_position(params)
+        return self.g.orm.add_position(params)
     
     def check_position_exists(self, security_code, task_id):
-        return self.G.orm.check_position_exists(convert_stock_suffix(security_code), task_id)    
+        return self.g.orm.check_position_exists(convert_stock_suffix(security_code), task_id)    
     
     def update_task(self,task_id, can_use_amount):
-        return self.G.orm.update_task(task_id,can_use_amount=can_use_amount)
+        return self.g.orm.update_task(task_id,can_use_amount=can_use_amount)
     
     def query_trade_today(self, task_id):
-        return self.G.orm.query_trade_today(task_id)
+        return self.g.orm.query_trade_today(task_id)
+    
+    def query_log_list(self,data):
+        return self.g.orm.query_log_list(data,page=data['page'],page_size=data['pageSize'])
+    
+    def clear_log(self):
+        return self.g.orm.clear_log()

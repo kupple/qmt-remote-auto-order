@@ -12,7 +12,7 @@ from api.tools.tokenManager import generate_token,verify_token
 from api.tools.template import get_template_order_count_type_1,get_template_order_count_type_2
 class Common:
     def __init__(self,G) -> None:
-        self.G = G
+        self.g = G
         
     def is_process_exist(self):
         app_name = "XtMiniQmt.exe"
@@ -85,18 +85,18 @@ class Common:
             
             return data
         except Exception as e:
-            print(f"还原错误: {e}")
+            self.g.logger.error(f"还原错误: {e}")
             return "还原错误"    
 
     # 转译代码 
     def transition_code(self,data,taskDic):
-        config =  self.G.orm.get_setting_config()
+        config =  self.g.orm.get_setting_config()
         run_model_type = config['run_model_type']
 
         if run_model_type == 2:
-            token = self.G.orm.getStorageVar('qmt_token')
+            token = self.g.orm.getStorageVar('qmt_token')
         else:
-            unique_id = self.G.unique_id
+            unique_id = self.g.unique_id
             plaintext = {
                 "u": unique_id,
                 "p":'local'

@@ -471,3 +471,37 @@ ALTER TABLE tasklist ADD COLUMN user_id VARCHAR;
 
 UPDATE alembic_version SET version_num='fb407105710b' WHERE alembic_version.version_num = 'eebf0c1055d1';
 
+-- Running upgrade fb407105710b -> 082422ec7ccb
+
+CREATE TABLE logger (
+    id INTEGER NOT NULL, 
+    timestamp VARCHAR, 
+    logger_name VARCHAR, 
+    level VARCHAR, 
+    message VARCHAR, 
+    module VARCHAR, 
+    func_name VARCHAR, 
+    line_num INTEGER, 
+    exception VARCHAR, 
+    user_id VARCHAR, 
+    created_at DATETIME DEFAULT (DATETIME(CURRENT_TIMESTAMP, 'localtime')), 
+    updated_at DATETIME DEFAULT (DATETIME(CURRENT_TIMESTAMP, 'localtime')), 
+    PRIMARY KEY (id)
+);
+
+UPDATE alembic_version SET version_num='082422ec7ccb' WHERE alembic_version.version_num = 'fb407105710b';
+
+-- Running upgrade 082422ec7ccb -> 2f7dcb98dbdc
+
+UPDATE alembic_version SET version_num='2f7dcb98dbdc' WHERE alembic_version.version_num = '082422ec7ccb';
+
+-- Running upgrade 2f7dcb98dbdc -> fee48e19d19f
+
+UPDATE alembic_version SET version_num='fee48e19d19f' WHERE alembic_version.version_num = '2f7dcb98dbdc';
+
+-- Running upgrade fee48e19d19f -> af741b58d30c
+
+ALTER TABLE logger ADD COLUMN task_id INTEGER;
+
+UPDATE alembic_version SET version_num='af741b58d30c' WHERE alembic_version.version_num = 'fee48e19d19f';
+

@@ -80,7 +80,7 @@
 import { ref, computed, onMounted, reactive } from 'vue'
 import { useCommonStore } from '@/store/common.js'
 import { QuestionFilled } from '@element-plus/icons-vue'
-import { createTask, checkStrategyCodeExists, getSettingConfig } from '@/api/comm_tube'
+import { createTask, checkStrategyCodeExists, getSettingConfig,getUniqueID } from '@/api/comm_tube'
 import { getUserInfo } from '@/api/auth'
 import { bindStrategyKey } from '@/api/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -183,7 +183,7 @@ const handleSubmit = async () => {
     const  userInfo = await getUserInfo()
     user_id = userInfo.id
   }else{
-    user_id = config.client_id
+    user_id = await getUniqueID()
   }
   let dic = {
     id: editDic.value?.id || undefined,

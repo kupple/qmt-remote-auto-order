@@ -24,7 +24,7 @@ class TaskScheduler:
             orm: 数据库操作实例
         """
         self.qmt = qmt
-        self.G = G
+        self.g = G
         self.timers = {}  # 存储所有定时器
         self.logger = logging.getLogger(__name__)
         
@@ -57,7 +57,7 @@ class TaskScheduler:
         Returns:
             bool: 是否满足执行条件
         """
-        config = self.G.orm.get_setting_config()
+        config = self.g.orm.get_setting_config()
         base_conditions = (
             config["client_id"] != "" and 
             config["mini_qmt_path"] != "" and 

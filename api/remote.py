@@ -18,7 +18,7 @@ class Remote:
     def __init__(self,qmt,G):
         self.stop_event = asyncio.Event()
         self.qmt = qmt
-        self.G = G
+        self.g = G
         self.ways = 1
         self.is_connected = False
         self.ws = None
@@ -57,7 +57,6 @@ class Remote:
                     self.is_connected = False
                     self.should_reconnect = False
                     System.system_py2js(self,'remoteCallBack',  {
-                        "state": 0,
                         "message": "其他地方已登录断开连接请重新登录",
                         "type": "logout",
                     })
@@ -66,25 +65,19 @@ class Remote:
                 else:             
                     # 发送信息 写法没错
                     System.system_py2js(self,'remoteCallBack',  {
-                        "state": 1,
                         "message": "",
                         "data":content,
                     })
                     
                     if self.qmt.is_connect == False :
-                        System.system_py2js(self,'remoteCallBack',  {
-                            "state": 1,
-                            "message": "",
-                            "status": "2",
-                            "data":"请先在个人页面配置好qmt路径和资金账号",
+                        self.g.logger.warning("请先在个人页面配置好qmt路径和资金账号",extra={
+                            "showMessage": True
                         })
                     self.qmt.manage_qmt_trader(content)
 
         except websockets.exceptions.ConnectionClosed:
-            print('Connection closed')
-            System.system_py2js(self,'remoteCallBack',  {
-                "state": 0,
-                "message": "已断开服务器连接",
+            self.g.logger.warning("已断开服务器连接",extra={
+                "showMessage": True
             })
             self.is_connected = False
             if self.should_reconnect:
@@ -92,12 +85,9 @@ class Remote:
 
     async def reconnect(self):
         self.reconnect_count += 1
-        print(f'Attempting to reconnect... (Attempt {self.reconnect_count})')
-        System.system_py2js(self,'remoteCallBack',  {
-            "state": 0,
-            "message": f"正在尝试重连... (第{self.reconnect_count}次) - {time.strftime('%Y-%m-%d %H:%M:%S')}",
+        self.g.logger.warning(f"正在尝试重连... (第{self.reconnect_count}次) - {time.strftime('%Y-%m-%d %H:%M:%S')}",extra={
+            "showMessage": True
         })
-        
         await asyncio.sleep(self.RECONNECT_INTERVAL)
         await self.connect_ws()
 
@@ -108,69 +98,62 @@ class Remote:
                 await self.ws.close()
                 self.ws = None
                 System.system_py2js(self,'remoteCallBack',  {
-                    "state": 0,
                     "type":"exit",
                     "message": "已断开服务器连接",
                 })
                 self.is_connected = False
         except Exception as e:
-            print(f'Error during disconnect: {e}')
-            System.system_py2js(self,'remoteCallBack',  {
-                "state": 0,
-                "message": "断开服务器连接时出错",
-            })
+            self.g.logger.error("断开服务器连接时出错" + str(e))
             self.is_connected = False
         
 
     
     async def connect_ws(self):
-        print("Starting connect_ws...",self.server_url,self.ways)
+        self.g.logger.info("正在连接到服务器地址是：" + str(self.server_url) + "方式是：" + str(self.ways),extra={
+            "showMessage": True
+        })
         try:
             TOKEN = None
             if self.ways == 2:
-                TOKEN = self.G.orm.getStorageVar('qmt_token')
+                TOKEN = self.g.orm.getStorageVar('qmt_token')
             else:
-                config = self.G.orm.get_setting_config()
+                config = self.g.orm.get_setting_config()
                 unique_id = get_system_unique_id()
                 plaintext = {
                     "u": unique_id            
                 }
                 TOKEN = generate_token(plaintext,config['salt'])
             
-            print("Attempting to connect to WebSocket...")
+            self.g.logger.info("正在连接到WebSocket...")
             self.ws = await websockets.connect(self.server_url, additional_headers={"Authorization": f"Bearer {TOKEN}"})
-            print("WebSocket connected successfully!")
+            self.g.logger.info("WebSocket连接成功!")
 
-            System.system_py2js(self,'remoteCallBack',  {
-                "state": 1,
-                "message": "已连接到服务器",
-                "data":None
+            self.g.logger.info("已连接到服务器",extra={
+                "showMessage": True
             })
             self.is_connected = True
             self.reconnect_count = 0  # Reset reconnect count on successful connection
             
-            print("Starting handle_messages...")
+            self.g.logger.info("正在处理消息...")
             # Start message handling
             await self.handle_messages()
         except Exception as e:
-            print(f"Error connecting to server: {e}")
             type = 'loss'
-            print(self.is_login)
             if self.is_login:
                 type = 'exit'
             System.system_py2js(self,'remoteCallBack',  {
-                "state": 0,
                 "show": True,
                 "showType": "error",
                 "message": "服务端访问失败",
                 "type": type
             })
+            self.g.logger.error("服务端访问失败" + str(e))
             if self.should_reconnect:
-                print("Attempting to reconnect...")
+                self.g.logger.warning("正在尝试重新连接...")
                 await self.reconnect()
 
     def connect(self, server_url,ways,is_login):
-        print("Starting connect method...")
+        self.g.logger.info("正在连接服务器...")
         self.reconnect_count = 0
         self.stop_event.clear()
         
@@ -185,7 +168,7 @@ class Remote:
                 self.is_login = is_login
                 await self.connect_ws()
             except Exception as e:
-                print(f"Error in connect_ws: {e}")
+                self.g.logger.error("连接服务器失败" + str(e))
         
         # 直接在当前线程的事件循环中运行
         self.loop.run_until_complete(start_connection())
@@ -199,7 +182,7 @@ class Remote:
                 future = asyncio.run_coroutine_threadsafe(self.disconnect(), self.loop)
                 future.result()  # 等待断开连接完成
             except Exception as e:
-                print(f'Error during close_ws: {e}')
+                self.g.logger.error("断开连接失败" + str(e))
 
                 
         self.loop = None  # 清理事件循环
