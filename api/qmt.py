@@ -502,3 +502,38 @@ class QMT:
 
     
 
+  def test_connect(self,path):
+    if sys.platform.startswith('darwin'):
+      return {
+        'msg':'',
+        'is_connect':True,
+        'account_arr':['121600012698']
+      }
+    
+    import random
+    from pyapp.pkg.xtquant.xttrader import XtQuantTrader
+    
+    result = {
+      'msg':'',
+      'is_connect':False,
+      'account_arr':[]
+    }
+    session_id = int(random.randint(100000, 999999)) 
+    xt_trader = XtQuantTrader(path, session_id)
+    xt_trader.start() 
+    connect_result = xt_trader.connect()
+    out = xt_trader.query_account_status()
+    account_arr = []
+    for obj in out:
+      if hasattr(obj, 'account_id'):
+        account_arr.append(getattr(obj, 'account_id'))
+    result['account_arr'] = account_arr
+
+
+    if connect_result == 0:
+      print('连接成功')
+      result['is_connect'] = True
+    else:
+      result['msg'] = 'QMT路径错误,请重新检查!'
+    return result
+    

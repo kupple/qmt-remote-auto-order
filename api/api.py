@@ -180,6 +180,8 @@ class API(System):
     def get_order_list(self,data):
         return G.orm.get_order_list(data)
     
+    def test_qmt_connect(self,path):
+        return self.qmt.test_connect(path)
 
     def cancel_daily_task(self):
         """取消所有定时任务"""
