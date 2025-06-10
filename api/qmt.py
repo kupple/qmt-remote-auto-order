@@ -138,9 +138,7 @@ class MyXtQuantTraderCallback(XtQuantTraderCallback):
         
                 
     except Exception as e:
-      G.logger.error("on_stock_trade error" + str(e),extra={
-              "showMessage": True
-      })
+      G.logger.error("on_stock_trade error" + str(e))
     # 系统下的单
   def on_stock_position(self, position):
     """
@@ -340,7 +338,7 @@ class QMT:
     
   
   # 统一处理-下单接口
-  def  place_order(self, 
+  def place_order(self, 
                    stock_code='600031.SH',
                    volume=100, 
                    price=20,
@@ -350,21 +348,11 @@ class QMT:
                    strategy_name='', 
                    order_remark='',
                    is_mock=False):
-      
+    
     price_type = get_qmt_price_type(stock_code, order_style_str, is_buy)
     order_type = OrderType.STOCK_BUY if is_buy == 1 else OrderType.STOCK_SELL
+    
     if is_mock == False:
-        self.simulator.place_order(
-          stock_code=stock_code,
-          volume=volume,
-          price=price,
-          order_type=order_type,
-          order_time=order_time,
-          price_type=price_type,
-          strategy_name=str(task['id']),
-          order_remark=order_remark
-        )
-    else:
         self.qmt_trader.place_order(
           stock_code=stock_code,
           volume=volume,
@@ -374,6 +362,17 @@ class QMT:
           strategy_name=strategy_name,
           order_remark=order_remark
         ) 
+    else:
+        self.simulator.place_order(
+          stock_code=stock_code,
+          volume=volume,
+          price=price,
+          order_type=order_type,
+          order_time=order_time,
+          price_type=price_type,
+          strategy_name=strategy_name,
+          order_remark=order_remark
+        )
     
   # 下单协议{code:code,price:price,amount:amount,type:type}
   def manage_qmt_trader(self,data):    
@@ -478,7 +477,9 @@ class QMT:
               stock_code=security,
               volume=real_amount,
               price=price,
-              order_type=True if is_buy == 1 else False,
+              is_buy=True if is_buy == 1 else False,
+              order_time=timestamp_ms,
+              order_style_str=style,
               strategy_name=str(task['id']),
               order_remark=orderId,
               is_mock=True
@@ -522,17 +523,22 @@ class QMT:
                 stock_code=security,
                 volume=real_amount,
                 price=price,
-                order_type=True if is_buy == 1 else False,
+                is_buy=True if is_buy == 1 else False,
+                order_time=None,
+                order_style_str=style,
                 strategy_name=str(task['id']),
-                order_remark=orderId
+                order_remark=orderId,
+                is_mock=False
             )
         else:
           G.logger.info("任务未开启: {}".format(strategy_code),extra={
                   "showMessage": True
           })
     except Exception as e:
-        G.logger.error("manage_qmt_trader error" + str(e),extra={
-                "showMessage": True
+        import traceback
+        error_msg = f"manage_qmt_trader error: {str(e)}\n{traceback.format_exc()}"
+        G.logger.error(error_msg,extra={
+          "showMessage": True
         })
 
     

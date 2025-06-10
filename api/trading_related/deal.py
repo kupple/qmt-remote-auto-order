@@ -138,4 +138,73 @@ def get_qmt_price_type(security, order_style_str, is_buy=True):
     return xtconstant.LATEST_PRICE
 
 
-
+def calculate_dividend_effect(
+    security_code: str,
+    holding_shares: int,
+    purchase_price: float,
+    bonus_pre_tax: float,
+    scale_factor: float,
+    tax_rate: float = 0.1,  # 默认红利税10%
+    ex_dividend_price: float = None  # 除权除息价（可选）
+) -> dict:
+    """
+    计算股票分红对持仓的影响
+    
+    参数:
+        security_code: 股票代码
+        holding_shares: 分红前持有股数
+        purchase_price: 买入价格
+        bonus_pre_tax: 每股税前分红金额
+        scale_factor: 送股比例（如1.2表示每股送1.2股）
+        tax_rate: 红利税税率
+        ex_dividend_price: 除权除息价（若未提供则自动计算）
+    
+    返回:
+        dict: 包含分红前后持仓变化的详细信息
+    """
+    # 计算送股后的总股数
+    new_shares = int(holding_shares * scale_factor)
+    total_shares = holding_shares + new_shares
+    
+    # 计算税前和税后现金分红
+    cash_dividend_pre_tax = holding_shares * bonus_pre_tax
+    tax_amount = cash_dividend_pre_tax * tax_rate
+    cash_dividend_after_tax = cash_dividend_pre_tax - tax_amount
+    
+    # 计算除权除息价（如果未提供）
+    if ex_dividend_price is None:
+        ex_dividend_price = (purchase_price - bonus_pre_tax) / (1 + scale_factor)
+    
+    # 计算分红前后的市值
+    market_value_before = holding_shares * purchase_price
+    market_value_after = total_shares * ex_dividend_price
+    total_value_after = market_value_after + cash_dividend_after_tax
+    
+    # 计算持仓成本变化
+    original_cost = holding_shares * purchase_price
+    new_cost_per_share = original_cost / total_shares
+    
+    return {
+        "security_code": security_code,
+        "holding_shares_before": holding_shares,
+        "purchase_price": purchase_price,
+        "market_value_before": market_value_before,
+        
+        "bonus_pre_tax": bonus_pre_tax,
+        "scale_factor": scale_factor,
+        "tax_rate": tax_rate,
+        
+        "new_shares": new_shares,
+        "total_shares_after": total_shares,
+        "cash_dividend_pre_tax": cash_dividend_pre_tax,
+        "tax_amount": tax_amount,
+        "cash_dividend_after_tax": cash_dividend_after_tax,
+        
+        "ex_dividend_price": ex_dividend_price,
+        "market_value_after": market_value_after,
+        "total_value_after": total_value_after,
+        "new_cost_per_share": new_cost_per_share,
+        
+        "value_change": total_value_after - market_value_before,
+        "cost_change_percentage": (new_cost_per_share / purchase_price - 1) * 100
+    }

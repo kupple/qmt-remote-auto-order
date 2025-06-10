@@ -17,13 +17,16 @@ class DatabaseLogHandler(logging.Handler):
 
     def emit(self, record: logging.LogRecord) -> None:
         try:
-            print(record.message)
             if record.levelname == 'ERROR':
                 print(record.message)
             
             showMessage = getattr(record, 'showMessage', False)
             if showMessage:
-                System.system_py2js(self,'remoteCallBack', {"message":record.message})
+                # 简化处理，直接删除特殊字符
+                safe_message = str(record.message)
+                # 删除特殊字符
+                safe_message = ''.join(c for c in safe_message if c.isalnum() or c in ' .,;:-_()[]{}<>!?=+*/%&|^~$#@!')
+                System.system_py2js(self,'remoteCallBack', {"message": safe_message})
             
             user_id = self.user_id if self.run_model_type == 2 else self.unique_id
             

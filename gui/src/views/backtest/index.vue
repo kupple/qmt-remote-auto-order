@@ -6,7 +6,7 @@
         <!-- order_count_type -->
         <el-descriptions-item label="任务类型">
           <el-tag disable-transitions	 v-if="taskDetail.order_count_type == 1" type="success">跟随策略</el-tag>
-          <el-tag disable-transitions	  v-else type="primary">动态调整</el-tag>
+          <el-tag disable-transitions	 v-else type="primary">动态调整</el-tag>
         </el-descriptions-item>
         <el-descriptions-item v-if="taskDetail.order_count_type == 2" label="初始金额">{{ taskDetail.mock_allocation_amount }}</el-descriptions-item>
         <el-descriptions-item v-if="taskDetail.order_count_type == 2" label="手续费">{{ taskDetail.mock_service_charge }}</el-descriptions-item>

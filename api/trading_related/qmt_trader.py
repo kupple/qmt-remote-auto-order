@@ -121,7 +121,7 @@ class qmt_trader:
     def place_order(self, stock_code='600031.SH',
                    volume=100, price=20, order_type=xtconstant.STOCK_BUY,
                    price_type=xtconstant.LATEST_PRICE,
-                   order_style_str='', strategy_name='', order_remark=''):
+                   strategy_name='', order_remark=''):
         # 订阅账号
         subscribe_result = self.xt_trader.subscribe(self.acc)
         stock_code = self.adjust_stock(stock=stock_code)

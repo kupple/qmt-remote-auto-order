@@ -68,7 +68,7 @@ class XtOrder:
         self.order_time = 0
         self.order_type = OrderType.STOCK_BUY
         self.order_volume = 0
-        self.price_type = PriceType.LIMIT_PRICE
+        self.price_type = PriceType.LATEST_PRICE
         self.price = 0.0
         self.traded_volume = 0
         self.traded_price = 0.0
@@ -192,14 +192,8 @@ class QmtTradingSimulator:
         if volume <= 0:
             return 1001, "订单数量必须大于0"
         
-        if price <= 0 and price_type != PriceType.BEST_5:
-            return 1002, "订单价格必须大于0"
-        
         if order_type not in [OrderType.STOCK_BUY, OrderType.STOCK_SELL]:
             return 1003, "订单类型必须是买入或卖出"
-        
-        if price_type not in [PriceType.LIMIT_PRICE, PriceType.BEST_5]:
-            return 1005, "不支持的报价类型"
         
         return 0, "订单验证通过"
     

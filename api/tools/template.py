@@ -122,6 +122,24 @@ def on_strategy_end(context):
     }}, data= jsonDic)
     return response
 """
+
+
+        # 添加on_event函数
+        data = data + F"""
+def on_event(context, event):
+    jsonDic = json.dumps({{
+        'run_params': g.run_params,
+        'strategy_code':'{strategy_code}',
+        'state':'event'
+    }})
+    url = "{server_url}/send_message"
+    response = requests.request('POST', url, headers=
+    {{
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + TOKEN
+    }}, data= jsonDic)
+    return response
+"""
         
         # 匹配方法名和括号内的参数
         pattern = r'\b(order_target|order_value|order_target_value|order)\(([^)]*)\)'
@@ -285,6 +303,12 @@ def on_strategy_end(context):
         'Authorization': 'Bearer ' + TOKEN
     }}, data= jsonDic)
     return response
+"""
+
+        # 添加on_event函数
+        data = data + F"""
+def on_event(context, event):
+    print("eventevent")
 """
         
         # 匹配方法名和括号内的参数
