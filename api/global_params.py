@@ -17,7 +17,7 @@ class DatabaseLogHandler(logging.Handler):
 
     def emit(self, record: logging.LogRecord) -> None:
         try:
-            # print(record.message)
+            print(record.message)
             if record.levelname == 'ERROR':
                 print(record.message)
             

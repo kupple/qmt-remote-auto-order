@@ -13,6 +13,7 @@ from .trading_related.qmt_trading_simulator import QmtTradingSimulator,OrderType
 from decimal import Decimal
 import json
 from api.global_params import G
+from api.trading_related.deal import get_qmt_price_type
   
 class MyXtQuantTraderCallback(XtQuantTraderCallback):
  
@@ -180,14 +181,9 @@ class MyXtQuantTraderCallback(XtQuantTraderCallback):
 class QMT:
   def __init__(self):
     self.qmt_trader = None
-    self.callback = MyXtQuantTraderCallback(G,False)
-    
-    
+    self.callback = MyXtQuantTraderCallback(False)
     self.is_connect = False
     self.simulator = None
-    
-  
-    
     
   def connect_qmt(self,params):
     if sys.platform.startswith('darwin'):
@@ -342,6 +338,42 @@ class QMT:
       
       return final_amount
     
+  
+  # 统一处理-下单接口
+  def  place_order(self, 
+                   stock_code='600031.SH',
+                   volume=100, 
+                   price=20,
+                   is_buy=True,
+                   order_time=None,
+                   order_style_str='', 
+                   strategy_name='', 
+                   order_remark='',
+                   is_mock=False):
+      
+    price_type = get_qmt_price_type(stock_code, order_style_str, is_buy)
+    order_type = OrderType.STOCK_BUY if is_buy == 1 else OrderType.STOCK_SELL
+    if is_mock == False:
+        self.simulator.place_order(
+          stock_code=stock_code,
+          volume=volume,
+          price=price,
+          order_type=order_type,
+          order_time=order_time,
+          price_type=price_type,
+          strategy_name=str(task['id']),
+          order_remark=order_remark
+        )
+    else:
+        self.qmt_trader.place_order(
+          stock_code=stock_code,
+          volume=volume,
+          price=price,
+          order_type=order_type,
+          price_type=price_type,
+          strategy_name=strategy_name,
+          order_remark=order_remark
+        ) 
     
   # 下单协议{code:code,price:price,amount:amount,type:type}
   def manage_qmt_trader(self,data):    
@@ -414,9 +446,9 @@ class QMT:
             'accruing_amounts':task['mock_allocation_amount'],
             'can_use_amount':task['mock_allocation_amount']
           })
-          G.orm.update_task(task['id'], backtest_id=backtest_id) 
+          G.orm.update_task(task['id'], backtest_id = backtest_id) 
           # 设置回测id
-          self.mockCallback = MyXtQuantTraderCallback(G,True,backtest_id)
+          self.mockCallback = MyXtQuantTraderCallback(True, backtest_id)
           self.simulator = QmtTradingSimulator(
               self.mockCallback, # 回测环境
           )
@@ -441,15 +473,15 @@ class QMT:
                     "showMessage": True
             })
             return
-          self.simulator.place_order(
-            stock_code=security,
-            volume=real_amount,
-            price=price,
-            order_type=OrderType.STOCK_BUY if is_buy == 1 else OrderType.STOCK_SELL,
-            order_time=timestamp_ms,
-            price_type=PriceType.LIMIT_PRICE,
-            strategy_name=str(task['id']),
-            order_remark=orderId
+
+          self.place_order(
+              stock_code=security,
+              volume=real_amount,
+              price=price,
+              order_type=True if is_buy == 1 else False,
+              strategy_name=str(task['id']),
+              order_remark=orderId,
+              is_mock=True
           )
         
       #####################     实盘环境     ###########################
@@ -485,12 +517,15 @@ class QMT:
                       "showMessage": True
               })
               return
-            self.qmt_trader.place_order(security=security,
-                                    amount=real_amount,
-                                    price=price,
-                                    order_type=OrderType.STOCK_BUY if is_buy == 1 else OrderType.STOCK_SELL,
-                                    strategy_name=str(task['id']),
-                                    order_remark=orderId) 
+            
+            self.place_order(
+                stock_code=security,
+                volume=real_amount,
+                price=price,
+                order_type=True if is_buy == 1 else False,
+                strategy_name=str(task['id']),
+                order_remark=orderId
+            )
         else:
           G.logger.info("任务未开启: {}".format(strategy_code),extra={
                   "showMessage": True

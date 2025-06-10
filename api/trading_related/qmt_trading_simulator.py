@@ -1,6 +1,7 @@
 import time
 import threading
 from typing import Optional
+from api.global_params import G
 
 class AccountType:
     STOCK = 1
@@ -12,8 +13,39 @@ class OrderType:
     STOCK_SELL = 24
 
 class PriceType:
-    LIMIT_PRICE = 1
-    BEST_5 = 3
+    # 最新价
+    LATEST_PRICE = 5
+    # 指定价/限价
+    FIX_PRICE = 11
+    # 市价最优价[郑商所][期货]
+    MARKET_BEST = 18
+    # 市价即成剩撤[大商所][期货]
+    MARKET_CANCEL = 19
+    # 市价全额成交或撤[大商所][期货]
+    MARKET_CANCEL_ALL = 20
+    # 市价最优一档即成剩撤[中金所][期货]
+    MARKET_CANCEL_1 = 21
+    # 市价最优五档即成剩撤[中金所][期货]
+    MARKET_CANCEL_5 = 22
+    # 市价最优一档即成剩转[中金所][期货]
+    MARKET_CONVERT_1 = 23
+    # 市价最优五档即成剩转[中金所][期货]
+    MARKET_CONVERT_5 = 24
+    # 最优五档即时成交剩余撤销[上交所][股票]
+    MARKET_SH_CONVERT_5_CANCEL = 42
+    # 最优五档即时成交剩转限价[上交所][股票]
+    MARKET_SH_CONVERT_5_LIMIT = 43
+    # 对手方最优价格委托[上交所[股票]][深交所[股票][期权]]
+    MARKET_PEER_PRICE_FIRST = 44
+    # 本方最优价格委托[上交所[股票]][深交所[股票][期权]]
+    MARKET_MINE_PRICE_FIRST = 45
+    # 即时成交剩余撤销委托[深交所][股票][期权]
+    MARKET_SZ_INSTBUSI_RESTCANCEL = 46
+    # 最优五档即时成交剩余撤销[深交所][股票][期权]
+    MARKET_SZ_CONVERT_5_CANCEL = 47
+    # 全额成交或撤销委托[深交所][股票][期权]
+    MARKET_SZ_FULL_OR_CANCEL = 48
+
 
 class OrderStatus:
     SUBMITTED = 1
@@ -128,14 +160,6 @@ class QmtTradingSimulator:
     def place_order(self, stock_code: str, volume: int, price: float, order_type: int, price_type: int, order_time: int = None, direction: int = Direction.LONG, strategy_name: str = "", order_remark: str = ""):
         order_id = self._generate_order_id()
         seq = self._generate_seq()
-
-        if order_time is None:
-            order_time = int(time.time() * 1000)
-            
-            # 立即调用异步下单响应
-            response = self._create_order_response(order_id, seq, 0, "下单成功", strategy_name, order_remark)
-            self.callback.on_order_stock_async_response(response)
-            return
         
         # 验证订单合法性
         error_id, error_msg = self._validate_order(stock_code, volume, price, order_type, price_type)
@@ -143,7 +167,7 @@ class QmtTradingSimulator:
             # 立即返回错误响应
             response = self._create_order_response(order_id, seq, error_id, error_msg, strategy_name, order_remark)
             self.callback.on_order_stock_async_response(response)
-            logger.error(f"订单验证失败: {error_msg}")
+            G.logger.error(f"订单验证失败: {error_msg}")
             return
         
         # 创建订单对象

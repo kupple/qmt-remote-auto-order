@@ -81,7 +81,7 @@ def stockcode_mapping_dic(security):
     }
     return stockDic
 
-def get_qmt_price_type(security, order_style_str, order_type='buy'):
+def get_qmt_price_type(security, order_style_str, is_buy=True):
     # 提取交易所代码
     exchange = security.split('.')[-1]
     cleanCode = security.split('.')[0]
@@ -95,7 +95,7 @@ def get_qmt_price_type(security, order_style_str, order_type='buy'):
     is_st = stockDic['is_st'] 
     
     # 如果是ST股票，且是卖出类型 且是上海股票
-    if is_st and order_type == 'sell' and is_zhishu:
+    if is_st and is_buy == False and is_zhishu:
         G.logger.warning("ST股票，且是卖出类型 且是上海股票，最新价报单")
         return xtconstant.LATEST_PRICE
     
