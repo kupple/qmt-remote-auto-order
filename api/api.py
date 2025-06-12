@@ -231,9 +231,7 @@ class API(System):
         
         if len(sample_trades)>0:
             # 假设 trades 是你的交易数据列表
-            result = analyze_stock_data(sample_trades, initial_capital=backtest['initial_capital'],
-                                        service_charge=backtest['service_charge'],
-                                        lower_limit_of_fees=backtest['lower_limit_of_fees'])
+            result = analyze_stock_data(sample_trades, initial_capital=backtest['initial_capital'])
             return result
         else:
             return None

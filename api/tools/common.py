@@ -11,7 +11,7 @@ import re
 from api.tools.tokenManager import generate_token,verify_token
 from api.tools.template import get_template_order_count_type_1,get_template_order_count_type_2
 from api.global_params import G
-
+from api.trading_related.deal import convert_stock_suffix
 
 # 同步数据到全局
 
@@ -22,7 +22,7 @@ def sync_data_to_global():
     G.stock_map["st_stock_code"] = st_code_arr
     
     all_stock_arr = G.orm.get_all_stock_data()
-    G.stock_map["all_stock_code"] = {stock['code']:stock for stock in all_stock_arr}
+    G.stock_map["all_stock_code"] = {convert_stock_suffix(stock['code']):stock for stock in all_stock_arr}
     
     trade_date_arr = G.orm.get_trade_date_list()
     G.stock_map['trade_date'] = trade_date_arr
@@ -36,12 +36,32 @@ def revert_transition_code(data):
         # 移除TOKEN定义
         data = re.sub(r'TOKEN\s*=\s*[\'"][^\'"]*[\'"]\n', '', data)
         
-        # 移除begin状态请求代码
-        begin_pattern = r'# 发送begin状态[\s\S]*?data\s*=\s*jsonDic\s*\)\n'
-        data = re.sub(begin_pattern, '', data)
+        # 移除begin状态请求代码 - 精准匹配版本
+        # 1. 首先匹配initialize函数定义
+        initialize_pattern = r'(def\s+initialize\s*\([^\)]*\)\s*:)([\s\S]*?)(?=def\s+|$)'
+        initialize_match = re.search(initialize_pattern, data)
+        
+        if initialize_match:
+            # 获取initialize函数定义
+            initialize_def = initialize_match.group(1)
+            # 获取initialize函数体
+            initialize_body = initialize_match.group(2)
+            
+            # 2. 在函数体中查找begin状态代码块
+            begin_pattern = r'(\s*)(# 发送begin状态[\s\S]*?)(?=\s*def\s+|$)'
+            begin_match = re.search(begin_pattern, initialize_body)
+            
+            if begin_match:
+                # 获取begin状态代码块的缩进
+                indent = begin_match.group(1)
+                # 构建替换后的函数体（移除begin状态代码块）
+                new_body = initialize_body.replace(begin_match.group(0), '')
+                
+                # 3. 重新组合数据
+                data = data.replace(initialize_def + initialize_body, initialize_def + new_body)
         
         # 移除on_strategy_end函数
-        end_pattern = r'def\s+on_strategy_end\s*\([^\)]*\)\s*:[\s\S]*?return\s+response\n'
+        end_pattern = r'def\s+on_strategy_end\s*\([^\)]*\)\s*:[\s\S]*?return\s+response\s*'
         data = re.sub(end_pattern, '', data)
         
         # 移除g.context赋值行（如果存在）
@@ -68,10 +88,14 @@ def revert_transition_code(data):
         event_pattern = r'def\s+on_event\s*\([^)]*\)\s*:[\s\S]*?return\s+response\s*'
         data = re.sub(event_pattern, '', data)
         
+        # 清理多余的空行
+        data = re.sub(r'\n{3,}', '\n\n', data)
+        
         return data
     except Exception as e:
         G.logger.error(f"还原错误: {e}")
         return "还原错误"
+    
 
 def is_process_exist():
     app_name = "XtMiniQmt.exe"

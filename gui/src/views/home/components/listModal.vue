@@ -48,7 +48,7 @@
           <el-input v-model="form.allocation_amount" placeholder="请输入账号分配金额" type="number" :min="0" @input="handleAllocationAmountInput" />
         </el-form-item>
       </div>
-      <el-form-item label="手续费设置" v-if="form.order_count_type === 2" required>
+      <el-form-item label="手续费设置" required>
         <div class="service_charge">
           <div class="service_charge-item">
             <span>费率(万分之几)</span>

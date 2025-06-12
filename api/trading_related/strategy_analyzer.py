@@ -4,10 +4,11 @@ import copy
 import json
 import datetime
 from .deal import calculate_stock_fee   
+from api.global_params import G
 class StockPositionCalculator:
     """股票持仓计算器"""
     
-    def __init__(self, trades_data: List[Dict[str, Any]], service_charge: float = 0.0003, lower_limit_of_fees: float = 5.0  ):
+    def __init__(self, trades_data: List[Dict[str, Any]]):
         # 首先检查输入数据
         if not trades_data:
             self.trades_df = pd.DataFrame()
@@ -16,16 +17,11 @@ class StockPositionCalculator:
             self.end_date = None
             self.all_dates = []
 
-            
-        # 保存手续费相关参数
-        self.service_charge = service_charge    
-        self.lower_limit_of_fees = lower_limit_of_fees
-        
         # 转换为DataFrame
         self.trades_df = pd.DataFrame(trades_data)
         
         # 确保持仓信息完整
-        required_columns = ['stock_code', 'traded_volume', 'traded_price', 'order_type', 'traded_time']
+        required_columns = ['stock_code', 'traded_volume', 'traded_price', 'order_type', 'traded_time', 'commission']
         missing_columns = [col for col in required_columns if col not in self.trades_df.columns]
         if missing_columns:
             raise ValueError(f"交易数据缺少必要列: {missing_columns}")
@@ -101,7 +97,6 @@ class StockPositionCalculator:
         """计算每天的股票持仓列表，包括变化量"""
         # 按日期分组处理交易
         daily_trades = {date: trades for date, trades in self.trades_df.groupby('date')}
-        
         # 初始化持仓
         current_positions = {}  # 当前持仓: {stock_code: {'volume': float, 'avg_price': float, 'status': str}}
         daily_records = {}
@@ -147,15 +142,10 @@ class StockPositionCalculator:
                     volume = trade['traded_volume']
                     price = trade['traded_price']
                     direction = trade['order_type']
-                    
-                    # 计算手续费
-                    commission = calculate_stock_fee(
-                        'buy' if direction == 23 else 'sell',
-                        price,
-                        volume,
-                        self.service_charge,
-                        self.lower_limit_of_fees
-                    )
+                    stock_name = G.stock_map["all_stock_code"][stock_code]['name']
+
+                    # 获取手续费
+                    commission = trade['commission']
                     
                     # 累加当日手续费
                     daily_records[date_str]['commission'] += commission
@@ -163,6 +153,7 @@ class StockPositionCalculator:
                     # # 添加交易记录
                     daily_records[date_str]['trades'].append({
                         'stock_code': stock_code,
+                        'stock_name':stock_name,
                         'volume': volume,
                         'price': price,
                         'direction': '买入' if direction == 23 else '卖出',
@@ -284,18 +275,16 @@ class StockPositionCalculator:
         
 
 
-def analyze_stock_data(trades: List[Dict], initial_capital: float = 100000.0,
-                       service_charge: float = 0.0003,
-                       lower_limit_of_fees: float = 5.0) -> Dict:
+def analyze_stock_data(trades: List[Dict], initial_capital: float = 100000.0) -> Dict:
+
     """分析股票交易数据并返回综合结果"""
     # 计算每日持仓（含变化量）
-    position_calculator = StockPositionCalculator(trades, service_charge, lower_limit_of_fees)
+    position_calculator = StockPositionCalculator(trades)
     daily_positions = position_calculator.calculate_daily_positions()
     
     # 将daily_positions转换为按日期排序的数组格式
     sorted_daily_positions = []
     remaining_cash = initial_capital  # 初始化剩余现金
-    
     for date_str in sorted(daily_positions.keys()):
         # 计算当日市值
         market_value = 0.0
@@ -303,9 +292,11 @@ def analyze_stock_data(trades: List[Dict], initial_capital: float = 100000.0,
         
         # 计算持仓市值
         for stock, pos in daily_positions[date_str]['positions'].items():
+            stock_name = G.stock_map["all_stock_code"][stock]['name']
             if pos['volume'] > 0:
                 positions_array.append({
                     'stock_code': stock,
+                    'stock_name':stock_name,
                     'volume': pos['volume'],
                     'avg_price': pos['avg_price'],
                     'status': pos['status']

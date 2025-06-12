@@ -9,17 +9,19 @@
           <el-tag disable-transitions	  v-else type="primary">动态调整</el-tag>
         </el-descriptions-item>
         <el-descriptions-item v-if="taskDetail.order_count_type == 2" label="初始金额">{{ taskDetail.mock_allocation_amount }}</el-descriptions-item>
-        <el-descriptions-item v-if="taskDetail.order_count_type == 2" label="手续费">{{ taskDetail.mock_service_charge }}</el-descriptions-item>
-        <el-descriptions-item v-if="taskDetail.order_count_type == 2" label="手续费下限">{{ taskDetail.mock_lower_limit_of_fees }}</el-descriptions-item>
-        <el-descriptions-item v-if="taskDetail.order_count_type == 1" label="说明">资金跟随策略，不统计盈亏和手续费</el-descriptions-item>
-        <el-descriptions-item v-if="taskDetail.order_count_type == 2" label="说明">保留资金记录</el-descriptions-item>
+        <el-descriptions-item  label="手续费">{{ taskDetail.mock_service_charge }}</el-descriptions-item>
+        <el-descriptions-item  label="手续费下限">{{ taskDetail.mock_lower_limit_of_fees }}</el-descriptions-item>
       </el-descriptions>
-      <el-button v-if="taskDetail.order_count_type == 2" class="sub-btn" type="primary" @click="openModal">设置回测参数</el-button>
+      <el-button class="sub-btn" type="primary" @click="openModal">设置回测参数</el-button>
     </div>
     <el-table class="table-container" :default-expand-all="true" :data="tableData" :preserve-expanded-content="true" >
       <el-table-column label="回测日期" prop="created_at" />
-      <el-table-column v-if="taskDetail.order_count_type == 2" prop="initial_capital" label="起始金额" />
-      <el-table-column v-if="taskDetail.order_count_type == 2" prop="final_amount" label="结束金额" />
+      <el-table-column  prop="initial_capital" label="起始金额" />
+      <el-table-column label="结束金额" >
+        <template #default="scope">
+          {{ scope.row.final_amount.toFixed(2) }}
+        </template>
+      </el-table-column>
       <el-table-column prop="state" label="状态" >
         <template #default="scope">
           <el-tag disable-transitions	 v-if="scope.row.state == 'run'" type="danger">运行中/未结束</el-tag>

@@ -2,7 +2,7 @@
   <el-dialog v-model="dialogVisible" title="回测参数设置" width="60vw" center>
     <el-form :model="form" label-width="120px">
       <div class="amount-container" style="display: flex; justify-content: space-between">
-        <el-form-item label="分配金额" required>
+        <el-form-item  label="分配金额" v-if="editDic.order_count_type == 2" required>
           <el-input v-model="form.mock_allocation_amount" placeholder="请输入账号分配金额" type="number" :min="0" @input="handleAllocationAmountInput" />
         </el-form-item>
       </div>
@@ -18,11 +18,16 @@
           </div>
         </div>
       </el-form-item>
+      <el-form-item label="仿真模式" required>
+        <el-switch v-model="form.is_simulation" />
+        <span style="margin-left: 10px;color:red">开启仿真模式后下单会拆开为多个订单进行模拟</span>
+      </el-form-item> 
       <el-form-item>
         <el-button type="primary" @click="handleSubmit">保存</el-button>
         <el-button @click="dialogVisible = false">取消</el-button>
       </el-form-item>
     </el-form>
+    <span style="margin-left: 10px;margin-top: 20px;">*保存后在下次回测时生效</span>
   </el-dialog>
 </template>
 
@@ -45,7 +50,8 @@ const props = defineProps({
 const form = reactive({
   mock_service_charge:0,
   mock_lower_limit_of_fees:0,
-  mock_allocation_amount:0
+  mock_allocation_amount:0,
+  is_simulation:true
 })
 
 
@@ -63,6 +69,7 @@ const showModal = (dic) => {
     form.mock_service_charge = dic.mock_service_charge
     form.mock_lower_limit_of_fees = dic.mock_lower_limit_of_fees
     form.mock_allocation_amount = dic.mock_allocation_amount
+    form.is_simulation = dic.is_simulation == 1 ? true:false
   }
 }
 const handleSubmit = async () => {
@@ -72,6 +79,7 @@ const handleSubmit = async () => {
     mock_service_charge: form.mock_service_charge,
     mock_lower_limit_of_fees: form.mock_lower_limit_of_fees,
     mock_allocation_amount: form.mock_allocation_amount,
+    is_simulation: form.is_simulation ? 1:0
   })
   dialogVisible.value = false
   ElMessage.success('保存成功')

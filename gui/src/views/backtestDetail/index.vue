@@ -1,7 +1,7 @@
 <template>
   <div class="backtest-container">
     <div class="backtest-header">
-      <div class="backtest-header-item">股票名称</div>
+      <div class="backtest-header-item flex-2">股票名称</div>
       <div class="backtest-header-item">数量</div>
       <div class="backtest-header-item">方向</div>
       <div class="backtest-header-item">持仓均价</div>
@@ -17,7 +17,7 @@
           <span>持仓</span>
         </div>
         <div v-for="(stock, idx) in item.positions" class="backtest-content-item-stocks" :key="idx">
-          <div class="backtest-content-item-stocks-item">{{ stock.stock_code }}</div>
+          <div class="backtest-content-item-stocks-item flex-2">{{stock.stock_name}}({{ stock.stock_code }})</div>
           <div class="backtest-content-item-stocks-item">{{ stock.volume }}</div>
           <div class="backtest-content-item-stocks-item"></div>
           <div class="backtest-content-item-stocks-item">{{ stock.avg_price }}</div>
@@ -39,13 +39,13 @@
           <span>当日变动</span>
         </div>
         <div v-for="(stock, idx) in item.trades" class="backtest-content-item-trades" :key="idx">
-          <div class="backtest-content-item-trades-item">{{ stock.stock_code }}</div>
+          <div class="backtest-content-item-trades-item flex-2">{{stock.stock_name}}({{ stock.stock_code }})</div>
           <div class="backtest-content-item-trades-item">{{ stock.volume }}</div>
           <div class="backtest-content-item-trades-item">
             <el-tag disable-transitions	 size="small" type="success" v-if="stock.direction == '买入'">买入</el-tag>
             <el-tag disable-transitions	 size="small" type="danger" v-else>卖出</el-tag></div>
-          <div class="backtest-content-item-trades-item"></div>
-          <div class="backtest-content-item-trades-item"></div>
+          <div class="backtest-content-item-trades-item">{{ stock.price.toFixed(2) }}</div>
+          <div class="backtest-content-item-trades-item">{{ stock.commission.toFixed(2) }}</div>
           <div class="backtest-content-item-trades-item">
             <span v-if="stock.direction == '买入'">+</span>
             <span v-else>-</span>
@@ -114,7 +114,7 @@ onMounted(() => {
     overflow: auto;
     // padding-left:10px;
     .section {
-      padding-left: 15px;
+      padding-left: 50px;
       font-weight: bold;
       height: 30px;
       display: flex;
@@ -190,5 +190,8 @@ onMounted(() => {
       }
     }
   }
+}
+.flex-2{
+  flex:1.4 !important;
 }
 </style>

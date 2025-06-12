@@ -109,6 +109,15 @@ class MyXtQuantTraderCallback(XtQuantTraderCallback):
           
         if order_count_type == 1:
           commission = 0  
+          if self.is_mock == True:
+            mock_service_charge = task_or_backtest['service_charge']
+            mock_lower_limit_of_fees = task_or_backtest['lower_limit_of_fees']
+            # 计算手续费
+            commission = Decimal(calculate_stock_fee("buy" if trade.order_type == OrderType.STOCK_BUY else "sell",
+                                            float(trade.traded_price),
+                                            int(trade.traded_volume),
+                                            float(mock_service_charge),
+                                            float(mock_lower_limit_of_fees)))
         else:
           if task_or_backtest:
               if self.is_mock == True:
@@ -260,21 +269,19 @@ class QMT:
   
   def calculate_stock_returns(self,saveData,order_count_type):
 
-      if order_count_type == 1:
-        pass
-      else:
-        positions_arr = G.orm.query_position_by_task_or_backtest_id(backtest_id=saveData['backtest_id'])
-        position_total_value = 0
-        positions = json.loads(saveData['positions'])
+    positions_arr = G.orm.query_position_by_task_or_backtest_id(backtest_id=saveData['backtest_id'])
+    position_total_value = 0
+    positions = json.loads(saveData['positions'])
 
-        for position in positions_arr:
-          for order_position in positions:
-            if position['security_code'] == convert_stock_suffix(order_position['security']):
-              position_total_value += position['volume'] * order_position['price']
-              continue
-        
-        backtest = G.orm.query_backtest_by_id(saveData['backtest_id'])
-        G.orm.update_backtest(saveData['backtest_id'], final_amount=position_total_value + backtest['can_use_amount']  )   
+    for position in positions_arr:
+      for order_position in positions:
+        if position['security_code'] == convert_stock_suffix(order_position['security']):
+          position_total_value += position['volume'] * order_position['price']
+          continue
+
+    backtest = G.orm.query_backtest_by_id(saveData['backtest_id'])
+    G.orm.update_backtest(saveData['backtest_id'], final_amount=position_total_value + backtest['can_use_amount']  )   
+
   
    
   #  计算配置仓位
@@ -437,18 +444,26 @@ class QMT:
       if run_params == 'simple_backtest' or run_params == 'full_backtest':
         #####################     回测环境     ###########################
         if state == 'begin':
+          if task['order_count_type'] == 2:
+            accruing_amounts = task['mock_allocation_amount']
+            can_use_amount = task['mock_allocation_amount']
+            initial_capital = task['mock_allocation_amount']
+          else:
+            accruing_amounts = total_value
+            can_use_amount = total_value
+            initial_capital = total_value
           # 创建一个回测
           backtest_id = G.orm.create_backtest({
             'name':strategy_code,
             'service_charge':task['mock_service_charge'],
-            'initial_capital':task['mock_allocation_amount'],
             'lower_limit_of_fees':task['mock_lower_limit_of_fees'],
             'final_amount':0,
             'task_id':task['id'],
             'state':state,
             'order_count_type':order_count_type,
-            'accruing_amounts':task['mock_allocation_amount'],
-            'can_use_amount':task['mock_allocation_amount']
+            'initial_capital':initial_capital,
+            'accruing_amounts':accruing_amounts,
+            'can_use_amount':can_use_amount
           })
           G.orm.update_task(task['id'], backtest_id = backtest_id) 
           # 设置回测id
@@ -503,7 +518,7 @@ class QMT:
                     "showMessage": True
             })
             return
-          if self.place_order != None:
+          if self.simulator != None:
             self.place_order(
               stock_code=security,
               volume=real_amount,
@@ -514,7 +529,11 @@ class QMT:
               strategy_name=str(task['id']),
               order_remark=orderId,
               is_mock=True
-          )
+            )
+          else:
+            G.logger.error("异常Code 121",extra={
+                    "showMessage": True
+            })
         
       #####################     实盘环境     ###########################
       else:

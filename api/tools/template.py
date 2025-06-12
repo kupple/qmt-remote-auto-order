@@ -24,6 +24,9 @@ def get_template_order_count_type_1(taskDic, data, config,token):
             
         # 构建要插入的代码行
         insert_line = f"    g.run_params = {param_name}.run_params.type"
+        insert_line += "\n"
+        insert_line += "    g.context = context"
+        insert_line += "\n"
         
         # 找到函数定义行的位置
         def_line_pos = data.find(match.group(0)) + len(match.group(0))
@@ -37,7 +40,10 @@ def get_template_order_count_type_1(taskDic, data, config,token):
     jsonDic = json.dumps({
         'run_params': g.run_params,
         'strategy_code':'%s',
-        'state':'begin'
+        'state':'begin',
+        'params':{
+            'total_value': context.portfolio.total_value  
+        }
     })
     url = "%s/send_message"
     response = requests.request('POST', url, headers={
@@ -76,7 +82,7 @@ def qmt_auto_orders(method_name, *args, **kwargs):
     pindex = args[4] if len(args) > 4 else kwargs.get('pindex',0)
 
     orderInfo = system_method(security, value,
-                        style=style_str,
+                        style=style,
                         side=side,
                         pindex=pindex)
     if orderInfo == None:
@@ -89,7 +95,7 @@ def qmt_auto_orders(method_name, *args, **kwargs):
         'params': {{
             'security':security,
             'value':value,
-            'style':style,
+            'style':style_str,
             'price':orderInfo.price,
             'amount':orderInfo.amount,
             'avg_cost':orderInfo.avg_cost,
@@ -109,9 +115,19 @@ def qmt_auto_orders(method_name, *args, **kwargs):
         # 在代码末尾添加on_strategy_end函数
         data = data + F"""
 def on_strategy_end(context):
+    positions = [
+        {{
+            'security': v.security,
+            'price': v.price,
+            'total_amount': v.total_amount,
+            'avg_cost': v.avg_cost
+        }}
+        for v in g.context.portfolio.positions.values()
+    ]
     jsonDic = json.dumps({{
         'run_params': g.run_params,
         'strategy_code':'{strategy_code}',
+        'positions':positions,
         'state':'end'
     }})
     url = "{server_url}/send_message"
@@ -137,7 +153,7 @@ def on_event(context, event):
         url = "{server_url}/send_message"
         jsonDic = json.dumps({{
             'run_params': g.run_params,
-            'strategy_code':event.security.code,
+            'strategy_code':'{strategy_code}',
             'dividends':formatted_data,
             'price':context.portfolio.positions[event.security.code].price,
             'state':'dividends',
@@ -256,7 +272,7 @@ def qmt_auto_orders(method_name, *args, **kwargs):
     ]    
 
     orderInfo = system_method(security, value,
-                        style=style_str,
+                        style=style,
                         side=side,
                         pindex=pindex)
     if orderInfo == None:
@@ -271,7 +287,7 @@ def qmt_auto_orders(method_name, *args, **kwargs):
         'params': {{
             'security':security,
             'value':value,
-            'style':style,
+            'style':style_str,
             'price':orderInfo.price,
             'amount':orderInfo.amount,
             'avg_cost':orderInfo.avg_cost,
@@ -331,7 +347,7 @@ def on_event(context, event):
         url = "{server_url}/send_message"
         jsonDic = json.dumps({{
             'run_params': g.run_params,
-            'strategy_code':event.security.code,
+            'strategy_code':'{strategy_code}',
             'dividends':formatted_data,
             'price':context.portfolio.positions[event.security.code].price,
             'state':'dividends',
