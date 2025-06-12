@@ -197,7 +197,7 @@ class QMT:
       })
       return True
 
-    self.qmt_trader = qmt_trader(params['mini_qmt_path'], params['client_id'],G)
+    self.qmt_trader = qmt_trader(params['mini_qmt_path'], params['client_id'])
     # 连接QMT 传递回调
     self.is_connect = self.qmt_trader.connect(self.callback)
     if self.is_connect:
@@ -377,7 +377,7 @@ class QMT:
         'add_time':add_time,
         'amount':amount,
         'price':price,
-        'status':status,
+        'status':0,
         'positions':json.dumps(positions),
         'total_value':total_value
       }
