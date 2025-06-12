@@ -136,3 +136,4 @@ pyapp/config/__pycache__/config.cpython-39.pyc
 
 
 .env
+static/db/base.db
