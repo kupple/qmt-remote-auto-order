@@ -122,6 +122,38 @@ def on_strategy_end(context):
     }}, data= jsonDic)
     return response
 """
+        # 添加on_event函数
+        data = data + F"""
+def on_event(context, event):
+    if event.name == "Dividends":
+        formatted_data = [
+            {{
+                'date': f"{{item['date'].year}}-{{item['date'].month:02d}}-{{item['date'].day:02d}}",
+                'bonus_pre_tax': item['bonus_pre_tax'],
+                'scale_factor': item['scale_factor']
+            }}
+            for item in event.dividends
+        ]
+        url = "{server_url}/send_message"
+        jsonDic = json.dumps({{
+            'run_params': g.run_params,
+            'strategy_code':event.security.code,
+            'dividends':formatted_data,
+            'price':context.portfolio.positions[event.security.code].price,
+            'state':'dividends',
+            'params':{{
+                'security':event.security.code,
+                'price':context.portfolio.positions[event.security.code].price,
+                'avg_cost':context.portfolio.positions[event.security.code].avg_cost
+            }}
+        }})
+        response = requests.request('POST', url, headers=
+        {{
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + TOKEN
+        }}, data= jsonDic)
+        return response
+"""
         
         # 匹配方法名和括号内的参数
         pattern = r'\b(order_target|order_value|order_target_value|order)\(([^)]*)\)'
@@ -212,16 +244,7 @@ def qmt_auto_orders(method_name, *args, **kwargs):
     side = args[3] if len(args) > 3 else kwargs.get('side','long')
     pindex = args[4] if len(args) > 4 else kwargs.get('pindex',0)
     total_value = g.context.portfolio.total_value
-    
 
-
-    orderInfo = system_method(security, value,
-                        style=style_str,
-                        side=side,
-                        pindex=pindex)
-    if orderInfo == None:
-        return None
-    
     positions = [
         {{
             'security': v.security,
@@ -231,6 +254,14 @@ def qmt_auto_orders(method_name, *args, **kwargs):
         }}
         for v in g.context.portfolio.positions.values()
     ]    
+
+    orderInfo = system_method(security, value,
+                        style=style_str,
+                        side=side,
+                        pindex=pindex)
+    if orderInfo == None:
+        return None
+        
     jsonDic = json.dumps({{
         'method': method_name,
         'run_params': g.run_params,
@@ -266,9 +297,7 @@ def on_strategy_end(context):
             'security': v.security,
             'price': v.price,
             'total_amount': v.total_amount,
-            'avg_cost': v.avg_cost,
-            'positions':positions,
-
+            'avg_cost': v.avg_cost
         }}
         for v in g.context.portfolio.positions.values()
     ]
@@ -285,6 +314,39 @@ def on_strategy_end(context):
         'Authorization': 'Bearer ' + TOKEN
     }}, data= jsonDic)
     return response
+"""
+
+        # 添加on_event函数
+        data = data + F"""
+def on_event(context, event):
+    if event.name == "Dividends":
+        formatted_data = [
+            {{
+                'date': f"{{item['date'].year}}-{{item['date'].month:02d}}-{{item['date'].day:02d}}",
+                'bonus_pre_tax': item['bonus_pre_tax'],
+                'scale_factor': item['scale_factor']
+            }}
+            for item in event.dividends
+        ]
+        url = "{server_url}/send_message"
+        jsonDic = json.dumps({{
+            'run_params': g.run_params,
+            'strategy_code':event.security.code,
+            'dividends':formatted_data,
+            'price':context.portfolio.positions[event.security.code].price,
+            'state':'dividends',
+            'params':{{
+                'security':event.security.code,
+                'price':context.portfolio.positions[event.security.code].price,
+                'avg_cost':context.portfolio.positions[event.security.code].avg_cost
+            }}
+        }})
+        response = requests.request('POST', url, headers=
+        {{
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + TOKEN
+        }}, data= jsonDic)
+        return response
 """
         
         # 匹配方法名和括号内的参数

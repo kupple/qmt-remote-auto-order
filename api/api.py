@@ -28,7 +28,6 @@ load_dotenv()
 from .global_params import G
 from .trading_related.ak_data import sync_data_stocks_data
 from .tools.common import transition_code,revert_transition_code,is_process_exist,sync_data_to_global
-from .trading_related.deal import get_qmt_price_type
 
 # 是否自动连接ws 开发模式不需要连接很麻烦
 AUTO_CONNECTION_WS = int(os.getenv('AUTO_CONNECTION_WS',1))
@@ -59,7 +58,7 @@ class API(System):
         
         # 
         self.loop = asyncio.get_event_loop()
-        self.loop.run_in_executor(None, sync_data_to_global)
+        self.loop.run_in_executor(None, sync_data_stocks_data)
 
     def setWindow(self, window):
         '''获取窗口实例'''
@@ -180,6 +179,8 @@ class API(System):
     def get_order_list(self,data):
         return G.orm.get_order_list(data)
     
+    def test_qmt_connect(self,path):
+        return self.qmt.test_connect(path)
 
     def cancel_daily_task(self):
         """取消所有定时任务"""

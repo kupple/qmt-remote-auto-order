@@ -652,11 +652,15 @@ class ORM:
         with dbSession.begin():
             stmt = select(DATA_TABLE_RECORD).where(DATA_TABLE_RECORD.table_name == table_name)
             result = dbSession.execute(stmt).scalar_one_or_none()
+            
             if result is not None:
                 # update
-                result.record_type = record_type
-                result.record_time = record_time
-                result.record_content = record_content
+                stmt = update(DATA_TABLE_RECORD).where(DATA_TABLE_RECORD.table_name == table_name).values(
+                    record_type=record_type,
+                    record_time=record_time,
+                    record_content=record_content
+                )
+                dbSession.execute(stmt)
             else:
                 # insert
                 data = DATA_TABLE_RECORD(

@@ -1,6 +1,7 @@
 import time
 import threading
 from typing import Optional
+from api.global_params import G
 
 class AccountType:
     STOCK = 1
@@ -12,8 +13,39 @@ class OrderType:
     STOCK_SELL = 24
 
 class PriceType:
-    LIMIT_PRICE = 1
-    BEST_5 = 3
+    # 最新价
+    LATEST_PRICE = 5
+    # 指定价/限价
+    FIX_PRICE = 11
+    # 市价最优价[郑商所][期货]
+    MARKET_BEST = 18
+    # 市价即成剩撤[大商所][期货]
+    MARKET_CANCEL = 19
+    # 市价全额成交或撤[大商所][期货]
+    MARKET_CANCEL_ALL = 20
+    # 市价最优一档即成剩撤[中金所][期货]
+    MARKET_CANCEL_1 = 21
+    # 市价最优五档即成剩撤[中金所][期货]
+    MARKET_CANCEL_5 = 22
+    # 市价最优一档即成剩转[中金所][期货]
+    MARKET_CONVERT_1 = 23
+    # 市价最优五档即成剩转[中金所][期货]
+    MARKET_CONVERT_5 = 24
+    # 最优五档即时成交剩余撤销[上交所][股票]
+    MARKET_SH_CONVERT_5_CANCEL = 42
+    # 最优五档即时成交剩转限价[上交所][股票]
+    MARKET_SH_CONVERT_5_LIMIT = 43
+    # 对手方最优价格委托[上交所[股票]][深交所[股票][期权]]
+    MARKET_PEER_PRICE_FIRST = 44
+    # 本方最优价格委托[上交所[股票]][深交所[股票][期权]]
+    MARKET_MINE_PRICE_FIRST = 45
+    # 即时成交剩余撤销委托[深交所][股票][期权]
+    MARKET_SZ_INSTBUSI_RESTCANCEL = 46
+    # 最优五档即时成交剩余撤销[深交所][股票][期权]
+    MARKET_SZ_CONVERT_5_CANCEL = 47
+    # 全额成交或撤销委托[深交所][股票][期权]
+    MARKET_SZ_FULL_OR_CANCEL = 48
+
 
 class OrderStatus:
     SUBMITTED = 1
@@ -36,7 +68,7 @@ class XtOrder:
         self.order_time = 0
         self.order_type = OrderType.STOCK_BUY
         self.order_volume = 0
-        self.price_type = PriceType.LIMIT_PRICE
+        self.price_type = PriceType.LATEST_PRICE
         self.price = 0.0
         self.traded_volume = 0
         self.traded_price = 0.0
@@ -117,25 +149,18 @@ class XtQuantTraderCallback:
         pass
 
 class QmtTradingSimulator:
-    def __init__(self, callback: XtQuantTraderCallback):
+    def __init__(self,is_simulation:bool,callback: XtQuantTraderCallback):
         self.callback = callback
         self.account_id = "SIM001"
         self.next_order_id = 10000
         self.next_trade_id = 20000
         self.next_seq = 1
         self.lock = threading.Lock()
+        self.is_simulation = is_simulation
 
     def place_order(self, stock_code: str, volume: int, price: float, order_type: int, price_type: int, order_time: int = None, direction: int = Direction.LONG, strategy_name: str = "", order_remark: str = ""):
         order_id = self._generate_order_id()
         seq = self._generate_seq()
-
-        if order_time is None:
-            order_time = int(time.time() * 1000)
-            
-            # 立即调用异步下单响应
-            response = self._create_order_response(order_id, seq, 0, "下单成功", strategy_name, order_remark)
-            self.callback.on_order_stock_async_response(response)
-            return
         
         # 验证订单合法性
         error_id, error_msg = self._validate_order(stock_code, volume, price, order_type, price_type)
@@ -143,7 +168,7 @@ class QmtTradingSimulator:
             # 立即返回错误响应
             response = self._create_order_response(order_id, seq, error_id, error_msg, strategy_name, order_remark)
             self.callback.on_order_stock_async_response(response)
-            logger.error(f"订单验证失败: {error_msg}")
+            G.logger.error(f"订单验证失败: {error_msg}")
             return
         
         # 创建订单对象
@@ -160,6 +185,7 @@ class QmtTradingSimulator:
         # 立即调用订单回报
         self.callback.on_stock_order(order)
         
+        
         # 模拟成交回报
         self._simulate_trades(order)
     
@@ -168,14 +194,8 @@ class QmtTradingSimulator:
         if volume <= 0:
             return 1001, "订单数量必须大于0"
         
-        if price <= 0 and price_type != PriceType.BEST_5:
-            return 1002, "订单价格必须大于0"
-        
         if order_type not in [OrderType.STOCK_BUY, OrderType.STOCK_SELL]:
             return 1003, "订单类型必须是买入或卖出"
-        
-        if price_type not in [PriceType.LIMIT_PRICE, PriceType.BEST_5]:
-            return 1005, "不支持的报价类型"
         
         return 0, "订单验证通过"
     
@@ -236,23 +256,73 @@ class QmtTradingSimulator:
     
     def _simulate_trades(self, order: XtOrder):
         """模拟成交回报"""
-        trade_volume = order.order_volume
+        import random
         trade_price = order.price
         traded_time = order.order_time
-        trade = self._create_trade(order, trade_price, trade_volume, traded_time)
-        self._process_trade(trade, order)
+        total_volume = order.order_volume
+        current_volume = 0
         
-        # 更新订单状态
-        order.traded_volume = order.order_volume
-        order.order_status = OrderStatus.FILLED 
-        order.status_msg = "全部成交"
-        
+        # 在模拟模式下，将订单拆分成随机次数的成交
+        if self.is_simulation:
+            # 随机决定成交次数（1-5次）
+            num_trades = random.randint(1, 5)
+            remaining_volume = total_volume
+            
+            for i in range(num_trades):
+                if remaining_volume <= 0:
+                    break
+                    
+                # 确保最后一次成交正好完成剩余数量
+                if i == num_trades - 1:
+                    # 最后一次成交，确保剩余数量是100的倍数
+                    if remaining_volume % 100 != 0:
+                        remaining_volume = (remaining_volume // 100) * 100  # 向下取整到100的倍数
+                    trade_volume = remaining_volume
+                else:
+                    # 随机决定本次成交的数量（必须是100的倍数）
+                    max_possible = min(1000, remaining_volume)  # 最大1000股或剩余数量
+                    if max_possible < 100:
+                        break  # 如果最大可能成交量小于100股，结束循环
+                        
+                    # 随机选择1-10之间的数，然后乘以100
+                    trade_volume = random.randint(1, min(10, max_possible // 100)) * 100
+                
+                # 创建并处理成交
+                trade = self._create_trade(order, trade_price, trade_volume, traded_time)
+                self._process_trade(trade, order)
+                
+                # 更新订单状态
+                current_volume += trade_volume
+                order.traded_volume = current_volume
+                remaining_volume -= trade_volume
+                
+                # # 更新订单状态
+                # if current_volume < total_volume:
+                #     order.order_status = OrderStatus.PARTIAL
+                #     order.status_msg = f"部分成交 {current_volume}/{total_volume}"
+                # else:
+                #     order.order_status = OrderStatus.FILLED
+                #     order.status_msg = "全部成交"
+                
+                # # 触发订单状态更新回调
+                # self.callback.on_stock_order(order)
+                
+        else:
+            # 非模拟模式，直接全部成交
+            trade = self._create_trade(order, trade_price, total_volume, traded_time)
+            self._process_trade(trade, order)
+            
+            # 更新订单状态
+            order.traded_volume = total_volume
+            order.order_status = OrderStatus.FILLED 
+            order.status_msg = "全部成交"
+            
+            # 触发订单状态更新回调
+            # self.callback.on_stock_order(order)
+            
         # 计算成交均价
         if order.traded_volume > 0:
             order.traded_price = order.price  # 简化处理，实际应为加权平均价
-        
-        # 触发订单状态更新回调
-        self.callback.on_stock_order(order)
     
     def _create_trade(self, order: XtOrder, trade_price: float, trade_volume: int, traded_time: int) -> XtTrade:
         """创建成交对象"""

@@ -7,7 +7,7 @@ from api.db.models import (
     DATA_ALL_STOCKS,DATA_ST_STOCKS,
     DATA_TRADE_DATE_HIST
 )
-
+from ..tools.common import sync_data_to_global
 
 
 # 同步数据表
@@ -28,10 +28,10 @@ def sync_data_stocks_data():
         record = G.orm.get_data_table_record(table_name)
         if record and record['record_time']:
             today = datetime.today()
-            record_date = datetime.fromtimestamp(record['record_time'])
+            record_date = datetime.fromtimestamp(record['record_time']).replace(hour=0, minute=0, second=0, microsecond=0)
             if record_date < today and (today - record_date).days > diff:
                 record = None
-        
+            
         if record and record['record_time']:
             G.logger.info(f"数据表: {table_name} 已同步")
         else:    
@@ -50,6 +50,7 @@ def sync_data_stocks_data():
                 G.orm.add_data_table_record(table_name)
             else:
                 G.logger.error(f"数据表: {table_name} 同步失败")
+    sync_data_to_global()
 
 
 # 保存数据到数据库
