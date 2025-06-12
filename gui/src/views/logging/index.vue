@@ -37,7 +37,7 @@
               <el-tag :type="row.level === 'INFO' ? 'success' : row.level === 'WARNING' ? 'warning' : 'danger'" size="small">{{ row.level }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="message" label="日志消息" width="450" />
+          <el-table-column prop="message" label="日志消息" width="150" />
           <el-table-column prop="module" label="模块" width="150" />
           <el-table-column prop="func_name" label="函数名称" width="150" />
           <el-table-column prop="line_num" label="行号" width="150" />

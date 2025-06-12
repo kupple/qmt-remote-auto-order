@@ -136,7 +136,6 @@ class TaskList(BaseModel):
     mock_lower_limit_of_fees = Column(Numeric(), doc='回测手续费下限', nullable=True)
     mock_allocation_amount = Column(Numeric(), doc='回测分配金额', nullable=True)
     user_id = Column(String(), doc='用户id', nullable=True)
-    is_simulation = Column(Integer(), doc='是否仿真回测', nullable=True, server_default='0')
 
     def __str__(self):
         return f"Task: {self.name}"
@@ -203,7 +202,6 @@ class Trades(BaseModel):
     traded_time = Column(Integer(), doc='交易时间', nullable=True)
     traded_price = Column(Numeric(), doc='交易价格', nullable=True) 
     traded_amount = Column(Numeric(), doc='交易金额', nullable=True)
-    commission = Column(Numeric(), doc='佣金', nullable=True)
     order_status = Column(Integer, doc='订单状态', nullable=True)
     order_type = Column(Integer, doc='订单类型', nullable=True)
     status_msg = Column(String(), doc='状态消息', nullable=True)

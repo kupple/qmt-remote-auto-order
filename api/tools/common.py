@@ -64,14 +64,11 @@ def revert_transition_code(data):
         portfolio_pattern = r"'total_amount':\s*g\.context\.portfolio\.positions\[security\]\.total_amount,?[\s\n]*'total_value':\s*g\.context\.portfolio\.total_value,?[\s\n]*"
         data = re.sub(portfolio_pattern, '', data)
         
-        # 移除添加的 on_event 函数
-        event_pattern = r'def\s+on_event\s*\([^)]*\)\s*:[\s\S]*?return\s+response\s*'
-        data = re.sub(event_pattern, '', data)
-        
         return data
     except Exception as e:
         G.logger.error(f"还原错误: {e}")
-        return "还原错误"
+        return "还原错误"    
+
 
 def is_process_exist():
     app_name = "XtMiniQmt.exe"

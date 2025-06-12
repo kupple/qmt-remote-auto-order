@@ -13,8 +13,6 @@ from api.system import System
 from api.trading_related import ak_data
 from api.trading_related.ak_data import save_all_data,save_st_data
 from ..global_params import G
-from api.trading_related.ak_data import sync_data_stocks_data
-from ..tools.common import sync_data_to_global
 
 
 class TaskScheduler:
@@ -221,7 +219,6 @@ class TaskScheduler:
         
     def get_stocks_data(self):
        sync_data_stocks_data()
-       sync_data_to_global()
        
             
         

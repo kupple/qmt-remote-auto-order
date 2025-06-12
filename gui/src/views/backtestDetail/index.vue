@@ -36,7 +36,7 @@
           <div class="backtest-content-item-stocks-item">{{item.remaining_cash.toFixed(2)}}</div>
         </div>
         <div class="section" v-if="item.trades.length > 0">
-          <span>当日成交</span>
+          <span>当日变动</span>
         </div>
         <div v-for="(stock, idx) in item.trades" class="backtest-content-item-trades" :key="idx">
           <div class="backtest-content-item-trades-item">{{ stock.stock_code }}</div>
@@ -44,8 +44,8 @@
           <div class="backtest-content-item-trades-item">
             <el-tag disable-transitions	 size="small" type="success" v-if="stock.direction == '买入'">买入</el-tag>
             <el-tag disable-transitions	 size="small" type="danger" v-else>卖出</el-tag></div>
-          <div class="backtest-content-item-trades-item">{{stock.price}}</div>
-          <div class="backtest-content-item-trades-item">{{stock.commission.toFixed(2)}}</div>
+          <div class="backtest-content-item-trades-item"></div>
+          <div class="backtest-content-item-trades-item"></div>
           <div class="backtest-content-item-trades-item">
             <span v-if="stock.direction == '买入'">+</span>
             <span v-else>-</span>
