@@ -655,3 +655,11 @@ UPDATE alembic_version SET version_num='d6609cc360f8' WHERE alembic_version.vers
 
 UPDATE alembic_version SET version_num='f8a587fd9552' WHERE alembic_version.version_num = 'd6609cc360f8';
 
+-- Running upgrade f8a587fd9552 -> 560b1c57f776
+
+ALTER TABLE tasklist ADD COLUMN is_simulation INTEGER DEFAULT '0';
+
+ALTER TABLE trades ADD COLUMN commission NUMERIC;
+
+UPDATE alembic_version SET version_num='560b1c57f776' WHERE alembic_version.version_num = 'f8a587fd9552';
+
