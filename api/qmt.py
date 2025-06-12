@@ -603,7 +603,7 @@ class QMT:
 
 
     if connect_result == 0:
-      print('连接成功')
+      print('连接成功~')
       result['is_connect'] = True
     else:
       result['msg'] = 'QMT路径错误,请重新检查!'
