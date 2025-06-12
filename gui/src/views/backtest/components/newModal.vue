@@ -18,6 +18,10 @@
           </div>
         </div>
       </el-form-item>
+      <el-form-item label="开启仿真回测" required>
+        <el-switch v-model="form.is_simulation" />
+        <span style="margin-left: 10px;color:red">开启后，任务将使用使用多单成交模拟交易</span>
+      </el-form-item> 
       <el-form-item>
         <el-button type="primary" @click="handleSubmit">保存</el-button>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -45,7 +49,8 @@ const props = defineProps({
 const form = reactive({
   mock_service_charge:0,
   mock_lower_limit_of_fees:0,
-  mock_allocation_amount:0
+  mock_allocation_amount:0,
+  is_simulation:true
 })
 
 
@@ -63,6 +68,7 @@ const showModal = (dic) => {
     form.mock_service_charge = dic.mock_service_charge
     form.mock_lower_limit_of_fees = dic.mock_lower_limit_of_fees
     form.mock_allocation_amount = dic.mock_allocation_amount
+    form.is_simulation = dic.is_simulation == 1 ? true:false
   }
 }
 const handleSubmit = async () => {
@@ -72,6 +78,7 @@ const handleSubmit = async () => {
     mock_service_charge: form.mock_service_charge,
     mock_lower_limit_of_fees: form.mock_lower_limit_of_fees,
     mock_allocation_amount: form.mock_allocation_amount,
+    is_simulation: form.is_simulation ? 1:0
   })
   dialogVisible.value = false
   ElMessage.success('保存成功')

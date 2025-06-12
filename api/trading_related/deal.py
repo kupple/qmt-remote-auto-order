@@ -144,7 +144,7 @@ def calculate_dividend_effect(
     purchase_price: float,
     bonus_pre_tax: float,
     scale_factor: float,
-    tax_rate: float = 0.1,  # 默认红利税10%
+    tax_rate: float = 0.2,  # 默认红利税20%
     ex_dividend_price: float = None  # 除权除息价（可选）
 ) -> dict:
     """
@@ -163,8 +163,7 @@ def calculate_dividend_effect(
         dict: 包含分红前后持仓变化的详细信息
     """
     # 计算送股后的总股数
-    new_shares = int(holding_shares * scale_factor)
-    total_shares = holding_shares + new_shares
+    total_shares = int(holding_shares * scale_factor)
     
     # 计算税前和税后现金分红
     cash_dividend_pre_tax = holding_shares * bonus_pre_tax
@@ -194,8 +193,7 @@ def calculate_dividend_effect(
         "scale_factor": scale_factor,
         "tax_rate": tax_rate,
         
-        "new_shares": new_shares,
-        "total_shares_after": total_shares,
+        "new_shares": total_shares,
         "cash_dividend_pre_tax": cash_dividend_pre_tax,
         "tax_amount": tax_amount,
         "cash_dividend_after_tax": cash_dividend_after_tax,

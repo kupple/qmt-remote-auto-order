@@ -655,3 +655,23 @@ UPDATE alembic_version SET version_num='d6609cc360f8' WHERE alembic_version.vers
 
 UPDATE alembic_version SET version_num='f8a587fd9552' WHERE alembic_version.version_num = 'd6609cc360f8';
 
+-- Running upgrade f8a587fd9552 -> f91a00207174
+
+ALTER TABLE backtest ADD COLUMN is_simulation INTEGER DEFAULT '0';
+
+UPDATE alembic_version SET version_num='f91a00207174' WHERE alembic_version.version_num = 'f8a587fd9552';
+
+-- Running upgrade f91a00207174 -> d5ea964b3b9d
+
+ALTER TABLE backtest DROP COLUMN is_simulation;
+
+ALTER TABLE tasklist ADD COLUMN is_simulation INTEGER DEFAULT '0';
+
+UPDATE alembic_version SET version_num='d5ea964b3b9d' WHERE alembic_version.version_num = 'f91a00207174';
+
+-- Running upgrade d5ea964b3b9d -> 16f1389120c2
+
+ALTER TABLE trades ADD COLUMN commission NUMERIC;
+
+UPDATE alembic_version SET version_num='16f1389120c2' WHERE alembic_version.version_num = 'd5ea964b3b9d';
+
