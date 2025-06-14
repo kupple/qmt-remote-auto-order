@@ -263,3 +263,6 @@ class API(System):
     
     def clear_log(self):
         return G.orm.clear_log()
+    
+    def get_account_info(self):
+        return self.qmt.get_account_info() 

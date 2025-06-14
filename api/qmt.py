@@ -655,3 +655,7 @@ class QMT:
       result['msg'] = 'QMT路径错误,请重新检查!'
     return result
     
+  
+  
+  def get_account_info(self):
+    return self.qmt_trader.balance()
