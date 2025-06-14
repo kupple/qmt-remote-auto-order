@@ -62,6 +62,8 @@
         </div>
       </div>
       <div class="bottom-container-right">
+        <span>资金</span>
+        <el-button size="small" type="primary" style="width:100px" @click="getAccountInfoAction">获取账号信息</el-button>
         <el-divider>功能</el-divider>
         <el-form :model="form" label-width="100px">
           <el-form-item label="自动逆回购">
@@ -101,7 +103,7 @@ import { useCommonStore } from '@/store/common.js'
 import { getUserInfo } from '@/api/auth'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter, useRoute } from 'vue-router'
-import { getSettingConfig, runTask, getTaskList, saveConfig, setAutomatically,getUniqueID } from '@/api/comm_tube'
+import { getSettingConfig, runTask, getTaskList, saveConfig, setAutomatically,getUniqueID,getAccountInfo } from '@/api/comm_tube'
 
 const router = useRouter() // 使用useRouter函数创建router实例
 const route = useRoute()
@@ -159,6 +161,10 @@ const shareAction = (row) => {
   return
 }
 
+const getAccountInfoAction = async () => {
+  const res = await getAccountInfo()
+  console.log(res)
+}
 // 开始任务
 const handleEdit = async (row) => {
   if (row.is_open === 0) {

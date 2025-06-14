@@ -207,7 +207,6 @@ class qmt_trader:
         if connect_result == 0:
             # 对交易回调进行订阅，订阅后可以收到交易主推，返回0表示订阅成功
             subscribe_result = xt_trader.subscribe(acc)
-            
             if subscribe_result == 0:
                 self.xt_trader = xt_trader
                 self.acc = acc
@@ -236,13 +235,7 @@ class qmt_trader:
                 df['总资产'] = [asset.total_asset]
                 return df
         except:
-            print('获取账户失败，读取上次数据，谨慎使用')
-            df = pd.read_excel(r'账户数据\账户数据.xlsx', dtype='object')
-            try:
-                del df['Unnamed: 0']
-            except:
-                pass
-            return df
+            return None
 
     def reverse_repurchase_of_treasury_bonds(self, security='131810.SZ',
                                            order_type=xtconstant.STOCK_SELL,
