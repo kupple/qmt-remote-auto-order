@@ -64,20 +64,6 @@ const isAccSubSuccess = computed(() => useCommonStore().isAccSubSuccess)
 
 onMounted(async () => {
   setInterval(async () => {
-    const res = await isProcessExist()
-    if(isQMTProcessExit.value == false && res == true){
-      // connectQMT
-      const config = await getSettingConfig()
-      if(config.mini_qmt_path && config.client_id){
-          await connectQMT({
-            mini_qmt_path: config.mini_qmt_path,
-            client_id: config.client_id
-          })
-      }
-    }
-    useCommonStore().changeIsQMTProcessExit(res)
-  }, 2000)
-  setInterval(async () => {
     time.value = new Date().toLocaleString()
   }, 1000)
 })

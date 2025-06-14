@@ -27,7 +27,7 @@ from dotenv import load_dotenv
 load_dotenv()
 from .global_params import G
 from .trading_related.ak_data import sync_data_stocks_data
-from .tools.common import transition_code,revert_transition_code,is_process_exist,sync_data_to_global
+from .tools.common import transition_code,revert_transition_code,sync_data_to_global
 
 # 是否自动连接ws 开发模式不需要连接很麻烦
 AUTO_CONNECTION_WS = int(os.getenv('AUTO_CONNECTION_WS',1))
@@ -114,8 +114,6 @@ class API(System):
     def save_config(self, data):
         G.orm.save_config(data)
     
-    def is_process_exist(self):
-        return is_process_exist()
     
     def connect_ws(self,server_url,ways = 2,is_login = False):
         if AUTO_CONNECTION_WS == 1:
