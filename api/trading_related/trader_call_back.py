@@ -22,6 +22,14 @@ class MyXtQuantTraderCallback(XtQuantTraderCallback):
     G.logger.warning("连接断开",extra={
             "showMessage": True
     })
+    
+  def on_account_status(self, status):
+    """
+    :param response: XtAccountStatus 对象
+    :return:
+    """
+    print("on_account_status")
+    print(status.account_id, status.account_type, status.status)
   def on_stock_order(self, order):
     
     # 将毫秒级时间戳转换为秒级时间戳
