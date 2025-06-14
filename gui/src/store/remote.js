@@ -3,6 +3,7 @@ import router from '@/router/index.js'
 import dayjs from 'dayjs'
 import { ElMessage } from 'element-plus'
 import { defineStore } from 'pinia'
+import { useCommonStore } from '@/store/common.js'
 
 import { clearAuth } from '@/api/auth'
 export const useRemoteStore = defineStore('remote', {
@@ -52,7 +53,9 @@ export const useRemoteStore = defineStore('remote', {
         if (params.type == 'logout') {
           this.connectState = 0
         }
-        
+        if (params.type == 'qmtProcessCheck') {
+          useCommonStore().changeIsQMTProcessExit(params.event)
+        }
       }
       // 模拟盘 回测 信号单
       if (params.data) {
