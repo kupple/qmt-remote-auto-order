@@ -192,7 +192,7 @@ class qmt_trader:
         # path为mini qmt客户端安装目录下userdata_mini路径
         path = self.path
         # session_id为会话编号，策略使用方对于不同的Python策略需要使用不同的会话编号
-        session_id = self.session_id
+        session_id = int(self.random_session_id())
         xt_trader = XtQuantTrader(path, session_id)
         # 创建资金账号为1000000365的证券账号对象
         account = self.account
