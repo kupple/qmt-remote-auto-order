@@ -26,6 +26,8 @@ class QMT:
     self._thread = None
     self.qmt_is_connect = False
     self.acc_is_connect = False
+    self.is_need_reconnection = False
+    self.is_need_reconnection_lock = True
     
     # 启动进程检查
     self._start_process_check()
@@ -53,21 +55,25 @@ class QMT:
         })  
         self.qmt_is_connect = event
         if event:
-          # await asyncio.sleep(2)  # 等待2秒
-          if self.acc_is_connect == False:          
-            G.logger.info("正在尝试订阅账号",extra={
-              "showMessage": True
-            })
+          if self.is_need_reconnection == True and self.is_need_reconnection_lock == False:          
+            self.is_need_reconnection = False
             config = G.orm.get_setting_config()
             # 已配置才可以选择
             if config['mini_qmt_path'] != "" and config['client_id'] != "":
-              
+              G.logger.info("正在重新连接QMT",extra={
+                "showMessage": True
+              })
+              self.is_need_reconnection_lock = True
               self.connect_qmt({
                 "mini_qmt_path": config['mini_qmt_path'],
                 "client_id": config['client_id']
               })
               await asyncio.sleep(2)  # 等待2秒 
-        await asyncio.sleep(2)  # 等待2秒
+        else:
+          # 如果之前连过才给他重连
+          # if self.acc_is_connect:
+          self.is_need_reconnection = True
+          self.acc_is_connect = False
       except Exception as e:
         error_msg = f"进程检查出错: {str(e)}"
         if G.logger:
@@ -82,30 +88,35 @@ class QMT:
             G.logger.info("进程检查正常完成")
     
   def connect_qmt(self,params):
-    # 如果是mac 电脑开发环境直接返回成功
-    if sys.platform.startswith('darwin'):
-        self.acc_is_connect = True
-        System.system_py2js(self,'remoteCallBack',  {
-          "type": "accSubSuccess",
-          "message": "QMT连接成功",
-          "event": True
-        })
-        return True
-    # 设置id
-    self.qmt_trader.path = params['mini_qmt_path']
-    self.qmt_trader.account = params['client_id']
-    # 连接QMT 传递回调
-    self.acc_is_connect = self.qmt_trader.connect(self.callback)
-    if self.acc_is_connect:
-      message = "QMT连接成功"
-    else:
-      message = "QMT连接失败"
-    System.system_py2js(self,'remoteCallBack',  {
-      "type": "accSubSuccess",
-      "message": message,
-      "event": self.acc_is_connect
-    })
-    return self.acc_is_connect
+    try:
+      # 如果是mac 电脑开发环境直接返回成功
+      if sys.platform.startswith('darwin'):
+          self.acc_is_connect = True
+          System.system_py2js(self,'remoteCallBack',  {
+            "type": "accSubSuccess",
+            "message": "QMT连接成功",
+            "event": True
+          })
+          return True
+      # 设置id
+      self.qmt_trader.path = params['mini_qmt_path']
+      self.qmt_trader.account = params['client_id']
+      # 连接QMT 传递回调
+      self.acc_is_connect = self.qmt_trader.connect(self.callback)
+      if self.acc_is_connect:
+        message = "QMT连接成功"
+      else:
+        message = "QMT连接失败"
+      System.system_py2js(self,'remoteCallBack',  {
+        "type": "accSubSuccess",
+        "message": message,
+        "event": self.acc_is_connect
+      })
+      self.is_need_reconnection_lock = False
+    except Exception as e:
+      G.logger.error("连接QMT报错! code 1980")
+      self.is_need_reconnection_lock = False
+      
   
   # 购买国债逆回购
   def buy_reverse_repo(self):
@@ -296,6 +307,7 @@ class QMT:
       G.logger.error("is_mock_state参数错误")
   # 下单协议{code:code,price:price,amount:amount,type:type}
   def manage_qmt_trader(self,data):    
+    print(data)
     try:    
       strategy_code = data['strategy_code']
       run_params = data['run_params']

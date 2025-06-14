@@ -4,6 +4,7 @@ import logging
 from api.system import System
 from datetime import datetime
 from typing import Any, Dict
+import asyncio
 
 # Remove the get_logger function since we're now creating the logger directly in GlobalParams
 
@@ -66,9 +67,16 @@ class GlobalParams():
         self.unique_id = get_system_unique_id()
         self.orm = ORM()
         
+        # Disable asyncio debug logging
+        asyncio.get_event_loop().set_debug(False)
+        
         # Create logger with ORM instance
         logger = logging.getLogger('my_app')
         logger.setLevel(logging.INFO)
+        
+        # Disable asyncio debug logging
+        asyncio_logger = logging.getLogger('asyncio')
+        asyncio_logger.setLevel(logging.ERROR)
         
         # Create formatter
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
