@@ -33,7 +33,7 @@ const router = useRouter(); // 使用useRouter函数创建router实例
 import { useCommonStore } from '@/store/common.js'
 import { useRemoteStore } from '@/store/remote.js'
 
-const isQMTProcessExit = computed(() => useCommonStore().isQMTProcessExit)
+const isQmtState = computed(() => useCommonStore().isQmtState)
 const isWSConnectedState = computed(() => useRemoteStore().connectState)
 
 const route = useRoute()

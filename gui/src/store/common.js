@@ -6,18 +6,18 @@ import {
 export const useCommonStore = defineStore('common', {
   state: () => ({
     isLoggedIn: false,
-    isQMTProcessExit: false,
-    isAccSubSuccess: false,
+    isQmtState: false,
+    isAccSubState: false,
     taskList: [],
     showTerminal: true,
     settingConfig: null,
   }),
   actions: {
-    changeIsQMTProcessExit(params) {
-      this.isQMTProcessExit = params
+    changeisQmtState(params) {
+      this.isQmtState = params
     },
-    changeIsAccSubSuccess(params){
-      this.isAccSubSuccess = params
+    changeisAccSubState(params){
+      this.isAccSubState = params
     },
     setTaskList(params) {
       this.taskList = params

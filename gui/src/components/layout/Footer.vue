@@ -2,7 +2,7 @@
   <div class="footer-container">
     <div class="xuntou-khd">
       <span class="label-tips">mini迅投客户端:</span>
-      <div v-if="isQMTProcessExit == true" class="footer-cell">
+      <div v-if="isQmtState == true" class="footer-cell">
         <div class="tips">已打开</div>
         <el-icon color="green"><CircleCheckFilled /></el-icon>
       </div>
@@ -28,7 +28,7 @@
     </div>
     <div class="ws-state">
       <span class="label-tips">资金账号订阅:</span>
-      <div v-if="isAccSubSuccess" class="footer-cell">
+      <div v-if="isAccSubState" class="footer-cell">
         <div class="tips">成功</div>
         <el-icon color="green"><CircleCheckFilled /></el-icon>
       </div>
@@ -57,10 +57,10 @@ defineOptions({
   name: 'LayoutFooter'
 })
 
-const isQMTProcessExit = computed(() => useCommonStore().isQMTProcessExit)
+const isQmtState = computed(() => useCommonStore().isQmtState)
 const isWSConnectedState = computed(() => useRemoteStore().connectState)
 // 是否订阅账号成功
-const isAccSubSuccess = computed(() => useCommonStore().isAccSubSuccess)
+const isAccSubState = computed(() => useCommonStore().isAccSubState)
 
 onMounted(async () => {
   setInterval(async () => {

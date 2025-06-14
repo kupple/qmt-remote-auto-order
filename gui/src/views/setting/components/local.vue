@@ -35,7 +35,7 @@
         </el-form-item>
 
         <el-form-item label="qmt客户端是否打开" required>
-          <div v-if="isQMTProcessExit == true" class="footer-cell">
+          <div v-if="isQmtState == true" class="footer-cell">
             <el-tag type="success">mini迅投客户端已打开</el-tag>
           </div>
           <div v-else class="footer-cell">
@@ -66,7 +66,7 @@ import { useCommonStore } from '@/store/common.js'
 import { CircleCheckFilled, CircleCloseFilled } from '@element-plus/icons-vue'
 import { testQMTConnect } from '@/api/comm_tube'
 
-const isQMTProcessExit = computed(() => useCommonStore().isQMTProcessExit)
+const isQmtState = computed(() => useCommonStore().isQmtState)
 
 const formRef = ref(null)
 
@@ -134,7 +134,7 @@ const saveAction = async () => {
 
   try {
     await formRef.value.validate()
-    if (isQMTProcessExit.value == false) {
+    if (isQmtState.value == false) {
       ElMessage({
         message: '请手动打开miniqmt',
         type: 'error'
