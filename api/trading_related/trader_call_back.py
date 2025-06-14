@@ -19,7 +19,7 @@ class MyXtQuantTraderCallback(XtQuantTraderCallback):
     连接断开
     :return:
     """
-    G.logger.warning("连接断开",extra={
+    G.logger.warning("QMT连接断开",extra={
             "showMessage": True
     })
   def on_stock_order(self, order):
