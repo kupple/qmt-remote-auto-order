@@ -142,7 +142,7 @@ class StockPositionCalculator:
                     volume = trade['traded_volume']
                     price = trade['traded_price']
                     direction = trade['order_type']
-                    stock_name = G.stock_map["all_stock_code"][stock_code]['name']
+                    stock_name = G.stock_map["all_stock_code"].get(stock_code, {}).get('name') or '未知'
 
                     # 获取手续费
                     commission = trade['commission']
@@ -292,7 +292,7 @@ def analyze_stock_data(trades: List[Dict], initial_capital: float = 100000.0) ->
         
         # 计算持仓市值
         for stock, pos in daily_positions[date_str]['positions'].items():
-            stock_name = G.stock_map["all_stock_code"][stock]['name']
+            stock_name = G.stock_map["all_stock_code"].get(stock, {}).get('name') or '未知'
             if pos['volume'] > 0:
                 positions_array.append({
                     'stock_code': stock,

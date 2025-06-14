@@ -13,12 +13,15 @@ from .trading_related.qmt_trading_simulator import QmtTradingSimulator,OrderType
 from decimal import Decimal
 import json
 from api.global_params import G
+import threading
   
 class MyXtQuantTraderCallback(XtQuantTraderCallback):
  
-  def __init__(self,is_mock,backtest_id=None) -> None:
+  def __init__(self,is_mock,backtest_id=None,is_pre=False) -> None:
     self.is_mock = is_mock
     self.backtest_id = backtest_id 
+    self.is_pre = is_pre
+    self.trade_lock = threading.Lock()  # 添加线程锁
     super().__init__()
     
   def on_disconnected(self):
@@ -32,26 +35,27 @@ class MyXtQuantTraderCallback(XtQuantTraderCallback):
   def on_stock_order(self, order):
     
     # 将毫秒级时间戳转换为秒级时间戳
-    timestamp_s = order.order_time / 1000
+    # timestamp_s = order.order_time / 1000
 
     # 将时间戳转换为 datetime 对象
-    dt = datetime.fromtimestamp(timestamp_s)
+    # dt = datetime.fromtimestamp(timestamp_s)
 
     # 格式化为指定的日期字符串
-    formatted_date = dt.strftime('%Y-%m-%d %H:%M:%S')
+    # formatted_date = dt.strftime('%Y-%m-%d %H:%M:%S')
     """
     委托回报推送
     :param order: XtOrder对象
     :return:
     """
-    # 系统下的单
-    if order.order_remark and order.strategy_name:
-      orderId = order.order_remark
-      G.orm.save_entrust(order,{
-        "orders_id": orderId,
-        "backtest_id": self.backtest_id,
-        "is_mock": self.is_mock
-      })
+    pass
+    # # 系统下的单
+    # if order.order_remark and order.strategy_name:
+    #   orderId = order.order_remark
+    #   G.orm.save_entrust(order,{
+    #     "orders_id": orderId,
+    #     "backtest_id": self.backtest_id,
+    #     "is_mock": self.is_mock
+    #   })
   def on_stock_asset(self, asset):
     """
     资金变动推送
@@ -66,85 +70,83 @@ class MyXtQuantTraderCallback(XtQuantTraderCallback):
     :return:
     """
     try:
-      if trade.order_remark and trade.strategy_name:
-        taskId = trade.strategy_name
-        orderId = trade.order_remark
-        task_or_backtest = G.orm.query_task_or_backtest(task_id=taskId, backtest_id=self.backtest_id)
-        order_count_type = task_or_backtest['order_count_type']
+      with self.trade_lock:  # 使用锁确保线程安全
+        if trade.order_remark and trade.strategy_name:
+          taskId = trade.strategy_name
+          orderId = trade.order_remark
+          task_or_backtest = G.orm.query_task_or_backtest(task_id=taskId, backtest_id=self.backtest_id)
+          order_count_type = task_or_backtest['order_count_type']
 
-        
-
-        positions = G.orm.query_position_by_task_or_backtest_id(backtest_id=self.backtest_id,task_id=taskId)
-        
-        positions_dict = {position['security_code']: position for position in positions}
-        
-        # 交易金额
-        traded_amount = Decimal(trade.traded_amount)
-        if trade.stock_code not in positions_dict:
-          G.orm.save_position({
-              "security_code": trade.stock_code,
-              "volume": trade.traded_volume,
-              "amount": traded_amount,
-              "backtest_id": self.backtest_id,
-              "is_mock": self.is_mock,
-              "task_id": taskId,
-              "average_price": trade.traded_price
-          })
-        else:
-          position = positions_dict[trade.stock_code]
-          if trade.order_type == OrderType.STOCK_BUY:
-            position['volume'] += trade.traded_volume
-          elif trade.order_type == OrderType.STOCK_SELL:
-            position['volume'] -= trade.traded_volume
+          positions = G.orm.query_position_by_task_or_backtest_id(backtest_id=self.backtest_id,task_id=taskId)
+          positions_dict = {position['security_code']: position for position in positions}
           
-          # 计算新的平均价格（在所有交易发生时更新）
-          position['average_price'] = Decimal(position['amount']) / Decimal(position['volume']) if position['volume'] > 0 else Decimal('0')
-          G.orm.update_position(position['id'], {
-            'volume': position['volume'],
-            'backtest_id': self.backtest_id,
-            'task_id': taskId,
-            'average_price': position['average_price'],
-            'amount': position['amount']
-          })
-          
-        if order_count_type == 1:
-          commission = 0  
-          if self.is_mock == True:
-            mock_service_charge = task_or_backtest['service_charge']
-            mock_lower_limit_of_fees = task_or_backtest['lower_limit_of_fees']
+          # 交易金额
+          traded_amount = Decimal(trade.traded_amount)
+          if trade.stock_code not in positions_dict:
+            G.orm.save_position({
+                "security_code": trade.stock_code,
+                "volume": trade.traded_volume,
+                "amount": traded_amount,
+                "backtest_id": self.backtest_id,
+                "is_mock": self.is_mock,
+                "task_id": taskId,
+                "average_price": trade.traded_price
+            })
+          else:
+            position = positions_dict[trade.stock_code]
+            if trade.order_type == OrderType.STOCK_BUY:
+              position['volume'] += trade.traded_volume
+            elif trade.order_type == OrderType.STOCK_SELL:
+              position['volume'] -= trade.traded_volume
+            
+            # 计算新的平均价格（在所有交易发生时更新）
+            position['average_price'] = Decimal(position['amount']) / Decimal(position['volume']) if position['volume'] > 0 else Decimal('0')
+            G.orm.update_position(position['id'], {
+              'volume': position['volume'],
+              'backtest_id': self.backtest_id,
+              'task_id': taskId,
+              'average_price': position['average_price'],
+              'amount': position['amount']
+            })
+            
+          if order_count_type == 1:
+            commission = 0  
+            if self.is_mock == True:
+              mock_service_charge = task_or_backtest['service_charge']
+              mock_lower_limit_of_fees = task_or_backtest['lower_limit_of_fees']
+              # 计算手续费
+              commission = Decimal(calculate_stock_fee("buy" if trade.order_type == OrderType.STOCK_BUY else "sell",
+                                              float(trade.traded_price),
+                                              int(trade.traded_volume),
+                                              float(mock_service_charge),
+                                              float(mock_lower_limit_of_fees)))
+          else:
+            if task_or_backtest:
+                if self.is_mock == True:
+                  mock_service_charge = task_or_backtest['service_charge']
+                  mock_lower_limit_of_fees = task_or_backtest['lower_limit_of_fees']
+                else:
+                  mock_service_charge = task_or_backtest['service_charge']
+                  mock_lower_limit_of_fees = task_or_backtest['lower_limit_of_fees']
             # 计算手续费
             commission = Decimal(calculate_stock_fee("buy" if trade.order_type == OrderType.STOCK_BUY else "sell",
-                                            float(trade.traded_price),
-                                            int(trade.traded_volume),
-                                            float(mock_service_charge),
-                                            float(mock_lower_limit_of_fees)))
-        else:
-          if task_or_backtest:
-              if self.is_mock == True:
-                mock_service_charge = task_or_backtest['service_charge']
-                mock_lower_limit_of_fees = task_or_backtest['lower_limit_of_fees']
-              else:
-                mock_service_charge = task_or_backtest['service_charge']
-                mock_lower_limit_of_fees = task_or_backtest['lower_limit_of_fees']
-          # 计算手续费
-          commission = Decimal(calculate_stock_fee("buy" if trade.order_type == OrderType.STOCK_BUY else "sell",
                                           float(trade.traded_price),
                                           int(trade.traded_volume),
                                           float(mock_service_charge),
                                           float(mock_lower_limit_of_fees)))
-        # 保存订单信息
-        G.orm.save_trade(trade,{
-          "orders_id": orderId,
-          "backtest_id": self.backtest_id,
-          "is_mock": self.is_mock,
-          "task_id": taskId,
-          "commission": commission
-        })
-        # 更新任务账户的可用金额
-        if trade.order_type == OrderType.STOCK_BUY:
-          G.orm.update_task_can_use_amount(self.backtest_id,taskId, round(-(traded_amount + commission),2))
-        elif trade.order_type == OrderType.STOCK_SELL:
-          G.orm.update_task_can_use_amount(self.backtest_id,taskId, round(traded_amount - commission,2))
+          # 保存订单信息
+          G.orm.save_trade(trade,{
+            "orders_id": orderId,
+            "backtest_id": self.backtest_id,
+            "is_mock": self.is_mock,
+            "task_id": taskId,
+            "commission": commission
+          })
+          # 更新任务账户的可用金额
+          if trade.order_type == OrderType.STOCK_BUY:
+            G.orm.update_task_can_use_amount(self.backtest_id,taskId, round(-(traded_amount + commission),2))
+          elif trade.order_type == OrderType.STOCK_SELL:
+            G.orm.update_task_can_use_amount(self.backtest_id,taskId, round(traded_amount - commission,2))
         
                 
     except Exception as e:
@@ -188,30 +190,32 @@ class MyXtQuantTraderCallback(XtQuantTraderCallback):
 
 class QMT:
   def __init__(self):
-    self.qmt_trader = None
+    self.qmt_trader = qmt_trader()
     self.callback = MyXtQuantTraderCallback(False)
     self.is_connect = False
     self.simulator = None
     
   def connect_qmt(self,params):
+    # 如果是mac 电脑开发环境直接返回成功
     if sys.platform.startswith('darwin'):
-      self.is_connect = True
-      G.logger.info("QMT连接成功",extra={
-              "showMessage": True
-      })
-      return True
-
-    self.qmt_trader = qmt_trader(params['mini_qmt_path'], params['client_id'])
+        self.is_connect = True
+        G.logger.info("QMT连接成功",extra={
+                "showMessage": True
+        })
+        return True
+    # 设置id
+    self.qmt_trader.path = params['mini_qmt_path']
+    self.qmt_trader.account = params['client_id']
     # 连接QMT 传递回调
     self.is_connect = self.qmt_trader.connect(self.callback)
     if self.is_connect:
-      G.logger.info("QMT连接成功",extra={
-              "showMessage": True
-      })
+        G.logger.info("QMT连接成功",extra={
+                "showMessage": True
+        })
     else:
-      G.logger.error("QMT连接失败",extra={
-              "showMessage": True
-      })
+        G.logger.error("QMT连接失败",extra={
+                "showMessage": True
+        })
     return self.is_connect
   
   # 购买国债逆回购
@@ -357,12 +361,12 @@ class QMT:
                    order_style_str='', 
                    strategy_name='', 
                    order_remark='',
-                   is_mock=False):
-    
+                   is_mock_state=1,
+                   ):
     price_type = get_qmt_price_type(stock_code, order_style_str, is_buy)
     order_type = OrderType.STOCK_BUY if is_buy == 1 else OrderType.STOCK_SELL
     
-    if is_mock == False:
+    if is_mock_state == 0:
         self.qmt_trader.place_order(
           stock_code=stock_code,
           volume=volume,
@@ -372,7 +376,7 @@ class QMT:
           strategy_name=strategy_name,
           order_remark=order_remark
         ) 
-    else:
+    elif is_mock_state == 1:
         self.simulator.place_order(
           stock_code=stock_code,
           volume=volume,
@@ -383,10 +387,26 @@ class QMT:
           strategy_name=strategy_name,
           order_remark=order_remark
         )
-    
+    elif is_mock_state == 2:
+      mockCallback = MyXtQuantTraderCallback(False,is_pre=True)
+      self.simulator = QmtTradingSimulator(
+          2,
+          mockCallback, # 回测环境
+      )
+      self.simulator.place_order(
+          stock_code=stock_code,
+          volume=volume,
+          price=price,
+          order_type=order_type,
+          price_type=price_type,
+          order_time=order_time,
+          strategy_name=strategy_name,
+          order_remark=order_remark
+        ) 
+    else:
+      G.logger.error("is_mock_state参数错误")
   # 下单协议{code:code,price:price,amount:amount,type:type}
   def manage_qmt_trader(self,data):    
-    # print(data)
     try:    
       strategy_code = data['strategy_code']
       run_params = data['run_params']
@@ -469,7 +489,7 @@ class QMT:
           # 设置回测id
           self.mockCallback = MyXtQuantTraderCallback(True, backtest_id)
           self.simulator = QmtTradingSimulator(
-              task["is_simulation"], #是否需要仿真回测
+              1 if task['is_simulation'] == True else 0, #是否需要仿真回测
               self.mockCallback # 回测环境
           )
         if state == 'dividends':
@@ -528,7 +548,7 @@ class QMT:
               order_style_str=style,
               strategy_name=str(task['id']),
               order_remark=orderId,
-              is_mock=True
+              is_mock_state=1
             )
           else:
             G.logger.error("异常Code 121",extra={
@@ -537,6 +557,13 @@ class QMT:
         
       #####################     实盘环境     ###########################
       else:
+        is_mock_state = 2 if run_params == 'pre' else 0
+        if state != 'run':
+          G.logger.error("实盘只有run状态,请不要修改运行环境",extra={
+                  "showMessage": True
+          })
+          return
+          
         # 没有检测没有连接不往下执行
         if self.is_connect == False:
           G.logger.error("qmt 没有正常运行",extra={
@@ -547,7 +574,7 @@ class QMT:
         orderId = G.orm.save_order(saveData)
         # 判断交易时间
         now = datetime.now()
-        if now.hour < 9 or (now.hour == 15 and now.minute > 30) or now.hour > 15:
+        if is_mock_state != 2 and (now.hour < 9 or (now.hour == 15 and now.minute > 30) or now.hour > 15):
           G.logger.info("非交易时间不能下单",extra={
                   "showMessage": True
           })
@@ -578,7 +605,7 @@ class QMT:
                 order_style_str=style,
                 strategy_name=str(task['id']),
                 order_remark=orderId,
-                is_mock=False
+                is_mock_state=is_mock_state
             )
         else:
           G.logger.info("任务未开启: {}".format(strategy_code),extra={

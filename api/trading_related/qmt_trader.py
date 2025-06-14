@@ -14,7 +14,7 @@ class qmt_trader:
                  account='55009640', account_type='STOCK',
                  is_slippage=True, slippage=0.01) -> None:
         self.xt_trader = ''
-        self.acc = ''
+        self.acc = None
         self.path = path
         self.session_id = int(self.random_session_id())
         self.account = account
@@ -89,8 +89,6 @@ class qmt_trader:
         """
         order_type = xtconstant.STOCK_SELL
         price_type = get_qmt_price_type(security, order_style_str, False)
-        # 对交易回调进行订阅，订阅后可以收到交易主推，返回0表示订阅成功
-        subscribe_result = self.xt_trader.subscribe(self.acc)
         stock_code = self.adjust_stock(stock=security)
         order_volume = amount
         # 使用指定价下单，接口返回订单编号，后续可以用于撤单操作以及查询委托状态
@@ -122,8 +120,6 @@ class qmt_trader:
                    volume=100, price=20, order_type=xtconstant.STOCK_BUY,
                    price_type=xtconstant.LATEST_PRICE,
                    strategy_name='', order_remark=''):
-        # 订阅账号
-        subscribe_result = self.xt_trader.subscribe(self.acc)
         stock_code = self.adjust_stock(stock=stock_code)
         order_volume = volume
         if order_volume > 0:
@@ -157,7 +153,6 @@ class qmt_trader:
         order_type = xtconstant.STOCK_BUY
         price_type = get_qmt_price_type(security, order_style_str, True)
         # 对交易回调进行订阅，订阅后可以收到交易主推，返回0表示订阅成功
-        subscribe_result = self.xt_trader.subscribe(self.acc)
         stock_code = self.adjust_stock(stock=security)
         order_volume = amount
         # 使用指定价下单，接口返回订单编号，后续可以用于撤单操作以及查询委托状态
@@ -212,10 +207,16 @@ class qmt_trader:
         if connect_result == 0:
             # 对交易回调进行订阅，订阅后可以收到交易主推，返回0表示订阅成功
             subscribe_result = xt_trader.subscribe(acc)
-            print(subscribe_result)
-            self.xt_trader = xt_trader
-            self.acc = acc
-            return True
+            
+            if subscribe_result == 0:
+                self.xt_trader = xt_trader
+                self.acc = acc
+                return True
+            else:
+                self.xt_trader.stop()
+                self.xt_trader.unsubscribe(acc)
+                self.xt_trader = None
+                return False
         else:
             return False
 
