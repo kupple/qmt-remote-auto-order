@@ -111,9 +111,8 @@ class QMT:
         "message": message,
         "event": self.acc_is_connect
       })
-      self.is_need_reconnection_lock = False
     except Exception as e:
-      G.logger.error("连接QMT报错! code 1980")
+      G.logger.error("连接QMT失败! code 1980" + str(e))
       self.is_need_reconnection_lock = False
       
   
