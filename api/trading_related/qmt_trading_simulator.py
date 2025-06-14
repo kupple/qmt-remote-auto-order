@@ -2,6 +2,8 @@ import time
 import threading
 from typing import Optional
 from api.global_params import G
+import asyncio
+import random
 
 class AccountType:
     STOCK = 1
@@ -149,14 +151,14 @@ class XtQuantTraderCallback:
         pass
 
 class QmtTradingSimulator:
-    def __init__(self,is_simulation:bool,callback: XtQuantTraderCallback):
+    def __init__(self,is_simulation_state:int,callback: XtQuantTraderCallback):
         self.callback = callback
         self.account_id = "SIM001"
         self.next_order_id = 10000
         self.next_trade_id = 20000
         self.next_seq = 1
         self.lock = threading.Lock()
-        self.is_simulation = is_simulation
+        self.is_simulation_state = is_simulation_state
 
     def place_order(self, stock_code: str, volume: int, price: float, order_type: int, price_type: int, order_time: int = None, direction: int = Direction.LONG, strategy_name: str = "", order_remark: str = ""):
         order_id = self._generate_order_id()
@@ -257,13 +259,15 @@ class QmtTradingSimulator:
     def _simulate_trades(self, order: XtOrder):
         """模拟成交回报"""
         import random
+        import asyncio
+        
         trade_price = order.price
         traded_time = order.order_time
         total_volume = order.order_volume
         current_volume = 0
         
         # 在模拟模式下，将订单拆分成随机次数的成交
-        if self.is_simulation:
+        if self.is_simulation_state == 1:
             # 随机决定成交次数（1-5次）
             num_trades = random.randint(1, 5)
             remaining_volume = total_volume
@@ -307,7 +311,33 @@ class QmtTradingSimulator:
                 # # 触发订单状态更新回调
                 # self.callback.on_stock_order(order)
                 
-        else:
+        elif self.is_simulation_state == 2:
+            trade = self._create_trade(order, trade_price, total_volume, traded_time)
+            
+            # 使用5个线程并行处理trade
+            threads = []
+            for _ in range(110):
+                t = threading.Thread(target=self._process_trade, args=(trade, order))
+                threads.append(t)
+                t.start()
+            
+            # 等待所有线程完成
+            for t in threads:
+                t.join()
+            
+            # 更新订单状态
+            order.traded_volume = total_volume
+            order.order_status = OrderStatus.FILLED 
+            order.status_msg = "全部成交"
+            
+            # 触发订单状态更新回调
+            # self.callback.on_stock_order(order)
+            
+        # 计算成交均价
+        if order.traded_volume > 0:
+            order.traded_price = order.price  # 简化处理，实际应为加权平均价
+            
+        elif self.is_simulation_state == 0:
             # 非模拟模式，直接全部成交
             trade = self._create_trade(order, trade_price, total_volume, traded_time)
             self._process_trade(trade, order)
@@ -371,3 +401,14 @@ class QmtTradingSimulator:
         # 触发资金回调
         self.callback.on_stock_asset(asset)
 
+
+    def _process_trade_thread(self, order: XtOrder, trade_price: float, trade_volume: int, traded_time: int):
+        """线程处理函数，用于处理单个成交"""
+        trade = self._create_trade(order, trade_price, trade_volume, traded_time)
+        self._process_trade(trade, order)
+        
+        with self.lock:  # 使用锁确保线程安全
+            order.traded_volume += trade_volume
+            if order.traded_volume == order.order_volume:
+                order.order_status = OrderStatus.FILLED
+                order.status_msg = "全部成交"
