@@ -136,3 +136,11 @@ pyapp/config/__pycache__/config.cpython-39.pyc
 
 
 .env
+pyapp/spec/windows.spec
+pyapp/spec/windows-cef.spec
+pyapp/spec/windows-folder.spec
+pyapp/spec/windows-folder-cef.spec
+pyapp/spec/windows-folder-pre.spec
+pyapp/spec/windows-folder-pre-cef.spec
+pyapp/spec/windows-pre.spec
+pyapp/spec/windows-pre-cef.spec
