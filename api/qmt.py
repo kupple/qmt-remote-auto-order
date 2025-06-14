@@ -84,8 +84,7 @@ class QMT:
       except KeyboardInterrupt:
         break  # 如果收到中断信号，退出循环
       else:
-        if G.logger:
-            G.logger.info("进程检查正常完成")
+        pass
     
   def connect_qmt(self,params):
     try:
