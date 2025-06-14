@@ -54,7 +54,11 @@ export const useRemoteStore = defineStore('remote', {
           this.connectState = 0
         }
         if (params.type == 'qmtProcessCheck') {
-          useCommonStore().changeIsQMTProcessExit(params.event)
+          useCommonStore().changeisQmtState(params.event)
+        }
+        if (params.type == 'accSubSuccess') {
+          console.log(params.event)
+          useCommonStore().changeisAccSubState(params.event)
         }
       }
       // 模拟盘 回测 信号单

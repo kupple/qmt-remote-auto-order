@@ -39,9 +39,9 @@ export const connectWs = (params,ways=2,is_login = false) => {
 }
 
 export const connectQMT = async(params) => {
-  const isAccSubSuccess = await window.pywebview.api.connect_qmt(params)
-  await useCommonStore().changeIsAccSubSuccess(isAccSubSuccess)
-  return isAccSubSuccess
+  const isAccSubState = await window.pywebview.api.connect_qmt(params)
+  // await useCommonStore().changeisAccSubState(isAccSubState)
+  // return isAccSubState
 }
 
 export const disconnect = () => {

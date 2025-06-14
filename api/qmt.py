@@ -44,7 +44,6 @@ class QMT:
 
   async def _process_check_loop(self):
     """进程检查的异步循环"""
-    await asyncio.sleep(1)  # 等待2秒
     while True:
       try:
         event = is_process_exist()  # 直接调用，不需要await
@@ -52,22 +51,22 @@ class QMT:
             "type": "qmtProcessCheck",
             "event": event
         })  
+        self.qmt_is_connect = event
         if event:
-          self.qmt_is_connect = True
-          if self.acc_is_connect == False:
+          # await asyncio.sleep(2)  # 等待2秒
+          if self.acc_is_connect == False:          
             G.logger.info("正在尝试订阅账号",extra={
               "showMessage": True
             })
             config = G.orm.get_setting_config()
             # 已配置才可以选择
             if config['mini_qmt_path'] != "" and config['client_id'] != "":
+              
               self.connect_qmt({
                 "mini_qmt_path": config['mini_qmt_path'],
                 "client_id": config['client_id']
               })
-              await asyncio.sleep(2)  # 等待2秒
-        else:
-          self.qmt_is_connect = False      
+              await asyncio.sleep(2)  # 等待2秒 
         await asyncio.sleep(2)  # 等待2秒
       except Exception as e:
         error_msg = f"进程检查出错: {str(e)}"
@@ -86,8 +85,10 @@ class QMT:
     # 如果是mac 电脑开发环境直接返回成功
     if sys.platform.startswith('darwin'):
         self.acc_is_connect = True
-        G.logger.info("QMT连接成功",extra={
-                "showMessage": True
+        System.system_py2js(self,'remoteCallBack',  {
+          "type": "accSubSuccess",
+          "message": "QMT连接成功",
+          "event": True
         })
         return True
     # 设置id
@@ -96,13 +97,14 @@ class QMT:
     # 连接QMT 传递回调
     self.acc_is_connect = self.qmt_trader.connect(self.callback)
     if self.acc_is_connect:
-        G.logger.info("QMT连接成功",extra={
-                "showMessage": True
-        })
+      message = "QMT连接成功"
     else:
-        G.logger.error("QMT连接失败",extra={
-                "showMessage": True
-        })
+      message = "QMT连接失败"
+    System.system_py2js(self,'remoteCallBack',  {
+      "type": "accSubSuccess",
+      "message": message,
+      "event": self.acc_is_connect
+    })
     return self.acc_is_connect
   
   # 购买国债逆回购
