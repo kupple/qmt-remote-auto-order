@@ -204,6 +204,7 @@ class qmt_trader:
         xt_trader.start()
         # 建立交易连接，返回0表示连接成功
         connect_result = xt_trader.connect()
+        
         if connect_result == 0:
             # 对交易回调进行订阅，订阅后可以收到交易主推，返回0表示订阅成功
             subscribe_result = xt_trader.subscribe(acc)
