@@ -237,7 +237,6 @@ class qmt_trader:
                 df['frozen_cash'] = asset.frozen_cash
                 df['market_value'] = asset.market_value
                 df['total_asset'] = asset.total_asset
-                print(df)
                 return df
         except:
             return {
