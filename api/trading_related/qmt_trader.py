@@ -13,7 +13,7 @@ class qmt_trader:
     def __init__(self, path=r'D:/国金QMT交易端模拟/userdata_mini',
                  account='55009640', account_type='STOCK',
                  is_slippage=True, slippage=0.01) -> None:
-        self.xt_trader = ''
+        self.xt_trader = None
         self.acc = None
         self.path = path
         self.session_id = int(self.random_session_id())
@@ -180,6 +180,12 @@ class qmt_trader:
                 extra={"showMessage": True}
             )
 
+    def disconnection_qmt(self):
+        if self.xt_trader != None:
+            self.xt_trader.unsubscribe(self.acc)
+            self.xt_trader.stop()
+            self.xt_trader = None
+        
     def connect(self, callback):
         """
         连接
@@ -193,32 +199,36 @@ class qmt_trader:
         path = self.path
         # session_id为会话编号，策略使用方对于不同的Python策略需要使用不同的会话编号
         session_id = int(self.random_session_id())
-        xt_trader = XtQuantTrader(path, session_id)
-        # 创建资金账号为1000000365的证券账号对象
-        account = self.account
-        account_type = self.account_type
-        acc = StockAccount(account_id=account, account_type=account_type)
-        # 创建交易回调类对象，并声明接收回调
-        xt_trader.register_callback(callback)
-        # 启动交易线程
-        xt_trader.start()
-        # 建立交易连接，返回0表示连接成功
-        connect_result = xt_trader.connect()
-        
-        if connect_result == 0:
-            # 对交易回调进行订阅，订阅后可以收到交易主推，返回0表示订阅成功
-            subscribe_result = xt_trader.subscribe(acc)
-            if subscribe_result == 0:
-                self.xt_trader = xt_trader
-                self.acc = acc
-                return True
+
+        if self.xt_trader != None:
+            self.disconnection_qmt()
+
+        if self.xt_trader == None:
+            xt_trader = XtQuantTrader(path, session_id)
+            # 创建资金账号为1000000365的证券账号对象
+            account = self.account
+            account_type = self.account_type
+            acc = StockAccount(account_id=account, account_type=account_type)
+            # 创建交易回调类对象，并声明接收回调
+            xt_trader.register_callback(callback)
+            # 启动交易线程
+            xt_trader.start()
+            # 建立交易连接，返回0表示连接成功
+            connect_result = xt_trader.connect()
+            
+            if connect_result == 0:
+                # 对交易回调进行订阅，订阅后可以收到交易主推，返回0表示订阅成功
+                subscribe_result = xt_trader.subscribe(acc)
+                if subscribe_result == 0:
+                    self.xt_trader = xt_trader
+                    self.acc = acc
+                    return True
+                else:
+                    self.disconnection_qmt()
+                    return False
             else:
-                self.xt_trader.stop()
-                self.xt_trader.unsubscribe(acc)
-                self.xt_trader = None
+                self.disconnection_qmt()
                 return False
-        else:
-            return False
 
     def balance(self):
         """

@@ -31,7 +31,7 @@ logoExt = 'icns' if ifMac else 'png' if ifLinux else 'ico'
 # 添加文件到打包中
 addDll = ''
 # 添加文件夹到打包中
-addModules = "('../../gui/dist', 'web'), ('../../static', 'static'), ('../../pyapp/icon', 'pyapp/icon')"
+addModules = "('../../gui/dist', 'web'), ('../../static', 'static'), ('../../pyapp/icon', 'pyapp/icon'), ('../../pyapp/calendar.json', 'akshare/file_fold/')"
 
 
 # spec配置文件 前半部分通用格式
