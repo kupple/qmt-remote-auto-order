@@ -64,7 +64,8 @@ class QMT:
                 "showMessage": True
               })
               self.is_need_reconnection_lock = True
-              self.connect_qmt({
+              # 在主线程中运行connect_qmt
+              await asyncio.get_running_loop().run_in_executor(None, self.connect_qmt, {
                 "mini_qmt_path": config['mini_qmt_path'],
                 "client_id": config['client_id']
               })
