@@ -236,7 +236,14 @@ class qmt_trader:
                 # print(df)
                 return df.to_dict()
         except:
-            return None
+            return {
+                    '账号类型': 0,
+                    '资金账户': 0,
+                    '可用金额': 0,
+                    '冻结金额': 0,
+                    '持仓市值': 0,
+                    '总资产': 0
+                    }
 
     def reverse_repurchase_of_treasury_bonds(self, security='131810.SZ',
                                            order_type=xtconstant.STOCK_SELL,

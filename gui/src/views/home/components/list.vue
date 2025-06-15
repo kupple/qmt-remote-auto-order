@@ -62,8 +62,13 @@
         </div>
       </div>
       <div class="bottom-container-right">
-        <!-- <span>资金</span>
-        <el-button size="small" type="primary" style="width:100px" @click="getAccountInfoAction">获取账号信息</el-button> -->
+        <el-descriptions direction="vertical" :column="2" border size="small">
+          <el-descriptions-item label="可用金额">{{ fundsDic.cash }}</el-descriptions-item>
+          <el-descriptions-item label="冻结金额">{{ fundsDic.frozen_cash }}</el-descriptions-item>
+          <el-descriptions-item label="持仓市值">{{ fundsDic.market_value }}</el-descriptions-item>
+          <el-descriptions-item label="总资产">{{ fundsDic.total_asset }}</el-descriptions-item>
+        </el-descriptions>
+        <el-button size="small" type="primary" style="width:100px;margin-top:10px;" @click="getAccountInfoAction">获取账号信息</el-button>
         <el-divider>功能</el-divider>
         <el-form :model="form" label-width="100px">
           <el-form-item label="自动逆回购">
@@ -128,6 +133,13 @@ const autoAutomaticReverseAtion = async (type, e) => {
   await saveConfig(subDic)
 }
 
+const fundsDic = reactive({
+  cash: 0,
+  frozen_cash: 0,
+  market_value: 0,
+  total_asset: 0
+})
+
 const form = reactive({
   auto_national_debt: true,
   auto_buy_stock_ipo: true,
@@ -163,7 +175,10 @@ const shareAction = (row) => {
 
 const getAccountInfoAction = async () => {
   const res = await getAccountInfo()
-  console.log(res)
+  fundsDic.cash = res.cash
+  fundsDic.frozen_cash = res.frozen_cash
+  fundsDic.market_value = res.market_value
+  fundsDic.total_asset = res.total_asset
 }
 // 开始任务
 const handleEdit = async (row) => {
