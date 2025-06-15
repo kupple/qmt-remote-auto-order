@@ -226,24 +226,25 @@ class qmt_trader:
         """
         try:
             asset = self.xt_trader.query_stock_asset(account=self.acc)
-            df = pd.DataFrame()
+            df = {
+                "cash":0,
+                "frozen_cash":0,
+                "market_value":0,
+                "total_asset":0
+            }
             if asset:
-                df['账号类型'] = [asset.account_type]
-                df['资金账户'] = [asset.account_id]
-                df['可用金额'] = [asset.cash]
-                df['冻结金额'] = [asset.frozen_cash]
-                df['持仓市值'] = [asset.market_value]
-                df['总资产'] = [asset.total_asset]
-                # print(df)
-                return df.to_dict()
+                df['cash'] = asset.cash
+                df['frozen_cash'] = asset.frozen_cash
+                df['market_value'] = asset.market_value
+                df['total_asset'] = asset.total_asset
+                print(df)
+                return df
         except:
             return {
-                    '账号类型': 0,
-                    '资金账户': 0,
-                    '可用金额': 0,
-                    '冻结金额': 0,
-                    '持仓市值': 0,
-                    '总资产': 0
+                    'cash': 0,
+                    'frozen_cash': 0,
+                    'market_value': 0,
+                    'total_asset': 0
                     }
 
     def reverse_repurchase_of_treasury_bonds(self, security='131810.SZ',
