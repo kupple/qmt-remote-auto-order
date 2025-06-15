@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime
 from api.global_params import G
 from pyapp.db.db import DB
+import time
 from api.db.models import (
     DATA_ALL_STOCKS,DATA_ST_STOCKS,
     DATA_TRADE_DATE_HIST
@@ -12,6 +13,7 @@ from ..tools.common import sync_data_to_global
 
 # 同步数据表
 def sync_data_stocks_data():
+    time.sleep(4)
     TABLE_NAME_LIST = [{
         'table_name':'data_trade_date_hist',
         'diff': 30,
@@ -33,9 +35,13 @@ def sync_data_stocks_data():
                 record = None
             
         if record and record['record_time']:
-            G.logger.info(f"数据表: {table_name} 已同步")
+            G.logger.info(f"数据表: {table_name} 已同步",extra={
+                "showMessage": True
+            })
         else:    
-            G.logger.info(f"正在同步数据表: {table_name}")
+            G.logger.info(f"正在同步数据表: {table_name}",extra={
+                "showMessage": True
+            })
             is_success = False
             if table_name == 'data_all_stocks':
                 is_success = save_all_data()
@@ -46,10 +52,14 @@ def sync_data_stocks_data():
                 is_success = save_trade_date_hist()
                 
             if is_success:
-                G.logger.info(f"数据表: {table_name} 同步成功")
+                G.logger.info(f"数据表: {table_name} 同步成功",extra={
+                    "showMessage": True
+                })
                 G.orm.add_data_table_record(table_name)
             else:
-                G.logger.error(f"数据表: {table_name} 同步失败")
+                G.logger.error(f"数据表: {table_name} 同步失败",extra={
+                    "showMessage": True
+                })
     sync_data_to_global()
 
 

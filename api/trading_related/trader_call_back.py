@@ -3,7 +3,7 @@ from api.global_params import G
 import threading
 from decimal import Decimal
 from api.trading_related.deal import calculate_stock_fee
-
+from .qmt_trading_simulator import OrderType
 
 class MyXtQuantTraderCallback(XtQuantTraderCallback):
  
