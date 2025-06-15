@@ -50,7 +50,7 @@ export const disconnect = () => {
 
 
 export const isProcessExist = () => {
-  return window.pywebview.api.is_process_exist()
+  return window.pywebview.api.is_process_exist_action()
 }
 
 export const createTask = (params) => {
