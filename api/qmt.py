@@ -73,7 +73,6 @@ class QMT:
           # 如果之前连过才给他重连
           # if self.acc_is_connect:
           self.is_need_reconnection = True
-          self.acc_is_connect = False
       except Exception as e:
         error_msg = f"进程检查出错: {str(e)}"
         if G.logger:
@@ -111,6 +110,7 @@ class QMT:
         "message": message,
         "event": self.acc_is_connect
       })
+      self.is_need_reconnection_lock = False
     except Exception as e:
       G.logger.error("连接QMT失败! code 1980" + str(e))
       self.is_need_reconnection_lock = False
