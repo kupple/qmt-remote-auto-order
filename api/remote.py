@@ -69,10 +69,10 @@ class Remote:
                         "data":content,
                     })
                     
-                    if self.qmt.is_connect == False :
-                        G.logger.warning("请先在个人页面配置好qmt路径和资金账号",extra={
-                            "showMessage": True
-                        })
+                    # if self.qmt.qmt_is_connect == False :
+                    #     G.logger.warning("请先在个人页面配置好qmt路径和资金账号",extra={
+                    #         "showMessage": True
+                    #     })
                     self.qmt.manage_qmt_trader(content)
 
         except websockets.exceptions.ConnectionClosed:

@@ -62,7 +62,8 @@ class QMT:
       error_msg = f"进程检查出错: {str(e)}"
       if G.logger:
           G.logger.error(error_msg)
-    
+  
+
   def connect_qmt(self,params):
     try:
       # 如果是mac 电脑开发环境直接返回成功
