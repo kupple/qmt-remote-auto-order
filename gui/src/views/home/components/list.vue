@@ -62,8 +62,8 @@
         </div>
       </div>
       <div class="bottom-container-right">
-        <span>资金</span>
-        <el-button size="small" type="primary" style="width:100px" @click="getAccountInfoAction">获取账号信息</el-button>
+        <!-- <span>资金</span>
+        <el-button size="small" type="primary" style="width:100px" @click="getAccountInfoAction">获取账号信息</el-button> -->
         <el-divider>功能</el-divider>
         <el-form :model="form" label-width="100px">
           <el-form-item label="自动逆回购">
