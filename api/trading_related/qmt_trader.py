@@ -233,7 +233,8 @@ class qmt_trader:
                 df['冻结金额'] = [asset.frozen_cash]
                 df['持仓市值'] = [asset.market_value]
                 df['总资产'] = [asset.total_asset]
-                return df
+                # print(df)
+                return df.to_dict()
         except:
             return None
 
