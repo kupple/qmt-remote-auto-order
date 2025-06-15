@@ -64,6 +64,9 @@ const isAccSubState = computed(() => useCommonStore().isAccSubState)
 
 onMounted(async () => {
   setInterval(async () => {
+    isProcessExist()
+  }, 2000)
+  setInterval(async () => {
     time.value = new Date().toLocaleString()
   }, 1000)
 })

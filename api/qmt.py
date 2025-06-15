@@ -29,62 +29,39 @@ class QMT:
     self.is_need_reconnection = False
     self.is_need_reconnection_lock = True
     
-    # 启动进程检查
-    self._start_process_check()
+  
 
-  def _start_process_check(self):
-    """启动进程检查线程"""
-    self._thread = threading.Thread(target=self._run_process_check)
-    self._thread.daemon = True
-    self._thread.start()
-
-  def _run_process_check(self):
-    """在新线程中运行进程检查"""
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(self._process_check_loop())
-
-  async def _process_check_loop(self):
-    """进程检查的异步循环"""
-    while True:
-      try:
-        event = is_process_exist()  # 直接调用，不需要await
-        System.system_py2js(self,'remoteCallBack',  {
-            "type": "qmtProcessCheck",
-            "event": event
-        })  
-        self.qmt_is_connect = event
-        if event:
-          if self.is_need_reconnection == True and self.is_need_reconnection_lock == False:          
-            self.is_need_reconnection = False
-            config = G.orm.get_setting_config()
-            # 已配置才可以选择
-            if config['mini_qmt_path'] != "" and config['client_id'] != "":
-              G.logger.info("正在重新连接QMT",extra={
-                "showMessage": True
-              })
-              self.is_need_reconnection_lock = True
-              # 在主线程中运行connect_qmt
-              await asyncio.get_running_loop().run_in_executor(None, self.connect_qmt, {
-                "mini_qmt_path": config['mini_qmt_path'],
-                "client_id": config['client_id']
-              })
-              await asyncio.sleep(2)  # 等待2秒 
-        else:
-          # 如果之前连过才给他重连
-          # if self.acc_is_connect:
-          self.is_need_reconnection = True
-      except Exception as e:
-        error_msg = f"进程检查出错: {str(e)}"
-        if G.logger:
-            G.logger.error(error_msg)
-        await asyncio.sleep(2)  # 即使出错也等待2秒再重试
-      except asyncio.CancelledError:
-        break  # 如果任务被取消，退出循环
-      except KeyboardInterrupt:
-        break  # 如果收到中断信号，退出循环
-      else:
-        pass
+  def _process_check_loop(self):
+    try:
+          event = is_process_exist()  # 直接调用，不需要await
+          System.system_py2js(self,'remoteCallBack',  {
+              "type": "qmtProcessCheck",
+              "event": event
+          })  
+          self.qmt_is_connect = event
+          if event:
+            if self.is_need_reconnection == True and self.is_need_reconnection_lock == False:          
+              self.is_need_reconnection = False
+              config = G.orm.get_setting_config()
+              # 已配置才可以选择
+              if config['mini_qmt_path'] != "" and config['client_id'] != "":
+                G.logger.info("正在重新连接QMT",extra={
+                  "showMessage": True
+                })
+                self.is_need_reconnection_lock = True
+                # 在主线程中运行connect_qmt
+                self.connect_qmt({
+                  "mini_qmt_path": config['mini_qmt_path'],
+                  "client_id": config['client_id']
+                })
+          else:
+            # 如果之前连过才给他重连
+            # if self.acc_is_connect:
+            self.is_need_reconnection = True
+    except Exception as e:
+      error_msg = f"进程检查出错: {str(e)}"
+      if G.logger:
+          G.logger.error(error_msg)
     
   def connect_qmt(self,params):
     try:
