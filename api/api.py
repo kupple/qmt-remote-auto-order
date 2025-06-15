@@ -266,5 +266,5 @@ class API(System):
         return self.qmt.get_account_info() 
     
     def is_process_exist_action(self):
-        return is_process_exist()
+        return self.qmt.process_check_loop()
         

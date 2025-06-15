@@ -31,33 +31,33 @@ class QMT:
     
   
 
-  def _process_check_loop(self):
+  def process_check_loop(self):
     try:
-          event = is_process_exist()  # 直接调用，不需要await
-          System.system_py2js(self,'remoteCallBack',  {
-              "type": "qmtProcessCheck",
-              "event": event
-          })  
-          self.qmt_is_connect = event
-          if event:
-            if self.is_need_reconnection == True and self.is_need_reconnection_lock == False:          
-              self.is_need_reconnection = False
-              config = G.orm.get_setting_config()
-              # 已配置才可以选择
-              if config['mini_qmt_path'] != "" and config['client_id'] != "":
-                G.logger.info("正在重新连接QMT",extra={
-                  "showMessage": True
-                })
-                self.is_need_reconnection_lock = True
-                # 在主线程中运行connect_qmt
-                self.connect_qmt({
-                  "mini_qmt_path": config['mini_qmt_path'],
-                  "client_id": config['client_id']
-                })
-          else:
-            # 如果之前连过才给他重连
-            # if self.acc_is_connect:
-            self.is_need_reconnection = True
+        event = is_process_exist()  # 直接调用，不需要await
+        System.system_py2js(self,'remoteCallBack',  {
+            "type": "qmtProcessCheck",
+            "event": event
+        })
+        self.qmt_is_connect = event
+        if event:
+          if self.is_need_reconnection == True and self.is_need_reconnection_lock == False:          
+            self.is_need_reconnection = False
+            config = G.orm.get_setting_config()
+            # 已配置才可以选择
+            if config['mini_qmt_path'] != "" and config['client_id'] != "":
+              G.logger.info("正在重新连接QMT",extra={
+                "showMessage": True
+              })
+              self.is_need_reconnection_lock = True
+              # 在主线程中运行connect_qmt
+              self.connect_qmt({
+                "mini_qmt_path": config['mini_qmt_path'],
+                "client_id": config['client_id']
+              })
+        else:
+          # 如果之前连过才给他重连
+          # if self.acc_is_connect:
+          self.is_need_reconnection = True
     except Exception as e:
       error_msg = f"进程检查出错: {str(e)}"
       if G.logger:
