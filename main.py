@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-
 import argparse
 import mimetypes
 import os
@@ -84,8 +83,10 @@ def on_closed():
         print(f'关闭程序时出错: {e}')
 
 def WebViewApp(ifCef=False):
+    
+    debug_mode = os.environ.get("DEBUG", "false").lower() == "true"
+    Config.devEnv = debug_mode
     # 是否为开发环境
-    Config.devEnv = sys.flags.dev_mode
 
     # 视图层页面URL
     if Config.devEnv:

@@ -5,6 +5,7 @@ Description: 业务层API,供前端JS调用
 usage: 在Javascript中调用window.pywebview.api.<methodname>(<parameters>)
 '''
 
+
 from api.system import System
 from api.db.orm import ORM
 from api.remote import Remote
@@ -27,11 +28,9 @@ from dotenv import load_dotenv
 load_dotenv()
 from .global_params import G
 from .trading_related.ak_data import sync_data_stocks_data
-from .tools.common import transition_code,revert_transition_code,sync_data_to_global,is_process_exist
+from .tools.common import transition_code,revert_transition_code
 
-# 是否自动连接ws 开发模式不需要连接很麻烦
 AUTO_CONNECTION_WS = int(os.getenv('AUTO_CONNECTION_WS',1))
-# 是否使用固定ws地址
 USE_FIXED_WS_URL = int(os.getenv('USE_FIXED_WS_URL',0))
 WS_URL_FIXED = os.getenv('WS_URL_FIXED')
 

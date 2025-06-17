@@ -663,3 +663,9 @@ ALTER TABLE trades ADD COLUMN commission NUMERIC;
 
 UPDATE alembic_version SET version_num='560b1c57f776' WHERE alembic_version.version_num = 'f8a587fd9552';
 
+-- Running upgrade 560b1c57f776 -> cb83aa7a9d58
+
+ALTER TABLE setting ADD COLUMN client_type INTEGER DEFAULT '1';
+
+UPDATE alembic_version SET version_num='cb83aa7a9d58' WHERE alembic_version.version_num = '560b1c57f776';
+

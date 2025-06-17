@@ -75,6 +75,7 @@ class Setting(BaseModel):
     auto_buy_purchase_ipo = Column(Integer, doc='自动打新债·', nullable=True, server_default='0')
     auto_startup = Column(Integer, doc='开机自启动', nullable=True, server_default='0')
     account = Column(String(), doc='账号·', nullable=True)
+    client_type = Column(Integer, doc='客户端类型', nullable=True, server_default='1')
     def __str__(self):
         return f"Setting: {self.client_id}"
 
