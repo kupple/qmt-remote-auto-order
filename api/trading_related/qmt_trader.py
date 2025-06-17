@@ -265,7 +265,7 @@ class qmt_trader:
         """
         # 对交易回调进行订阅，订阅后可以收到交易主推，返回0表示订阅成功
         account = self.balance()
-        av_cash = account['可用金额'].tolist()[-1]
+        av_cash = account['cash'].tolist()[-1]
         av_cash = float(av_cash)
         spot_data = self.data.get_full_tick(code_list=[security])
         price = spot_data[security]['lastPrice']
