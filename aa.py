@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import ttk
 import platform
 import random
+import time
+from threading import Timer
 
 class ResizableFloatingWindow:
     def __init__(self, root):
@@ -48,6 +50,12 @@ class ResizableFloatingWindow:
         self.original_x = 0
         self.original_y = 0
         
+        # 边缘吸附相关变量
+        self.edge_docked = False
+        self.dock_position = None  # 'top', 'bottom', 'left', 'right'
+        self.dock_timer = None
+        self.dock_timer_duration = 3.0
+        
         # 绑定鼠标事件
         self.bind_events()
     
@@ -61,7 +69,7 @@ class ResizableFloatingWindow:
                                    bg='#2a2a2a', fg='white', font=('SimHei', 10))
         self.title_label.pack(side=tk.LEFT, padx=10, pady=5)
         
-        # 添加消息按钮（新增）
+        # 添加消息按钮
         self.add_button = tk.Button(self.title_bar, text="+", bg='#3a3a3a', fg='white',
                                     width=2, height=0, command=self.on_add_message,
                                     relief=tk.FLAT, font=('SimHei', 10))
@@ -96,6 +104,11 @@ class ResizableFloatingWindow:
         self.message_frame.bind("<Configure>", self.on_message_frame_configure)
         self.canvas.bind("<Configure>", self.on_canvas_configure)
         
+        # 绑定鼠标滚轮事件
+        self.canvas.bind_all("<MouseWheel>", self.on_mousewheel)  # Windows 和 macOS
+        self.canvas.bind_all("<Button-4>", self.on_mousewheel)    # Linux 向上滚动
+        self.canvas.bind_all("<Button-5>", self.on_mousewheel)    # Linux 向下滚动
+        
         # 初始提示信息
         self.add_message("消息列表将显示在这里...")
     
@@ -109,32 +122,54 @@ class ResizableFloatingWindow:
         self.canvas.itemconfig(self.message_window, width=width)
     
     def bind_events(self):
-        # 绑定标题栏的鼠标事件（拖动窗口）
-        self.title_bar.bind("<Button-1>", self.on_drag_start)
-        self.title_bar.bind("<B1-Motion>", self.on_drag_motion)
-        self.title_bar.bind("<ButtonRelease-1>", self.on_drag_stop)
+        # 鼠标事件绑定
+        self.root.bind('<Button-1>', self.on_drag_start)
+        self.root.bind('<B1-Motion>', self.on_drag_motion)
+        self.root.bind('<ButtonRelease-1>', self.on_drag_stop)
+        self.root.bind('<Motion>', self.on_mouse_move)
+        self.root.bind('<Enter>', self.on_mouse_enter)
+        self.root.bind('<Leave>', self.on_mouse_leave)
         
-        # 让标签也能响应拖动
-        self.title_label.bind("<Button-1>", self.on_drag_start)
-        self.title_label.bind("<B1-Motion>", self.on_drag_motion)
-        self.title_label.bind("<ButtonRelease-1>", self.on_drag_stop)
+        # 滚轮事件
+        self.root.bind('<MouseWheel>', self.on_mousewheel)
         
-        # 绑定窗口边缘的鼠标事件（调整大小）
-        self.root.bind("<Motion>", self.on_mouse_move)
-        self.root.bind("<Button-1>", self.on_resize_start)
-        self.root.bind("<B1-Motion>", self.on_resize_motion)
-        self.root.bind("<ButtonRelease-1>", self.on_resize_stop)
     
     def on_drag_start(self, event):
         self.dragging = True
+        # 获取鼠标相对于窗口的位置
         self.offset_x = event.x
         self.offset_y = event.y
+        
+        # 获取窗口当前的位置
+        self.window_x = self.root.winfo_x()
+        self.window_y = self.root.winfo_y()
+        
+        # 获取鼠标相对于屏幕的位置
+        self.screen_x = self.root.winfo_pointerx()
+        self.screen_y = self.root.winfo_pointery()
+        
+        # 计算偏移量
+        self.offset_x = self.screen_x - self.window_x - event.x
+        self.offset_y = self.screen_y - self.window_y - event.y
     
     def on_drag_motion(self, event):
-        if self.dragging and not self.resizing:
+        if self.dragging:
+            # 获取鼠标当前相对于屏幕的位置
+            screen_x = self.root.winfo_pointerx()
+            screen_y = self.root.winfo_pointery()
+            
             # 计算新位置
-            x = self.root.winfo_pointerx() - self.offset_x
-            y = self.root.winfo_pointery() - self.offset_y
+            x = screen_x - self.offset_x
+            y = screen_y - self.offset_y
+            
+            # 限制窗口位置，防止拖出屏幕
+            screen_width = self.root.winfo_screenwidth()
+            screen_height = self.root.winfo_screenheight()
+            window_width = self.root.winfo_width()
+            window_height = self.root.winfo_height()
+            
+            x = max(0, min(x, screen_width - window_width))
+            y = max(0, min(y, screen_height - window_height))
             
             # 更新窗口位置
             self.root.geometry(f'+{x}+{y}')
@@ -143,115 +178,85 @@ class ResizableFloatingWindow:
         self.dragging = False
         self._apply_snap()
     
+    def on_drag_stop(self, event):
+        self.dragging = False
+        self._apply_snap()
+    
     def on_mouse_move(self, event):
-        # 检测鼠标是否在窗口边缘，设置相应的光标样式
-        x, y = event.x, event.y
-        width = self.root.winfo_width()
-        height = self.root.winfo_height()
-        
-        # 调整后的边框宽度（macOS 上更灵敏）
-        adjusted_border = int(self.border_width * self.macos_adjustment)
-        
         # 重置光标
-        self.root.config(cursor="")
+        self.root.config(cursor="arrow")  # 使用通用的箭头光标
+    
+        self.dock_timer.start()
+
+    def dock_window(self):
+        if not self.edge_docked:
+            x, y = self.root.winfo_x(), self.root.winfo_y()
+            width = self.root.winfo_width()
+            height = self.root.winfo_height()
+            
+            if self.dock_position == 'left':
+                self.root.geometry(f'20x{height}+0+{y}')
+            elif self.dock_position == 'right':
+                self.root.geometry(f'20x{height}+{self.screen_width - 20}+{y}')
+            elif self.dock_position == 'top':
+                self.root.geometry(f'{width}x20+{x}+0')
+            elif self.dock_position == 'bottom':
+                self.root.geometry(f'{width}x20+{x}+{self.screen_height - 20}')
+            
+            self.edge_docked = True
+
+    def undock_window(self):
+        if self.edge_docked:
+            x, y = self.root.winfo_x(), self.root.winfo_y()
+            width = self.root.winfo_width()
+            height = self.root.winfo_height()
+            
+            # 恢复原始大小
+            if self.dock_position == 'left':
+                self.root.geometry(f'400x{height}+0+{y}')
+            elif self.dock_position == 'right':
+                self.root.geometry(f'400x{height}+{self.screen_width - 400}+{y}')
+            elif self.dock_position == 'top':
+                self.root.geometry(f'{width}x300+{x}+0')
+            elif self.dock_position == 'bottom':
+                self.root.geometry(f'{width}x300+{x}+{self.screen_height - 300}')
+            
+            self.edge_docked = False
+
+    def on_mouse_enter(self, event):
+        if self.edge_docked:
+            self.undock_window()
+        if self.dock_timer:
+            self.dock_timer.cancel()
+
+    def on_mouse_leave(self, event):
+        if not self.edge_docked:
+            self.start_dock_timer()
+
+    # 鼠标滚轮事件处理
+    def on_mousewheel(self, event):
+        """处理鼠标滚轮事件，使整个内容区域都能滚动"""
+        # 检查鼠标是否在内容区域内（包括Canvas和滚动条）
+        x, y = self.root.winfo_pointerxy()
+        content_x = self.content_frame.winfo_rootx()
+        content_y = self.content_frame.winfo_rooty()
+        content_width = self.content_frame.winfo_width()
+        content_height = self.content_frame.winfo_height()
         
-        # 检测边缘区域
-        if y < adjusted_border:
-            if x < adjusted_border:
-                self.root.config(cursor="nwse_resize")  # 左上角
-                self.resize_direction = "nw"
-            elif x > width - adjusted_border:
-                self.root.config(cursor="nesw_resize")  # 右上角
-                self.resize_direction = "ne"
+        if (content_x <= x <= content_x + content_width and 
+            content_y <= y <= content_y + content_height):
+            # 根据不同操作系统处理滚轮事件
+            if self.is_macos:
+                # macOS 使用 event.delta 直接滚动
+                self.canvas.yview_scroll(-1 * (event.delta // 120), "units")
             else:
-                self.root.config(cursor="ns_resize")   # 上边缘
-                self.resize_direction = "n"
-        elif y > height - adjusted_border:
-            if x < adjusted_border:
-                self.root.config(cursor="nesw_resize")  # 左下角
-                self.resize_direction = "sw"
-            elif x > width - adjusted_border:
-                self.root.config(cursor="nwse_resize")  # 右下角
-                self.resize_direction = "se"
-            else:
-                self.root.config(cursor="ns_resize")   # 下边缘
-                self.resize_direction = "s"
-        elif x < adjusted_border:
-            self.root.config(cursor="ew_resize")   # 左边缘
-            self.resize_direction = "w"
-        elif x > width - adjusted_border:
-            self.root.config(cursor="ew_resize")   # 右边缘
-            self.resize_direction = "e"
-        else:
-            self.resize_direction = None
+                # Windows/Linux 使用 Button-4/5 事件
+                if event.num == 4:
+                    self.canvas.yview_scroll(-1, "units")
+                elif event.num == 5:
+                    self.canvas.yview_scroll(1, "units")
     
-    def on_resize_start(self, event):
-        if self.resize_direction:
-            self.resizing = True
-            self.original_width = self.root.winfo_width()
-            self.original_height = self.root.winfo_height()
-            self.original_x = self.root.winfo_x()
-            self.original_y = self.root.winfo_y()
-            self.start_x = event.x
-            self.start_y = event.y
-    
-    def on_resize_motion(self, event):
-        if self.resizing:
-            dx = event.x - self.start_x
-            dy = event.y - self.start_y
-            width = self.original_width
-            height = self.original_height
-            x = self.original_x
-            y = self.original_y
-            
-            # 根据方向调整大小
-            if self.resize_direction in ["n", "nw", "ne"]:
-                height -= dy
-                y += dy
-                dy = 0  # 防止重复计算
-            if self.resize_direction in ["s", "sw", "se"]:
-                height += dy
-            if self.resize_direction in ["w", "nw", "sw"]:
-                width -= dx
-                x += dx
-                dx = 0  # 防止重复计算
-            if self.resize_direction in ["e", "ne", "se"]:
-                width += dx
-            
-            # 确保不小于最小尺寸
-            width = max(width, self.min_width)
-            height = max(height, self.min_height)
-            
-            # 更新窗口大小和位置
-            self.root.geometry(f"{width}x{height}+{x}+{y}")
-    
-    def on_resize_stop(self, event):
-        if self.resizing:
-            self.resizing = False
-            self._apply_snap()
-    
-    def _apply_snap(self):
-        # 获取当前窗口位置和大小
-        x = self.root.winfo_x()
-        y = self.root.winfo_y()
-        width = self.root.winfo_width()
-        height = self.root.winfo_height()
-        
-        # 边缘吸附逻辑
-        if x < self.snap_threshold:  # 左边缘
-            x = 0
-        elif x > self.screen_width - width - self.snap_threshold:  # 右边缘
-            x = self.screen_width - width
-        
-        if y < self.snap_threshold:  # 上边缘
-            y = 0
-        elif y > self.screen_height - height - self.snap_threshold:  # 下边缘
-            y = self.screen_height - height
-        
-        # 更新窗口位置（吸附后）
-        self.root.geometry(f'+{x}+{y}')
-    
-    # 新增方法：添加消息按钮回调
+    # 添加消息按钮回调
     def on_add_message(self):
         """按钮点击回调：添加随机消息"""
         messages = [
@@ -268,7 +273,7 @@ class ResizableFloatingWindow:
         ]
         self.add_message(random.choice(messages))
     
-    # 新增方法：向列表添加消息
+    # 向列表添加消息
     def add_message(self, message):
         """向消息列表添加一条新消息"""
         # 获取当前窗口宽度，减去边距

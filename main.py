@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-'''
-Author: 潘高
-LastEditors: 潘高
-Date: 2022-03-23 15:41:46
-LastEditTime: 2024-09-08 20:29:41
-Description: 生成客户端主程序
-usage: 运行前，请确保本机已经搭建Python3开发环境，且已经安装 pywebview 模块。
-'''
 
 import argparse
 import mimetypes
@@ -91,8 +83,10 @@ def on_closed():
         print(f'关闭程序时出错: {e}')
 
 def WebViewApp(ifCef=False):
+    
+    debug_mode = os.environ.get("DEBUG", "false").lower() == "true"
+    Config.devEnv = debug_mode
     # 是否为开发环境
-    Config.devEnv = sys.flags.dev_mode
 
     # 视图层页面URL
     if Config.devEnv:

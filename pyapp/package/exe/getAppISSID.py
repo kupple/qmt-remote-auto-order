@@ -1,12 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-'''
-Author: 潘高
-LastEditors: 潘高
-Date: 2023-04-25 10:25:55
-LastEditTime: 2023-05-26 10:25:45
-Description: 生成 appISSID 打包唯一编号。
-'''
+
 import random
 from pathlib import Path
 

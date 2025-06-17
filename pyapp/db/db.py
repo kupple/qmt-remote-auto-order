@@ -1,13 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-'''
-Author: 潘高
-LastEditors: 潘高
-Date: 2023-03-12 20:08:30
-LastEditTime: 2024-08-09 09:49:34
-Description: 数据库类
-usage: 运行前，请确保本机已经搭建Python3开发环境，且已经安装 sqlalchemy 模块。
-'''
+
 
 import os
 from shutil import copyfile

@@ -1,12 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-'''
-Author: 潘高
-LastEditors: 潘高
-Date: 2022-03-23 09:05:53
-LastEditTime: 2024-09-08 20:47:03
-Description: 生成 .spec APP配置文件
-'''
 
 import argparse
 import os
@@ -32,6 +25,7 @@ logoExt = 'icns' if ifMac else 'png' if ifLinux else 'ico'
 addDll = ''
 # 添加文件夹到打包中
 addModules = "('../../gui/dist', 'web'), ('../../static', 'static'), ('../../pyapp/icon', 'pyapp/icon'), ('../../pyapp/calendar.json', 'akshare/file_fold/')"
+# ,('../common_old.onnx','ddddocr')
 
 
 # spec配置文件 前半部分通用格式
