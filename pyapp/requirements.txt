@@ -19,3 +19,4 @@ pystray
 Pillow
 python-dotenv
 akshare
+ppppocr
