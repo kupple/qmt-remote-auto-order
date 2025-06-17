@@ -84,8 +84,14 @@ def on_closed():
 
 def WebViewApp(ifCef=False):
     
-    debug_mode = os.environ.get("DEBUG", "false").lower() == "true"
-    Config.devEnv = debug_mode
+    is_win = platform.system().lower() == 'windows'
+    if is_win:
+        pass
+    else:
+        debug_mode = os.environ.get("DEBUG", "false").lower() == "true"
+        Config.devEnv = debug_mode
+    
+    
     # 是否为开发环境
 
     # 视图层页面URL
