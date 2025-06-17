@@ -13,7 +13,7 @@ from ..tools.common import sync_data_to_global
 
 # 同步数据表
 def sync_data_stocks_data():
-    time.sleep(4)
+    time.sleep(8)
     TABLE_NAME_LIST = [{
         'table_name':'data_trade_date_hist',
         'diff': 30,
