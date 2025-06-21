@@ -64,7 +64,7 @@ import { getSettingConfig, saveConfig, connectWs, disconnect, getRemoteState, ch
 import { QuestionFilled } from '@element-plus/icons-vue'
 import { useCommonStore } from '@/store/common.js'
 import { CircleCheckFilled, CircleCloseFilled } from '@element-plus/icons-vue'
-import { testQMTConnect } from '@/api/comm_tube'
+import { testConnect } from '@/api/comm_tube'
 
 const isQmtState = computed(() => useCommonStore().isQmtState)
 
@@ -77,7 +77,7 @@ const remoteStoreDic = computed(() => {
 const isWSConnectedState = computed(() => useRemoteStore().connectState)
 
 const connectionAction = () => {
-  testQMTConnect(params.qmtPath).then((res) => {
+  testConnect(params.qmtPath).then((res) => {
     if (res.is_connect) {
       if (res.account_arr.length == 0) {
         ElMessage({

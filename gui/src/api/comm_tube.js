@@ -65,16 +65,16 @@ export const deleteTask = (params) => {
   return window.pywebview.api.delete_task(params)
 }
 
-export const testQMTConnect = (path) => {
-  return window.pywebview.api.test_qmt_connect(path)
+export const testConnect = (path,type) => {
+  return window.pywebview.api.test_connect(path,type)
 }
 
 export const checkStrategyCodeExists = (strategy_code)=>{
   return window.pywebview.api.check_strategy_code_exists(strategy_code)
 }
 
-export const chooseDirectory = ()=>{
-  return window.pywebview.api.open_directory_dialog()
+export const chooseDirectory = (client_type)=>{
+  return window.pywebview.api.open_directory_dialog(client_type)
 }
 
 export const setAutomatically = ()=>{

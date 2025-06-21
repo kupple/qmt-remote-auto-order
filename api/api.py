@@ -11,7 +11,7 @@ from api.db.orm import ORM
 from api.remote import Remote
 import json
 import asyncio
-from api.qmt import QMT
+from api.trade_controller import TradeController
 from api.trading_related.task_scheduler import TaskScheduler
 from api.trading_related.strategy_analyzer import analyze_stock_data
 import threading
@@ -40,12 +40,12 @@ class API(System):
     def __init__(self):
         
         # 创建一个qmt对象
-        self.qmt = QMT()
-        self.remote = Remote(self.qmt)
+        self.trade_controller = TradeController()
+        self.remote = Remote(self.trade_controller)
         self.thread1 = None
         
         # 初始化任务调度器
-        self.task_scheduler = TaskScheduler(self.qmt)
+        self.task_scheduler = TaskScheduler(self.trade_controller)
         
         # 启动定时任务
         self.task_scheduler.schedule_national_debt(hour=15, minute=10)
@@ -129,7 +129,7 @@ class API(System):
             self.thread1.join(timeout=1)  # Wait up to 1 second for thread to finish
         
     def connect_qmt(self,params):
-        result = self.qmt.connect_qmt(params)
+        result = self.trade_controller.connect_qmt(params)
         return result
     
     def get_task_list(self,data):
@@ -176,8 +176,9 @@ class API(System):
     def get_order_list(self,data):
         return G.orm.get_order_list(data)
     
-    def test_qmt_connect(self,path):
-        return self.qmt.test_connect(path)
+    def test_connect(self,path,type):
+        return self.trade_controller.test_connect(path,type)
+    
 
     def cancel_daily_task(self):
         """取消所有定时任务"""
@@ -186,7 +187,7 @@ class API(System):
     def check_strategy_code_exists(self,strategy_code):
         return G.orm.check_strategy_code_exists(strategy_code)
 
-    def open_directory_dialog(self):
+    def open_directory_dialog(self,client_type):
         """打开系统目录选择对话框（跨平台）"""
         os_type = get_os_type()
         
@@ -199,17 +200,28 @@ class API(System):
             )
             path = directory[0] if directory else None
             if path != None:
-                userdata_path = os.path.join(path, "userdata_mini")
-                if os.path.exists(userdata_path):
-                    return True, userdata_path
+                if client_type == 2:
+                    userdata_path = os.path.join(path, "userdata_mini")
+                    if os.path.exists(userdata_path):
+                        return True, userdata_path
+                    else:
+                        return False, None
                 else:
-                    return False, None
+                    xiadan_path = os.path.join(path, "xiadan.exe")
+                    if os.path.exists(xiadan_path):
+                        return True, path
+                    else:
+                        return False, None
                 
             else:
                 return False,None
         
         elif os_type == "macos":
-           return True,"D:\\长城策略交易系统new\\userdata_mini"
+            if client_type == 2:
+                return True,"D:\\长城策略交易系统new\\userdata_mini"
+            else:
+                return True,"D:\\同花顺\\xiadan.exe"
+           
         
         else:
             return None        
@@ -262,8 +274,8 @@ class API(System):
         return G.orm.clear_log()
     
     def get_account_info(self):
-        return self.qmt.get_account_info() 
+        return self.trade_controller.get_account_info() 
     
     def is_process_exist_action(self):
-        return self.qmt.process_check_loop()
+        return self.trade_controller.process_check_loop()
         

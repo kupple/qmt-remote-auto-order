@@ -81,7 +81,7 @@ def stockcode_mapping_dic(security):
     }
     return stockDic
 
-def get_qmt_price_type(security, order_style_str, is_buy=True):
+def get_qmt_price_type(security, order_style_str, is_buy=True, price=0):
     # 提取交易所代码
     exchange = security.split('.')[-1]
     cleanCode = security.split('.')[0]
@@ -95,16 +95,15 @@ def get_qmt_price_type(security, order_style_str, is_buy=True):
     is_st = stockDic['is_st'] 
     
     # 如果是ST股票，且是卖出类型 且是上海股票
-    if is_st and is_buy == False and is_zhishu:
+    if is_st and is_zhishu:
         G.logger.warning("ST股票，且是卖出类型 且是上海股票，最新价报单")
-        return xtconstant.LATEST_PRICE
+        return xtconstant.LATEST_PRICE,price
     
     
     # 解析订单类型字符串
     if not order_style_str:
         # 默认为市价单
         order_type = 'MarketOrderStyle'
-        limit_price = None
     else:
         # 使用正则表达式解析订单类型和参数
         match = re.match(r'(\w+)\((.*)\)', order_style_str.strip())
@@ -117,25 +116,25 @@ def get_qmt_price_type(security, order_style_str, is_buy=True):
             param = match.group(2).strip()
             limit_price = float(param) if param else None
     
+    
     # 处理限价单
     if order_type == 'LimitOrderStyle':
-        return xtconstant.FIX_PRICE
+        return xtconstant.FIX_PRICE,price
     
     # 处理市价单
     elif order_type == 'MarketOrderStyle':
         
         # 科创板特殊处理
         if is_kcb and limit_price is not None:
-            return xtconstant.MARKET_SH_CONVERT_5_CANCEL
+            return xtconstant.MARKET_SH_CONVERT_5_CANCEL,price
         
         # 上交所/北交所股票
         else:
-            return xtconstant.MARKET_PEER_PRICE_FIRST
+            return xtconstant.MARKET_PEER_PRICE_FIRST,price
 
-        
     
     # 默认使用最新价
-    return xtconstant.LATEST_PRICE
+    return xtconstant.LATEST_PRICE,price
 
 
 def calculate_dividend_effect(
@@ -206,3 +205,38 @@ def calculate_dividend_effect(
         "value_change": total_value_after - market_value_before,
         "cost_change_percentage": (new_cost_per_share / purchase_price - 1) * 100
     }
+    
+    
+
+# 计算平均成本
+def calculate_average_price(
+    previous_avg_price: float,
+    previous_quantity: int,
+    traded_price: float,
+    traded_volume: int
+) -> float:
+    """
+    计算股票的平均成本（均价）
+    
+    参数:
+    previous_avg_price (float): 上一次保存的平均均价
+    previous_quantity (int): 上一次的仓位数量
+    traded_price (float): 本次交易价格
+    traded_volume (int): 本次交易数量(买入为正，卖出为负)
+    
+    返回:
+    float: 新的平均均价
+    """
+    # 计算交易后的总数量
+    new_quantity = previous_quantity + traded_volume
+    
+    # 处理全部卖出的情况：均价重置为0
+    if new_quantity == 0:
+        return 0.0
+    
+    # 计算交易后的总价值
+    # 注意：卖出时 traded_volume 为负，总价值会减少
+    total_value = previous_avg_price * previous_quantity + traded_price * traded_volume
+    
+    # 计算新的平均成本
+    return total_value / new_quantity

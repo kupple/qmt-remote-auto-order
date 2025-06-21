@@ -2,7 +2,7 @@ from pyapp.pkg.xtquant.xttrader import XtQuantTrader, XtQuantTraderCallback
 from api.global_params import G
 import threading
 from decimal import Decimal
-from api.trading_related.deal import calculate_stock_fee
+from api.trading_related.deal import calculate_stock_fee,calculate_average_price
 from .qmt_trading_simulator import OrderType
 
 class MyXtQuantTraderCallback(XtQuantTraderCallback):
@@ -94,13 +94,18 @@ class MyXtQuantTraderCallback(XtQuantTraderCallback):
             })
           else:
             position = positions_dict[trade.stock_code]
+            # 计算均价
+            tmp_volume = position['volume']
+            tmp_traded_volume = trade.traded_volume
             if trade.order_type == OrderType.STOCK_BUY:
               position['volume'] += trade.traded_volume
             elif trade.order_type == OrderType.STOCK_SELL:
               position['volume'] -= trade.traded_volume
+              tmp_traded_volume = -tmp_traded_volume
             
-            # 计算新的平均价格（在所有交易发生时更新）
-            position['average_price'] = Decimal(position['amount']) / Decimal(position['volume']) if position['volume'] > 0 else Decimal('0')
+            position['average_price'] = calculate_average_price(position['average_price'], tmp_volume, trade.traded_price, tmp_traded_volume)
+
+                        
             G.orm.update_position(position['id'], {
               'volume': position['volume'],
               'backtest_id': self.backtest_id,
@@ -165,7 +170,7 @@ class MyXtQuantTraderCallback(XtQuantTraderCallback):
     :param order_error:XtOrderError 对象
     :return:
     """
-    G.logger.error("on order_error callback" + str(order_error),extra={
+    G.logger.error("on order_error callback" + str(order_error.error_msg),extra={
             "showMessage": True
     })
   def on_cancel_error(self, cancel_error):

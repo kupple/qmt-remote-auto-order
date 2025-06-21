@@ -88,7 +88,7 @@ class qmt_trader:
         单独独立股票卖出函数
         """
         order_type = xtconstant.STOCK_SELL
-        price_type = get_qmt_price_type(security, order_style_str, False)
+        price_type = xtconstant.MARKET_PEER_PRICE_FIRST
         stock_code = self.adjust_stock(stock=security)
         order_volume = amount
         # 使用指定价下单，接口返回订单编号，后续可以用于撤单操作以及查询委托状态
@@ -146,12 +146,12 @@ class qmt_trader:
             )
 
     def buy(self, security='600031.SH',
-            amount=100, price=20, order_style_str='', strategy_name='', order_remark=''):
+            amount=100, price=20, strategy_name='', order_remark=''):
         """
         单独独立股票买入函数
         """
         order_type = xtconstant.STOCK_BUY
-        price_type = get_qmt_price_type(security, order_style_str, True)
+        price_type = xtconstant.MARKET_PEER_PRICE_FIRST
         # 对交易回调进行订阅，订阅后可以收到交易主推，返回0表示订阅成功
         stock_code = self.adjust_stock(stock=security)
         order_volume = amount
@@ -265,7 +265,7 @@ class qmt_trader:
         """
         # 对交易回调进行订阅，订阅后可以收到交易主推，返回0表示订阅成功
         account = self.balance()
-        av_cash = account['cash'].tolist()[-1]
+        av_cash = account['cash']
         av_cash = float(av_cash)
         spot_data = self.data.get_full_tick(code_list=[security])
         price = spot_data[security]['lastPrice']

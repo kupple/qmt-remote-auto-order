@@ -18,7 +18,7 @@ from .tools.common import is_process_exist
 from threading import Timer
 from .trading_related.trader_call_back import MyXtQuantTraderCallback
 
-class QMT:
+class TradeController:
   def __init__(self):
     self.qmt_trader = qmt_trader()
     self.callback = MyXtQuantTraderCallback(False)
@@ -30,7 +30,6 @@ class QMT:
     self.is_need_reconnection_lock = True
     
   
-
   def process_check_loop(self):
     try:
         event = is_process_exist()  # 直接调用，不需要await
@@ -240,7 +239,7 @@ class QMT:
                    order_remark='',
                    is_mock_state=1,
                    ):
-    price_type = get_qmt_price_type(stock_code, order_style_str, is_buy)
+    price_type = get_qmt_price_type(stock_code, order_style_str, is_buy, price)
     order_type = OrderType.STOCK_BUY if is_buy == 1 else OrderType.STOCK_SELL
     
     if is_mock_state == 0:
@@ -498,41 +497,43 @@ class QMT:
 
     
 
-  def test_connect(self,path):
-    if sys.platform.startswith('darwin'):
-      return {
+  def test_connect(self,path,client_type,**kwargs):
+    if client_type == 2:
+      if sys.platform.startswith('darwin'):
+        return {
+          'msg':'',
+          'is_connect':True,
+          'account_arr':['888888888']
+        }
+      
+      import random
+      from pyapp.pkg.xtquant.xttrader import XtQuantTrader
+      
+      result = {
         'msg':'',
-        'is_connect':True,
-        'account_arr':['121600012698']
+        'is_connect':False,
+        'account_arr':[]
       }
-    
-    import random
-    from pyapp.pkg.xtquant.xttrader import XtQuantTrader
-    
-    result = {
-      'msg':'',
-      'is_connect':False,
-      'account_arr':[]
-    }
-    session_id = int(random.randint(100000, 999999)) 
-    xt_trader = XtQuantTrader(path, session_id)
-    xt_trader.start() 
-    connect_result = xt_trader.connect()
-    out = xt_trader.query_account_status()
-    account_arr = []
-    for obj in out:
-      if hasattr(obj, 'account_id'):
-        account_arr.append(getattr(obj, 'account_id'))
-    result['account_arr'] = account_arr
+      session_id = int(random.randint(100000, 999999)) 
+      xt_trader = XtQuantTrader(path, session_id)
+      xt_trader.start() 
+      connect_result = xt_trader.connect()
+      out = xt_trader.query_account_status()
+      account_arr = []
+      for obj in out:
+        if hasattr(obj, 'account_id'):
+          account_arr.append(getattr(obj, 'account_id'))
+      result['account_arr'] = account_arr
 
 
-    if connect_result == 0:
-      print('连接成功~')
-      result['is_connect'] = True
+      if connect_result == 0:
+        result['is_connect'] = True
+      else:
+        result['msg'] = 'QMT路径错误,请重新检查!'
+      return result
     else:
-      result['msg'] = 'QMT路径错误,请重新检查!'
-    return result
-    
+      pass
+      
   
   
   def get_account_info(self):

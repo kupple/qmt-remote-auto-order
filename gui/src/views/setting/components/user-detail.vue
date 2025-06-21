@@ -17,8 +17,11 @@
           <span class="edit-span" @click="editConfigAction">编辑</span>
         </div>
       </template>
-      <p>QMT路径:{{ params.qmtPath }}</p>
-      <p>客户编号:{{ params.clientId }}</p>
+      <p>下单模式：<el-tag>{{ params.client_type == 1 ? ' 同花顺下单模式' : ' QMT下单模式' }}</el-tag></p>
+      <p v-if="params.client_type == 2">QMT路径:{{ params.mini_qmt_path }}</p>
+      <p v-if="params.client_type == 2">客户编号:{{ params.client_id }}</p>
+      <p v-if="params.client_type == 1">同花顺路径:{{ params.ths_path }}</p>
+      <p v-if="params.client_type == 1">证券账号:{{ params.ths_client_id }}</p>
     </el-card>
     <editConfigModal ref="editConfigModalRef" @callBack="getSetting" />
   </div>
@@ -37,8 +40,12 @@ const userInfo = ref(null)
 const editConfigModalRef = ref(null)
 import { getSettingConfig,saveConfig,disconnect } from '@/api/comm_tube'
 const params = reactive({
-  qmtPath: '',
-  clientId: ''
+  mini_qmt_path: '',
+  client_id: '',
+  client_type: 1,
+  ths_path: '',
+  ths_client_id: '',
+  ths_pwd: ''
 })
 
 const editConfigAction = () => {
@@ -73,8 +80,11 @@ const formatDate = (dateString) => {
 // 获取配置文件
 const getSetting = async () => {
   const res = await getSettingConfig()
-  params.qmtPath = res.mini_qmt_path
-  params.clientId = res.client_id
+  params.mini_qmt_path = res.mini_qmt_path
+  params.client_id = res.client_id
+  params.ths_path = res.ths_path
+  params.ths_client_id = res.ths_client_id
+  params.ths_pwd = res.ths_pwd
   return res
 }
 

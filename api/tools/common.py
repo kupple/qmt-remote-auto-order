@@ -155,3 +155,4 @@ def transition_code(data,taskDic):
         return get_template_order_count_type_1(taskDic,data,config,token)
     else:
         return get_template_order_count_type_2(taskDic,data,config,token)
+

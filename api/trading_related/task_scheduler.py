@@ -20,7 +20,7 @@ from ..tools.common import sync_data_to_global
 class TaskScheduler:
     """定时任务调度器，用于管理所有交易相关的定时任务"""
     
-    def __init__(self, qmt):
+    def __init__(self, trade_controller):
         """
         初始化任务调度器
         
@@ -28,7 +28,7 @@ class TaskScheduler:
             qmt: QMT交易接口实例
             orm: 数据库操作实例
         """
-        self.qmt = qmt
+        self.trade_controller = trade_controller
         self.timers = {}  # 存储所有定时器
         self.logger = logging.getLogger(__name__)
         
@@ -65,7 +65,7 @@ class TaskScheduler:
         base_conditions = (
             config["client_id"] != "" and 
             config["mini_qmt_path"] != "" and 
-            self.qmt.qmt_trader is not None
+            self.trade_controller.qmt_trader is not None
         )
         
         if task_type == "national_debt":
@@ -133,7 +133,7 @@ class TaskScheduler:
             "national_debt",
             hour,
             minute,
-            self.qmt.buy_reverse_repo
+            self.trade_controller.buy_reverse_repo
         )
     
     def schedule_new_stock(self, hour: int = 10, minute: int = 10) -> bool:
@@ -151,7 +151,7 @@ class TaskScheduler:
             "new_stock",
             hour,
             minute,
-            self.qmt.auto_buy_new_stock
+            self.trade_controller.auto_buy_new_stock
         )
     
     def schedule_new_bond(self, hour: int = 10, minute: int = 10) -> bool:
@@ -169,7 +169,7 @@ class TaskScheduler:
             "new_bond",
             hour,
             minute,
-            self.qmt.auto_buy_convertible_bond
+            self.trade_controller.auto_buy_convertible_bond
         )
     
     def cancel_task(self, task_type: str) -> bool:

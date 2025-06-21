@@ -16,9 +16,9 @@ from .global_params import G
 
 class Remote:
     
-    def __init__(self,qmt):
+    def __init__(self,trade_controller):
         self.stop_event = asyncio.Event()
-        self.qmt = qmt
+        self.trade_controller = trade_controller
         self.ways = 1
         self.is_connected = False
         self.ws = None
@@ -73,7 +73,7 @@ class Remote:
                     #     G.logger.warning("请先在个人页面配置好qmt路径和资金账号",extra={
                     #         "showMessage": True
                     #     })
-                    self.qmt.manage_qmt_trader(content)
+                    self.trade_controller.manage_qmt_trader(content)
 
         except websockets.exceptions.ConnectionClosed:
             G.logger.warning("已断开服务器连接",extra={

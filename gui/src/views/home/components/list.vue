@@ -68,9 +68,9 @@
           <el-descriptions-item label="持仓市值">{{ fundsDic.market_value }}</el-descriptions-item>
           <el-descriptions-item label="总资产">{{ fundsDic.total_asset }}</el-descriptions-item>
         </el-descriptions>
-        <el-button size="small" type="primary" style="width:100px;margin-top:10px;" @click="getAccountInfoAction">获取账号信息</el-button>
+        <el-button size="small" type="primary" style="width: 100px; margin-top: 10px" @click="getAccountInfoAction">获取账号信息</el-button>
         <el-divider>功能</el-divider>
-        <el-form :model="form" label-width="100px">
+        <el-form :model="form" label-width="100px" v-if="settingConfig.client_type == 2">
           <el-form-item label="自动逆回购">
             <el-switch size="small" v-model="form.auto_national_debt" @change="(e) => autoAutomaticReverseAtion(1, e)" />
             <el-tooltip effect="dark" content="开启后3点10分自动将盈余资金买入1天期国债逆回购，不占用资金" placement="top">
@@ -94,6 +94,9 @@
             <el-switch size="small" v-model="form.auto_startup" @change="(e) => autoAutomaticReverseAtion(4, e)" />
           </el-form-item>
         </el-form>
+        <div v-else class="ths-functional-area">
+          <el-button size="small" type="primary" style="width: 100px; margin-top: 10px" @click="getAccountInfoAction">打开同花顺下单</el-button>
+        </div>
       </div>
     </div>
     <ListModal ref="listModalRef" @getTaskList="getTaskListAction" />
@@ -108,10 +111,14 @@ import { useCommonStore } from '@/store/common.js'
 import { getUserInfo } from '@/api/auth'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter, useRoute } from 'vue-router'
-import { getSettingConfig, runTask, getTaskList, saveConfig, setAutomatically,getUniqueID,getAccountInfo } from '@/api/comm_tube'
+import { getSettingConfig, runTask, getTaskList, saveConfig, setAutomatically, getUniqueID, getAccountInfo } from '@/api/comm_tube'
 
 const router = useRouter() // 使用useRouter函数创建router实例
 const route = useRoute()
+
+const settingConfig = computed(() => {
+  return useCommonStore().settingConfig
+})
 
 // 自动逆回购
 const autoAutomaticReverseAtion = async (type, e) => {
@@ -376,6 +383,12 @@ onMounted(async () => {
     padding: 10px;
     background: #fff;
     min-width: 200px;
+    .ths-functional-area {
+      display: flex;
+      flex-direction: column;
+      // justify-content: center;
+      // align-items: center;
+    }
   }
 }
 </style>

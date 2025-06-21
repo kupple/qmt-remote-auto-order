@@ -76,6 +76,9 @@ class Setting(BaseModel):
     auto_startup = Column(Integer, doc='开机自启动', nullable=True, server_default='0')
     account = Column(String(), doc='账号·', nullable=True)
     client_type = Column(Integer, doc='客户端类型', nullable=True, server_default='1')
+    ths_path = Column(String(), doc='同花顺路径', nullable=True)
+    ths_pwd = Column(String(), doc='同花顺密码', nullable=True)
+    ths_client_id = Column(String(), doc='同花顺客户端ID', nullable=True)
     def __str__(self):
         return f"Setting: {self.client_id}"
 
@@ -92,7 +95,15 @@ class Setting(BaseModel):
                 client_id='',
                 salt='',
                 server_url='',
-                run_model_type=0
+                run_model_type=0,
+                auto_national_debt=0,
+                auto_buy_stock_ipo=0,
+                auto_buy_purchase_ipo=0,
+                auto_startup=0,
+                account='',
+                client_type=1,
+                ths_path='',
+                ths_pwd='',
             )
             session.add(default_setting)
             session.commit()

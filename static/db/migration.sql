@@ -669,3 +669,17 @@ ALTER TABLE setting ADD COLUMN client_type INTEGER DEFAULT '1';
 
 UPDATE alembic_version SET version_num='cb83aa7a9d58' WHERE alembic_version.version_num = '560b1c57f776';
 
+-- Running upgrade cb83aa7a9d58 -> 423724d7bf7f
+
+ALTER TABLE setting ADD COLUMN ths_path VARCHAR;
+
+ALTER TABLE setting ADD COLUMN ths_pwd VARCHAR;
+
+UPDATE alembic_version SET version_num='423724d7bf7f' WHERE alembic_version.version_num = 'cb83aa7a9d58';
+
+-- Running upgrade 423724d7bf7f -> d3a25fd123c4
+
+ALTER TABLE setting ADD COLUMN ths_client_id VARCHAR;
+
+UPDATE alembic_version SET version_num='d3a25fd123c4' WHERE alembic_version.version_num = '423724d7bf7f';
+
