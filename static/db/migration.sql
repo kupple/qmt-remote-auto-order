@@ -683,3 +683,11 @@ ALTER TABLE setting ADD COLUMN ths_client_id VARCHAR;
 
 UPDATE alembic_version SET version_num='d3a25fd123c4' WHERE alembic_version.version_num = '423724d7bf7f';
 
+-- Running upgrade d3a25fd123c4 -> c8e939bca315
+
+UPDATE alembic_version SET version_num='c8e939bca315' WHERE alembic_version.version_num = 'd3a25fd123c4';
+
+-- Running upgrade c8e939bca315 -> bb1f7dcbde39
+
+UPDATE alembic_version SET version_num='bb1f7dcbde39' WHERE alembic_version.version_num = 'c8e939bca315';
+

@@ -1,6 +1,6 @@
 import akshare as ak
 import pandas as pd
-from datetime import datetime
+from datetime import datetime,timedelta
 from api.global_params import G
 from pyapp.db.db import DB
 import time
@@ -8,59 +8,73 @@ from api.db.models import (
     DATA_ALL_STOCKS,DATA_ST_STOCKS,
     DATA_TRADE_DATE_HIST
 )
-from ..tools.common import sync_data_to_global
+from ..tools.common import sync_data_to_global,timestamp_to_date
 
 
 # 同步数据表
 def sync_data_stocks_data():
-    time.sleep(8)
-    TABLE_NAME_LIST = [{
-        'table_name':'data_trade_date_hist',
-        'diff': 30,
-    },{
-        'table_name':'data_all_stocks',
-        'diff': 5,
-    },{
-        'table_name':'data_st_stocks',
-        'diff': 0,
-    }]
-    for item in TABLE_NAME_LIST:
-        table_name = item['table_name']
-        diff = item['diff']
-        record = G.orm.get_data_table_record(table_name)
-        if record and record['record_time']:
-            today = datetime.today()
-            record_date = datetime.fromtimestamp(record['record_time']).replace(hour=0, minute=0, second=0, microsecond=0)
-            if record_date < today and (today - record_date).days > diff:
-                record = None
-            
-        if record and record['record_time']:
-            G.logger.info(f"数据表: {table_name} 已同步",extra={
-                "showMessage": True
-            })
-        else:    
-            G.logger.info(f"正在同步数据表: {table_name}",extra={
-                "showMessage": True
-            })
-            is_success = False
-            if table_name == 'data_all_stocks':
-                is_success = save_all_data()
-            elif table_name == 'data_st_stocks':
-                is_success = save_st_data()
-   
-            elif table_name == 'data_trade_date_hist':
-                is_success = save_trade_date_hist()
+    try:
+        time.sleep(8)
+        TABLE_NAME_LIST = [{
+            'table_name':'data_trade_date_hist',
+            'diff': 30,
+        },{
+            'table_name':'data_all_stocks',
+            'diff': 0,
+        },{
+            'table_name':'data_st_stocks',
+            'diff': 0,
+        }]
+        for item in TABLE_NAME_LIST:
+            table_name = item['table_name']
+            diff = item['diff']
+            record = G.orm.get_data_table_record(table_name)
+            if record and record['record_time']:
+                if type(record['record_time']) == float:
+                    record = None
+                else:
+                    date_obj = datetime.strptime(record['record_time'], '%Y-%m-%d %H:%M:%S')
+                    if diff > 0:
+                        adjusted_date = date_obj - timedelta(days=int(diff))
+                    else:
+                        adjusted_date = date_obj
+
+                    today = datetime.now().date()
+                    if adjusted_date.date() > today:
+                        record = None
                 
-            if is_success:
-                G.logger.info(f"数据表: {table_name} 同步成功",extra={
+            if record and record['record_time']:
+                G.logger.info(f"数据表: {table_name} 已同步",extra={
                     "showMessage": True
                 })
-                G.orm.add_data_table_record(table_name)
-            else:
-                G.logger.error(f"数据表: {table_name} 同步失败",extra={
+            else:     
+                G.logger.info(f"正在同步数据表: {table_name}",extra={
                     "showMessage": True
                 })
-    sync_data_to_global()
+                is_success = False
+                if table_name == 'data_all_stocks':
+                    is_success = save_all_data()
+                elif table_name == 'data_st_stocks':
+                    is_success = save_st_data()
+    
+                elif table_name == 'data_trade_date_hist':
+                    is_success = save_trade_date_hist()
+                    
+                if is_success:
+                    G.logger.info(f"数据表: {table_name} 同步成功",extra={
+                        "showMessage": True
+                    })
+                    G.orm.add_data_table_record(table_name)
+                else:
+                    G.logger.error(f"数据表: {table_name} 同步失败",extra={
+                        "showMessage": True
+                    })
+        sync_data_to_global()        
+    except Exception as e:
+        G.logger.error(f"同步数据表失败: {str(e)}",extra={
+            "showMessage": True
+        })
+    
 
 
 # 保存数据到数据库
@@ -70,6 +84,7 @@ def save_all_data():
         if isinstance(data, pd.DataFrame) and not data.empty:
             # 确保列名与数据库模型匹配
             column_mapping = {
+                "日期":"date",
                 '代码': 'code',
                 '名称': 'name',
                 '最新价': 'latest_price',
@@ -216,5 +231,3 @@ def save_st_data():
         
         return True
     return False
-
-

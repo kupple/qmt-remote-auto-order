@@ -646,7 +646,7 @@ class ORM:
     def add_data_table_record(self, table_name):
         """添加数据表记录"""
         dbSession = DB.session()
-        record_time = datetime.now().timestamp()
+        record_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         record_type = 1
         record_content = ''
         with dbSession.begin():

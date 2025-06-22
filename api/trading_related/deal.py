@@ -1,6 +1,156 @@
 from pyapp.pkg.xtquant import xtconstant
 import re
 from api.global_params import G
+from datetime import datetime
+
+def is_auction_period(stock_code: str, check_time: datetime = None) -> bool:
+    """
+    判断给定时间是否为股票集合竞价时间
+    
+    参数:
+    stock_code (str): 股票代码，用于识别股票所属板块
+    check_time (datetime.datetime): 需要判断的时间点，默认为当前时间
+    
+    返回:
+    bool: True表示处于集合竞价时间，False表示不处于
+    """
+    # 如果未传入时间，使用当前时间
+    if check_time is None:
+        check_time = datetime.now()
+    
+    # 判断股票所属板块
+    is_main_board = not (stock_code.startswith(("688", "689")) or  # 非科创板
+                         stock_code.startswith(("300", "301")) or  # 非创业板
+                         stock_code.startswith(("8", "4")))        # 非北交所
+    is_science_innovation = stock_code.startswith(("688", "689"))  # 科创板
+    is_gem = stock_code.startswith(("300", "301"))  # 创业板
+    is_north = stock_code.startswith(("8", "4"))  # 北交所
+    
+    # 检查是否为交易日（简单判断：周一至周五）
+    if check_time.weekday() >= 5:  # 5是周六，6是周日
+        return False
+    
+    # 初始化开盘集合竞价和收盘集合竞价的时间范围
+    morning_auction_start = datetime.time(9, 15)
+    morning_auction_end = datetime.time(9, 25)
+    afternoon_auction_start = datetime.time(14, 57)
+    afternoon_auction_end = datetime.time(15, 0)
+    
+    # 检查时间是否在开盘集合竞价范围内
+    morning_check = (check_time.time() >= morning_auction_start) and (check_time.time() <= morning_auction_end)
+    
+    # 检查时间是否在收盘集合竞价范围内
+    afternoon_check = False
+    
+    # 区分不同板块的收盘集合竞价规则
+    if is_main_board:
+        # 主板：沪市无收盘集合竞价，深市有
+        # 简化处理：假设60开头为沪市，00/30开头为深市
+        if stock_code.startswith("60"):
+            afternoon_check = False  # 沪市无收盘集合竞价
+        else:
+            afternoon_check = (check_time.time() >= afternoon_auction_start) and (check_time.time() <= afternoon_auction_end)
+    elif is_science_innovation or is_gem or is_north:
+        # 科创板、创业板、北交所：有收盘集合竞价
+        afternoon_check = (check_time.time() >= afternoon_auction_start) and (check_time.time() <= afternoon_auction_end)
+    
+    return morning_check or afternoon_check
+
+
+def calculate_max_possible_price(stock_code: str, previous_close: float, current_price: float,
+                                direction: str, is_st: bool = False, auction_period: bool = False) -> float:
+    """
+    计算在当前规则下允许的最大可能成交价格
+    
+    参数:
+    stock_code (str): 股票代码
+    previous_close (float): 前一日收盘价
+    current_price (float): 当前最新成交价
+    direction (str): 交易方向，'buy' 或 'sell'
+    is_st (bool): 是否为ST股票，默认为False
+    auction_period (bool): 是否为集合竞价阶段，默认为False
+    
+    返回:
+    float: 最大可能成交价格（买入方向）或最小可能成交价格（卖出方向）
+    """
+    # 计算涨停价和跌停价
+    limit_up, limit_down = calculate_price_limits(stock_code, previous_close, is_st)
+    
+    # 判断股票板块
+    is_main_board = not (stock_code.startswith(("688", "689")) or  # 非科创板
+                         stock_code.startswith(("300", "301")) or  # 非创业板
+                         stock_code.startswith(("8", "4")))        # 非北交所
+    is_science_innovation = stock_code.startswith(("688", "689"))  # 科创板
+    is_gem = stock_code.startswith(("300", "301"))  # 创业板
+    is_star = stock_code.startswith(("8", "4"))  # 北交所
+    
+    # 初始化价格笼子上下限
+    cage_upper = float('inf')
+    cage_lower = float('-inf')
+    
+    # 根据板块和交易时段设置价格笼子
+    if is_science_innovation or is_gem:
+        # 科创板和创业板：全天有价格笼子
+        cage_upper = round(current_price * 1.02, 2)
+        cage_lower = round(current_price * 0.98, 2)
+    elif is_star and not auction_period:
+        # 北交所：连续竞价有价格笼子
+        cage_upper = round(current_price * 1.05, 2)
+        cage_lower = round(current_price * 0.95, 2)
+    elif is_main_board and not auction_period:
+        # 主板：连续竞价有价格笼子（修正逻辑）
+        cage_upper = round(current_price * 1.02, 2)
+        cage_lower = round(current_price * 0.98, 2)
+    
+    # 应用涨跌停限制和价格笼子
+    if direction.lower() == 'buy':
+        # 买入方向：最终价格为 价格笼子上限 和 涨停价 的较小值
+        final_price = min(limit_up, cage_upper)
+        return round(final_price, 2)
+    elif direction.lower() == 'sell':
+        # 卖出方向：最终价格为 价格笼子下限 和 跌停价 的较大值
+        final_price = max(limit_down, cage_lower)
+        return round(final_price, 2)
+    else:
+        raise ValueError("交易方向必须是 'buy' 或 'sell'")
+
+def calculate_price_limits(stock_code: str, previous_close: float, is_st: bool) -> tuple[float, float]:
+    """
+    计算股票的涨停价和跌停价
+    
+    参数:
+    stock_code (str): 股票代码
+    previous_close (float): 前一日收盘价
+    is_st (bool): 是否为ST股票
+    
+    返回:
+    tuple[float, float]: 涨停价和跌停价
+    """
+    # 判断股票板块
+    is_main_board = not (stock_code.startswith(("688", "689")) or  # 非科创板
+                         stock_code.startswith(("300", "301")) or  # 非创业板
+                         stock_code.startswith(("8", "4")))        # 非北交所
+    is_science_innovation = stock_code.startswith(("688", "689"))  # 科创板
+    is_gem = stock_code.startswith(("300", "301"))  # 创业板
+    is_star = stock_code.startswith(("8", "4"))  # 北交所
+    
+    # 根据板块和ST状态确定涨跌幅限制
+    if is_main_board:
+        limit_ratio = 0.05 if is_st else 0.10  # 主板ST股票±5%，非ST股票±10%
+    elif is_science_innovation or is_gem:
+        limit_ratio = 0.20  # 科创板和创业板±20%
+    elif is_star:
+        limit_ratio = 0.30  # 北交所±30%
+    else:
+        limit_ratio = 0.10  # 默认±10%
+    
+    # 计算涨停价和跌停价
+    limit_up = round(previous_close * (1 + limit_ratio), 2)
+    limit_down = round(previous_close * (1 - limit_ratio), 2)
+    
+    return limit_up, limit_down
+
+
 
 def calculate_stock_fee(
     transaction_type: str,  # 'buy' 或 'sell'
@@ -75,11 +225,33 @@ def convert_stock_suffix(stock_code: str) -> str:
 
 # 拼装股票代码
 def stockcode_mapping_dic(security):
+    # {'id': 788, 'code': '600031', 'name': '三一重工', 'latest_price': 18.03, 'change_rate': 1.24, 'change_amount': 0.22, 'volume': 462329.0, 'turnover': 834199896.0, 'amplitude': 1.63, 'highest': 18.17, 'lowest': 17.88, 'open': 17.89, 'close': 17.81, 'volume_ratio': 1.44, 'turnover_ratio': 0.55, 'pe_dynamic': 15.46, 'pb': 2.13, 'total_market_value': 152803854007.0, 'circulating_market_value': 152609811541.0, 'rise_speed': -0.06, 'five_minute_change': 0.06, 'sixty_days_change': -7.82, 'year_to_date_change': 11.85, 'created_at': '2025-06-17 16:46:35', 'updated_at': '2025-06-17 16:46:35'}
     stockDic = {
         "security":security,
-        "is_st":security in G.stock_map["st_stock_code"]    
+        "is_st":security in G.stock_map["st_stock_code"]
     }
     return stockDic
+
+# 按比率买卖股票
+def count_stock_price(security,price,is_buy):
+    # 获取上一个收盘价格
+    close=G.stock_map["all_stock_code"][security]["close"]
+    is_data_synced = G.stock_map["is_data_synced"]
+    is_st = security in G.stock_map["st_stock_code"]
+    # 如果数据未同步，使用最新价
+    if is_data_synced:
+        optimal_price = calculate_max_possible_price(
+            security, 
+            close, 
+            price,
+            "buy" if is_buy else "sell",
+            is_st,
+            False)
+        return optimal_price
+    else:
+        return price
+    
+    
 
 def get_qmt_price_type(security, order_style_str, is_buy=True, price=0):
     # 提取交易所代码
@@ -96,8 +268,9 @@ def get_qmt_price_type(security, order_style_str, is_buy=True, price=0):
     
     # 如果是ST股票，且是卖出类型 且是上海股票
     if is_st and is_zhishu:
-        G.logger.warning("ST股票，且是卖出类型 且是上海股票，最新价报单")
-        return xtconstant.LATEST_PRICE,price
+        G.logger.warning("上海ST股票，使用最新价报单")
+        optimal_price = count_stock_price(security,price,is_buy)
+        return xtconstant.LATEST_PRICE,optimal_price
     
     
     # 解析订单类型字符串
@@ -133,8 +306,9 @@ def get_qmt_price_type(security, order_style_str, is_buy=True, price=0):
             return xtconstant.MARKET_PEER_PRICE_FIRST,price
 
     
+    optimal_price = count_stock_price(security,price,is_buy)
     # 默认使用最新价
-    return xtconstant.LATEST_PRICE,price
+    return xtconstant.LATEST_PRICE,optimal_price
 
 
 def calculate_dividend_effect(

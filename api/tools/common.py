@@ -3,6 +3,7 @@
 '''
 Description: 数据库操作相关的API
 '''
+from ast import Try
 import subprocess
 import sys
 from api.db.orm import ORM
@@ -12,21 +13,78 @@ from api.tools.tokenManager import generate_token,verify_token
 from api.tools.template import get_template_order_count_type_1,get_template_order_count_type_2
 from api.global_params import G
 from api.trading_related.deal import convert_stock_suffix
+from datetime import datetime
+
+def timestamp_to_date(timestamp):
+    """
+    将 Unix 时间戳转换为 'YYYY-MM-DD' 格式的日期字符串
+    
+    参数:
+    timestamp (int/float): Unix 时间戳（从 1970-01-01 开始的秒数）
+    
+    返回:
+    str: 格式化的日期字符串
+    """
+    # 将时间戳转换为 datetime 对象
+    dt_object = datetime.fromtimestamp(timestamp)
+    
+    # 格式化为 'YYYY-MM-DD' 字符串
+    return dt_object.strftime('%Y-%m-%d')
+
+
+def find_nearest_date(dates):
+    # 将字符串转换为日期对象
+    date_objects = [datetime.strptime(date_str, '%Y-%m-%d').date() for date_str in dates]
+    
+    # 获取当前日期
+    current_date = datetime.now().date()
+    
+    # 计算每个日期与当前日期的时间差
+    deltas = [(date, abs(date - current_date)) for date in date_objects]
+    
+    # 找出时间差最小的日期
+    nearest_date = min(deltas, key=lambda x: x[1])[0]
+    
+    return nearest_date.strftime('%Y-%m-%d')
 
 # 同步数据到全局
-
 def sync_data_to_global():
     
-    G.logger.info("同步数据到全局")
-    st_code_arr = G.orm.get_st_stock_data()
-    G.stock_map["st_stock_code"] = st_code_arr
-    
-    all_stock_arr = G.orm.get_all_stock_data()
-    G.stock_map["all_stock_code"] = {convert_stock_suffix(stock['code']):stock for stock in all_stock_arr}
-    
-    trade_date_arr = G.orm.get_trade_date_list()
-    G.stock_map['trade_date'] = trade_date_arr
-    G.logger.info("同步数据结束")
+    try:
+        G.logger.info("同步数据到全局")
+        st_code_arr = G.orm.get_st_stock_data()
+        G.stock_map["st_stock_code"] = st_code_arr
+        
+        all_stock_arr = G.orm.get_all_stock_data()
+        G.stock_map["all_stock_code"] = {convert_stock_suffix(stock['code']):stock for stock in all_stock_arr}
+        
+        trade_date_arr = G.orm.get_trade_date_list()
+
+        G.stock_map['trade_date'] = trade_date_arr
+        
+        nearest_date = find_nearest_date(trade_date_arr)
+        G.stock_map['nearest_trade_date'] = nearest_date
+        
+        record = G.orm.get_data_table_record("data_all_stocks")        
+        if record and record['record_time']:
+            # 将其时间部分设置为 00:00:00
+            dt1 = datetime.strptime(record['record_time'], '%Y-%m-%d %H:%M:%S')
+            # 解析第二个日期时间字符串（YYYY-MM-DD HH:mm:ss）
+            dt2 = datetime.strptime(nearest_date, '%Y-%m-%d')
+            if dt1.date() >= dt2.date():
+                G.stock_map['is_data_synced'] = True
+            else:
+                G.stock_map['is_data_synced'] = False
+        else:
+            G.stock_map['is_data_synced'] = False
+            
+            
+            
+        
+        
+        G.logger.info("同步数据结束")
+    except Exception as e:
+        G.logger.error(f"同步数据到全局失败: {e}")
     
     
 

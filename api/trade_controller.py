@@ -239,14 +239,14 @@ class TradeController:
                    order_remark='',
                    is_mock_state=1,
                    ):
-    price_type = get_qmt_price_type(stock_code, order_style_str, is_buy, price)
+    price_type, optimal_price = get_qmt_price_type(stock_code, order_style_str, is_buy, price)
     order_type = OrderType.STOCK_BUY if is_buy == 1 else OrderType.STOCK_SELL
     
     if is_mock_state == 0:
         self.qmt_trader.place_order(
           stock_code=stock_code,
           volume=volume,
-          price=price,
+          price=optimal_price,
           order_type=order_type,
           price_type=price_type,
           strategy_name=strategy_name,
@@ -256,7 +256,7 @@ class TradeController:
         self.simulator.place_order(
           stock_code=stock_code,
           volume=volume,
-          price=price,
+          price=optimal_price,
           order_type=order_type,
           order_time=order_time,
           price_type=price_type,
@@ -272,7 +272,7 @@ class TradeController:
       self.simulator.place_order(
           stock_code=stock_code,
           volume=volume,
-          price=price,
+          price=optimal_price,
           order_type=order_type,
           price_type=price_type,
           order_time=order_time,

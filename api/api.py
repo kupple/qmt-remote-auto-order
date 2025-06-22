@@ -20,7 +20,6 @@ from .tools.sysConfig import get_os_type
 import subprocess
 import webview
 import os
-import datetime
 import logging
 import sys
 from api.trading_related.deal import convert_stock_suffix

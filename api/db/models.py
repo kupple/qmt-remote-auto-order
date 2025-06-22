@@ -329,7 +329,7 @@ class DATA_TABLE_RECORD(BaseModel):
     __tablename__ = "data_table_record"
     table_name = Column(String(), doc='表名', nullable=True)
     record_type = Column(Integer(), doc='记录类型', nullable=True)
-    record_time = Column(Integer(), doc='记录时间', nullable=True)
+    record_time = Column(String(), doc='记录时间', nullable=True)
     record_content = Column(String(), doc='记录内容', nullable=True)
     def __str__(self):
         return f"DATA_TABLE_RECORD: {self.id}"
