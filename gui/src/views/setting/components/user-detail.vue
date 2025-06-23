@@ -85,6 +85,7 @@ const getSetting = async () => {
   params.ths_path = res.ths_path
   params.ths_client_id = res.ths_client_id
   params.ths_pwd = res.ths_pwd
+  params.client_type = res.client_type
   return res
 }
 
