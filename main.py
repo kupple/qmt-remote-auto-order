@@ -36,7 +36,7 @@ def create_tray_icon():
             application_path = os.path.dirname(os.path.abspath(__file__))
         
         # 构建图标路径
-        icon_path = os.path.join(application_path, "pyapp", "icon", "logo.png")
+        icon_path = os.path.join(application_path, "pyapp", "icon", "tray.png")
         image = Image.open(icon_path)
     except Exception as e:
         print(f"加载图标失败: {e}")
