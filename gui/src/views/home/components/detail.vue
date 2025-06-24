@@ -8,7 +8,12 @@
             <el-button v-if="taskDic.order_count_type == 2" size="small" type="primary" @click="addPositionAction">手动添加</el-button>
           </div>
           <el-table :data="currentPositionList" stripe style="width: 100%; margin-top: 10px" size="small" height="100%">
-            <el-table-column align="center" prop="security_code" label="股票代码" />
+            <el-table-column align="center" label="股票代码" width="140">
+              <template #default="{ row }">
+                {{ row.security_code }}
+                ({{ row.security_name }})
+              </template>
+            </el-table-column>
             <el-table-column align="center" label="数量" width="150">
               <template #default="{ row }">
                 <span v-if="!row.is_edit">{{ row.volume }}</span>
@@ -37,7 +42,6 @@
             </el-table-column>
           </el-table>
           <div class="task-detail" v-if="taskDic.order_count_type == 2">
-            <span>估算总收益: {{ total_amount }}</span>
             <div style="display: flex; align-items: center">
               <span>可用资金: {{ taskDic.can_use_amount }}</span>
               <el-button @click="openAdjustmentModal()" style="margin-left: 10px" size="small" type="primary">编辑</el-button>
@@ -112,13 +116,6 @@ const currentPositionList = ref([])
 const addPositionRef = ref(null)
 const adjustmentModalRef = ref(null)
 
-const total_amount = computed(() => {
-  let total = 0
-  for (const item of currentPositionList.value) {
-    total += item.volume * item.average_price
-  }
-  return (taskDic.value.can_use_amount + total).toFixed(2)
-})
 
 const openAdjustmentModal = () => {
   adjustmentModalRef.value.showModal({

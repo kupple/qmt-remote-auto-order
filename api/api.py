@@ -245,7 +245,12 @@ class API(System):
             return None
 
     def get_position_by_task_id(self, task_id):
-        return G.orm.query_position_by_task_id(task_id)
+        list = G.orm.query_position_by_task_id(task_id)
+        for item in list:
+            if item['security_code']:
+                item['security_name'] = G.stock_map["all_stock_code"][item['security_code']]['name']
+        return list
+
     
     def delete_position_by_id(self, id):
         return G.orm.delete_position_by_id(id)

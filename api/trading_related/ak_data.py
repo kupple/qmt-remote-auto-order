@@ -14,7 +14,7 @@ from ..tools.common import sync_data_to_global,timestamp_to_date
 # 同步数据表
 def sync_data_stocks_data():
     try:
-        time.sleep(8)
+        time.sleep(4)
         TABLE_NAME_LIST = [{
             'table_name':'data_trade_date_hist',
             'diff': 30,
