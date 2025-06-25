@@ -1,11 +1,16 @@
 import re
+import sys
+if sys.platform.startswith('darwin'):
+    pass
+else:
+    import win32api
+    import win32gui
+    import win32ui
+    import win32con
+    import win32clipboard
+    import win32process
+    from const import VK_CODE, BALANCE_CONTROL_ID_GROUP
 
-import win32api
-import win32gui
-import win32ui
-import win32con
-import win32clipboard
-import win32process
 
 import ctypes
 import time
@@ -16,7 +21,6 @@ from PIL import Image, ImageFilter
 
 # import pytesseract
 
-from const import VK_CODE, BALANCE_CONTROL_ID_GROUP
 
 sleep_time = 0.2
 short_sleep_time = 0.05

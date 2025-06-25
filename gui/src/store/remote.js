@@ -60,6 +60,9 @@ export const useRemoteStore = defineStore('remote', {
           console.log(params.event)
           useCommonStore().changeisAccSubState(params.event)
         }
+        if (params.type == 'thsProcessCheck') {
+          useCommonStore().changeisThsState(params.event)
+        }
       }
       // 模拟盘 回测 信号单
       if (params.data) {

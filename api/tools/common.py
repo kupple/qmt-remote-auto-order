@@ -157,6 +157,8 @@ def revert_transition_code(data):
 
 def is_process_exist():
     app_name = "XtMiniQmt.exe"
+    if G.client_type == 1:
+        app_name = "xiadan.exe"
     if sys.platform.startswith('darwin'):
         return True
     try:

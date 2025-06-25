@@ -15,6 +15,7 @@ class DatabaseLogHandler(logging.Handler):
         self.run_model_type = run_model_type
         self.user_id = user_id
         self.orm = orm
+        self.client_type = None 
 
     def emit(self, record: logging.LogRecord) -> None:
         try:

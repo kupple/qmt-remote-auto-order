@@ -17,46 +17,86 @@ import asyncio
 from .tools.common import is_process_exist
 from threading import Timer
 from .trading_related.trader_call_back import MyXtQuantTraderCallback
+from .trading_related.ths_blocking_queue import NonBlockingQueue
+from .trading_related.ths_auto import ThsAuto
 
 class TradeController:
   def __init__(self):
     self.qmt_trader = qmt_trader()
+    
+    # 同花顺队列
+    self.ths_queue = NonBlockingQueue()
     self.callback = MyXtQuantTraderCallback(False)
     self.simulator = None
     self._thread = None
     self.qmt_is_connect = False
     self.acc_is_connect = False
     self.is_need_reconnection = False
-    self.is_need_reconnection_lock = True
-    
+    self.is_need_reconnection_lock =  True
+    self.ths_auto = ThsAuto()
+
+    self.consumer_thread = self.ths_queue.start_consumer(self.ths_deal_order)
+
+  
+  # 同花顺处理订单
+  def ths_deal_order(self,order):
+    result = self.ths_auto.get_balance()
+    print(result)
+    # order_type = order['order_type']
+    # if order_type == OrderType.STOCK_BUY: 
+    #   self.ths_auto.buy(order['stock_code'],order['volume'],order['price'])
+    # elif order_type == OrderType.STOCK_SELL:
+    #   self.ths_auto.sell(order['stock_code'],order['volume'],order['price'])
+    # stock_code = order['stock_code']
+    # volume = order['volume']
+    # price = order['price']
+    # order_time = order['order_time']
+    # price_type = order['price_type']
+    # strategy_name = order['strategy_name']
+    # order_remark = order['order_remark']  
+    # "stock_code": stock_code,
+    # "volume": volume,
+    # "price": optimal_price,
+    # "order_type": order_type,
+    # "order_time": order_time,
+    # "price_type": price_type,
+    # "strategy_name": strategy_name,
+    # "order_remark": order_remark
+    pass
   
   def process_check_loop(self):
     try:
         event = is_process_exist()  # 直接调用，不需要await
-        System.system_py2js(self,'remoteCallBack',  {
-            "type": "qmtProcessCheck",
-            "event": event
-        })
-        self.qmt_is_connect = event
-        if event:
-          if self.is_need_reconnection == True and self.is_need_reconnection_lock == False:          
-            self.is_need_reconnection = False
-            config = G.orm.get_setting_config()
-            # 已配置才可以选择
-            if config['mini_qmt_path'] != "" and config['client_id'] != "":
-              G.logger.info("正在重新连接QMT",extra={
-                "showMessage": True
-              })
-              self.is_need_reconnection_lock = True
-              # 在主线程中运行connect_qmt
-              self.connect_qmt({
-                "mini_qmt_path": config['mini_qmt_path'],
-                "client_id": config['client_id']
-              })
+        if G.client_type == 2:
+          System.system_py2js(self,'remoteCallBack',  {
+              "type": "qmtProcessCheck",
+              "event": event
+          })
+          self.qmt_is_connect = event
+          if event:
+            if self.is_need_reconnection == True and self.is_need_reconnection_lock == False:          
+              self.is_need_reconnection = False
+              config = G.orm.get_setting_config()
+              # 已配置才可以选择
+              if config['mini_qmt_path'] != "" and config['client_id'] != "":
+                G.logger.info("正在重新连接QMT",extra={
+                  "showMessage": True
+                })
+                self.is_need_reconnection_lock = True
+                # 在主线程中运行connect_qmt
+                self.connect_qmt({
+                  "mini_qmt_path": config['mini_qmt_path'],
+                  "client_id": config['client_id']
+                })
+          else:
+            # 如果之前连过才给他重连
+            # if self.acc_is_connect:
+            self.is_need_reconnection = True
         else:
-          # 如果之前连过才给他重连
-          # if self.acc_is_connect:
-          self.is_need_reconnection = True
+          System.system_py2js(self,'remoteCallBack',  {
+              "type": "thsProcessCheck",
+              "event": event
+          })
     except Exception as e:
       error_msg = f"进程检查出错: {str(e)}"
       if G.logger:
@@ -93,7 +133,6 @@ class TradeController:
       G.logger.error("连接QMT失败! code 1980" + str(e))
       self.is_need_reconnection_lock = False
       
-  
   # 购买国债逆回购
   def buy_reverse_repo(self):
 
@@ -162,8 +201,6 @@ class TradeController:
     backtest = G.orm.query_backtest_by_id(saveData['backtest_id'])
     G.orm.update_backtest(saveData['backtest_id'], final_amount=position_total_value + backtest['can_use_amount']  )   
 
-  
-   
   #  计算配置仓位
   def order_on_pro_rata_basis(self,orderDic:dict,task:dict,backtest_id:int = None)->int:
     if task['order_count_type'] == 1:
@@ -226,7 +263,6 @@ class TradeController:
       
       return final_amount
     
-  
   # 统一处理-下单接口
   def place_order(self, 
                    stock_code='600031.SH',
@@ -243,6 +279,20 @@ class TradeController:
     order_type = OrderType.STOCK_BUY if is_buy == 1 else OrderType.STOCK_SELL
     
     if is_mock_state == 0:
+      # 如果是同花顺类型
+      if G.client_type == 1:
+        self.ths_queue.enqueue({
+          "stock_code": stock_code,
+          "volume": volume,
+          "price": optimal_price,
+          "order_type": order_type,
+          "order_time": order_time,
+          "price_type": price_type,
+          "strategy_name": strategy_name,
+          "order_remark": order_remark
+        })
+      else:
+        # 如果是QMT类型
         self.qmt_trader.place_order(
           stock_code=stock_code,
           volume=volume,
@@ -264,21 +314,33 @@ class TradeController:
           order_remark=order_remark
         )
     elif is_mock_state == 2:
-      mockCallback = MyXtQuantTraderCallback(False,is_pre=True)
-      self.simulator = QmtTradingSimulator(
-          2,
-          mockCallback, # 回测环境
-      )
-      self.simulator.place_order(
-          stock_code=stock_code,
-          volume=volume,
-          price=optimal_price,
-          order_type=order_type,
-          price_type=price_type,
-          order_time=order_time,
-          strategy_name=strategy_name,
-          order_remark=order_remark
-        ) 
+      if G.client_type == 2:
+        mockCallback = MyXtQuantTraderCallback(False,is_pre=True)
+        self.simulator = QmtTradingSimulator(
+            2,
+            mockCallback, # 回测环境
+        )
+        self.simulator.place_order(
+            stock_code=stock_code,
+            volume=volume,
+            price=optimal_price,
+            order_type=order_type,
+            price_type=price_type,
+            order_time=order_time,
+            strategy_name=strategy_name,
+            order_remark=order_remark
+          ) 
+      else:
+        self.ths_queue.enqueue({
+          "stock_code": stock_code,
+          "volume": volume,
+          "price": optimal_price,
+          "order_type": order_type,
+          "order_time": order_time,
+          "price_type": price_type,
+          "strategy_name": strategy_name,
+          "order_remark": order_remark
+        })
     else:
       G.logger.error("is_mock_state参数错误")
   # 下单协议{code:code,price:price,amount:amount,type:type}
