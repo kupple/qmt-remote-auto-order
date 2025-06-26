@@ -55,8 +55,8 @@ class API(System):
         self.task_scheduler.schedule_save_all_data(hour=8, minute=56)
         
         # 
-        self.loop = asyncio.get_event_loop()
-        self.loop.run_in_executor(None, sync_data_stocks_data)
+        # self.loop = asyncio.get_event_loop()
+        # self.loop.run_in_executor(None, sync_data_stocks_data)
 
     def setWindow(self, window):
         '''获取窗口实例'''
