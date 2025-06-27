@@ -9,7 +9,7 @@ else:
     import win32con
     import win32clipboard
     import win32process
-    from const import VK_CODE, BALANCE_CONTROL_ID_GROUP
+    from .const import VK_CODE, BALANCE_CONTROL_ID_GROUP
 
 
 import ctypes
