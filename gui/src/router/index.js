@@ -43,17 +43,17 @@ export const routes = [
       }
     ]
   },
-  {
-    path: '/order',
-    name: 'Order',
-    chName: '订单列表',
-    icon: 'List',
-    component: () => import('../views/order/index.vue'),
-    meta: {
-      title: '订单列表',
-      showBack: false
-    }
-  },
+  // {
+  //   path: '/order',
+  //   name: 'Order',
+  //   chName: '订单列表',
+  //   icon: 'List',
+  //   component: () => import('../views/order/index.vue'),
+  //   meta: {
+  //     title: '订单列表',
+  //     showBack: false
+  //   }
+  // },
   {
     path: '/logging',
     name: 'Logging',

@@ -10,19 +10,83 @@ import pystray
 from PIL import Image
 import webview
 import threading
+import os
+import sys
+import multiprocessing
 
 from api.api import API
 from pyapp.config.config import Config
 from pyapp.db.db import DB
 
-cfg = Config()    # 配置
-cfg.init()    # Initialize config first to set up app data directory
-db = DB()    # 数据库类
-api = API()    # 本地接口
+# 单例锁文件路径
+def get_lock_file_path():
+    if getattr(sys, 'frozen', False):
+        # 打包后的应用
+        lock_file = os.path.join(sys._MEIPASS, 'lock.txt')
+    else:
+        # 开发环境
+        lock_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lock.txt')
+    return lock_file
+
+# 检查是否已有实例运行
+def check_single_instance():
+    lock_file = get_lock_file_path()
+    try:
+        # 创建或打开锁文件
+        if os.path.exists(lock_file):
+            # 如果文件已存在，尝试获取锁
+            lock = multiprocessing.Lock()
+            try:
+                lock.acquire(timeout=0.1)  # 尝试获取锁，超时0.1秒
+                return True, lock
+            except:
+                # 如果获取锁失败，说明其他实例正在运行
+                return False, None
+        else:
+            # 如果文件不存在，创建新文件并获取锁
+            with open(lock_file, 'w') as f:
+                f.write('')
+            lock = multiprocessing.Lock()
+            lock.acquire()
+            return True, lock
+    except Exception as e:
+        print(f"检查单例失败: {e}")
+        return False, None
+
+# 释放锁
+def release_lock(lock):
+    if lock:
+        try:
+            lock.release()
+        except Exception as e:
+            print(f"释放锁失败: {e}")
+
+# 在程序退出时释放锁
+def cleanup():
+    if hasattr(sys, 'fd'):
+        release_lock(sys.fd)
+
+# 注册退出处理
+import atexit
+atexit.register(cleanup)
+
+# 检查是否已有实例运行
+is_first_instance, lock_fd = check_single_instance()
+if not is_first_instance:
+    print("程序已经在运行中，请不要重复启动！")
+    sys.exit(0)
+
+# 保存锁文件描述符
+sys.fd = lock_fd
 
 # 全局变量
 window = None
 icon = None
+
+cfg = Config()    # 配置
+cfg.init()    # Initialize config first to set up app data directory
+db = DB()    # 数据库类
+api = API()    # 本地接口
 
 def create_tray_icon():
     # 创建系统托盘图标
@@ -43,11 +107,24 @@ def create_tray_icon():
         # 如果找不到图标文件，创建一个默认的红色图标
         image = Image.new('RGB', (64, 64), color = 'red')
     
+    # 创建菜单项
     menu = (
         pystray.MenuItem('显示', show_window),
         pystray.MenuItem('退出', quit_window)
     )
-    return pystray.Icon("name", image, "应用名称", menu)
+    
+    # 创建托盘图标
+    icon = pystray.Icon("name", image, "应用名称", menu)
+    
+    # 添加双击事件
+    def on_double_click(icon, event):
+        if event == pystray.Icon.DOUBLE_CLICK:
+            show_window(icon, None)
+    
+    # 设置双击事件
+    icon.on_click = on_double_click
+    
+    return icon
 
 def show_window(icon, item):
     if window:

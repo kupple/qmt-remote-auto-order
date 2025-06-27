@@ -26,7 +26,7 @@ from api.trading_related.deal import convert_stock_suffix
 from dotenv import load_dotenv
 load_dotenv()
 from .global_params import G
-from .trading_related.ak_data import sync_data_stocks_data
+from .trading_related.sync_data import sync_data_stocks_data
 from .tools.common import transition_code,revert_transition_code
 
 AUTO_CONNECTION_WS = int(os.getenv('AUTO_CONNECTION_WS',1))
@@ -37,26 +37,33 @@ WS_URL_FIXED = os.getenv('WS_URL_FIXED')
 
 class API(System):
     def __init__(self):
+        """
+        Initialize the API class.
         
-        # 创建一个qmt对象
+        This constructor sets up the trade controller, initializes the task scheduler
+        with various scheduled tasks, and starts a loop to sync stock data.
+
+        Attributes:
+            trade_controller (TradeController): Manages trade-related operations.
+            remote (Remote): Facilitates remote operations with trade controller.
+            thread1 (None): Placeholder for a thread object, currently not initialized.
+            task_scheduler (TaskScheduler): Manages scheduled tasks related to trading.
+            loop (asyncio.AbstractEventLoop): Asynchronous event loop for executing tasks.
+        """
         self.trade_controller = TradeController()
         self.remote = Remote(self.trade_controller)
         self.thread1 = None
         
-        # 初始化任务调度器
         self.task_scheduler = TaskScheduler(self.trade_controller)
         
-        # 启动定时任务
         self.task_scheduler.schedule_national_debt(hour=15, minute=10)
         self.task_scheduler.schedule_new_stock(hour=10, minute=10)
         self.task_scheduler.schedule_new_bond(hour=10, minute=10)
         
-        # 获取数据
         self.task_scheduler.schedule_save_all_data(hour=8, minute=56)
         
-        # 
-        # self.loop = asyncio.get_event_loop()
-        # self.loop.run_in_executor(None, sync_data_stocks_data)
+        self.loop = asyncio.get_event_loop()
+        self.loop.run_in_executor(None, sync_data_stocks_data)
 
     def setWindow(self, window):
         '''获取窗口实例'''
