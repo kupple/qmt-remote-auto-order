@@ -18,5 +18,5 @@ PyJWT
 pystray
 Pillow
 python-dotenv
-akshare
 ddddocr
+baostock

@@ -1,4 +1,3 @@
-import akshare as ak
 import pandas as pd
 from datetime import datetime,timedelta
 from api.global_params import G
@@ -9,7 +8,7 @@ from api.db.models import (
     DATA_TRADE_DATE_HIST
 )
 from ..tools.common import sync_data_to_global,timestamp_to_date
-
+from api.trading_related.additional_data import stock_zh_a_spot_em, stock_zh_a_st_em, get_all_trade_day
 
 # 同步数据表
 def sync_data_stocks_data():
@@ -80,7 +79,7 @@ def sync_data_stocks_data():
 # 保存数据到数据库
 def save_all_data():
     try:
-        data = ak.stock_zh_a_spot_em()
+        data = stock_zh_a_spot_em()
         if isinstance(data, pd.DataFrame) and not data.empty:
             # 确保列名与数据库模型匹配
             column_mapping = {
@@ -145,11 +144,11 @@ def save_all_data():
 
 # 保存日期到数据库
 def save_trade_date_hist():
-   data = ak.tool_trade_date_hist_sina()
+   data = get_all_trade_day()
    if isinstance(data, pd.DataFrame) and not data.empty:
         # 确保列名与数据库模型匹配
         column_mapping = {
-            'trade_date': 'trade_date',
+            'calendar_date': 'trade_date',
         }
         
         # 移除不需要的序号列
@@ -182,7 +181,7 @@ def save_trade_date_hist():
 
 # 保存数据到数据库
 def save_st_data():
-    data = ak.stock_zh_a_st_em()
+    data = stock_zh_a_st_em()
     if isinstance(data, pd.DataFrame) and not data.empty:
         # 确保列名与数据库模型匹配
         column_mapping = {
