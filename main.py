@@ -163,7 +163,7 @@ def WebViewApp(ifCef=False):
     
     is_win = platform.system().lower() == 'windows'
     if is_win:
-        pass
+        Config.devEnv = sys.flags.dev_mode
     else:
         debug_mode = os.environ.get("DEBUG", "false").lower() == "true"
         Config.devEnv = debug_mode
