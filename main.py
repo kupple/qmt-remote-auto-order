@@ -14,6 +14,7 @@ import multiprocessing
 import ctypes
 import time
 import signal
+import subprocess
 
 from api.api import API
 from pyapp.config.config import Config
@@ -24,6 +25,7 @@ window = None
 icon = None
 mutex = None
 lock_file = None
+is_quitting = False  # 退出状态标记
 
 cfg = Config()    # 配置
 cfg.init()    # Initialize config first to set up app data directory
@@ -34,12 +36,10 @@ def create_mutex():
     """创建系统级互斥锁，确保应用只能运行一个实例"""
     global mutex, lock_file
     
-    # 使用应用ID生成唯一互斥锁名称
     mutex_name = Config.appNameEN
     
     try:
         if platform.system() == "Windows":
-            # Windows平台使用CreateMutex
             kernel32 = ctypes.windll.kernel32
             mutex = kernel32.CreateMutexW(None, False, mutex_name)
             error = kernel32.GetLastError()
@@ -49,7 +49,6 @@ def create_mutex():
                 activate_existing_instance()
                 return False
         else:
-            # Linux/macOS平台使用文件锁
             lock_file = os.path.join(cfg.appDataDir, ".app.lock")
             os.makedirs(os.path.dirname(lock_file), exist_ok=True)
             mutex = open(lock_file, 'w')
@@ -69,52 +68,26 @@ def create_mutex():
 
 def activate_existing_instance():
     """尝试激活已运行的实例窗口"""
-    # 可通过socket或文件标记实现进程间通信
-    # 此处简化处理，仅打印提示
     print("尝试激活已运行的实例...")
 
 def create_tray_icon():
     # 创建系统托盘图标
     try:
-        # 获取应用根目录
-        if getattr(sys, 'frozen', False):
-            # 如果是打包后的应用
-            application_path = sys._MEIPASS
-        else:
-            # 如果是开发环境
-            application_path = os.path.dirname(os.path.abspath(__file__))
-        
-        # 构建图标路径
+        application_path = sys._MEIPASS if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
         icon_path = os.path.join(application_path, "pyapp", "icon", "tray.png")
         image = Image.open(icon_path)
     except Exception as e:
         print(f"加载图标失败: {e}")
-        # 如果找不到图标文件，创建一个默认的红色图标
-        image = Image.new('RGB', (64, 64), color = 'red')
+        image = Image.new('RGB', (64, 64), color='red')
         
-    # 创建菜单项
-    def default_action(icon, item):
-        show_window(icon, None)
-        return True
-    
-    # 创建菜单项
     menu = (
         pystray.MenuItem('显示', show_window),
         pystray.MenuItem('退出', quit_window),
-        pystray.MenuItem('default', default_action, default=True, visible=False)
+        pystray.MenuItem('default', lambda i, i2: None, default=True, visible=False)
     )
     
-    # 创建托盘图标
-    icon = pystray.Icon("name", image, "自动下单工具", menu)
-    
-    # 添加双击事件
-    def on_double_click(icon, event):
-        if event == pystray.Icon.DOUBLE_CLICK:
-            show_window(icon, None)
-    
-    # 设置双击事件
-    icon.on_click = on_double_click
-    
+    icon = pystray.Icon("name", image, "应用名称", menu)
+    icon.on_click = lambda i, e: show_window(i, None) if e == pystray.Icon.DOUBLE_CLICK else None
     return icon
 
 def show_window(icon, item):
@@ -123,139 +96,98 @@ def show_window(icon, item):
         window.restore()
 
 def force_quit_application():
-    """使用平台特定的API强制终止应用程序"""
+    """强制终止进程，确保一次点击生效"""
+    global is_quitting
+    if is_quitting:
+        return  # 避免重复执行
+        
+    is_quitting = True
     current_pid = os.getpid()
+    print(f"强制退出进程 {current_pid}...")
     
     try:
-        print(f"正在使用平台特定API强制终止进程 {current_pid}...")
-        
-        # 尝试正常清理资源
-        try:
-            # 断开WebSocket连接
+        # 快速清理核心资源（减少一次点击无效的问题）
+        if api:
             api.disconnect()
+        if window:
+            window.destroy()
+        if icon:
+            icon.stop()
+        if mutex and platform.system() == "Windows":
+            ctypes.windll.kernel32.ReleaseMutex(mutex)
+        elif mutex:
+            mutex.close()
             
-            # 销毁窗口
-            if window:
-                window.destroy()
-            
-            # 释放互斥锁资源
-            if mutex:
-                if platform.system() == "Windows":
-                    ctypes.windll.kernel32.ReleaseMutex(mutex)
-                else:
-                    mutex.close()
-            
-            # 停止托盘图标
-            if icon:
-                icon.stop()
-                
-        except Exception as e:
-            print(f'正常清理资源时出错: {e}')
-        
+    except:
+        pass  # 清理失败时直接强制终止
+    
+    # 平台特定强制终止
+    try:
         if platform.system() == "Windows":
-            # Windows平台
+            # 方法1: 直接调用Windows API
             kernel32 = ctypes.windll.kernel32
-            
-            # 打开进程
-            PROCESS_TERMINATE = 0x0001
-            handle = kernel32.OpenProcess(PROCESS_TERMINATE, False, current_pid)
-            
+            handle = kernel32.OpenProcess(0x0001, False, current_pid)
             if handle:
-                # 终止进程
                 kernel32.TerminateProcess(handle, 0)
                 kernel32.CloseHandle(handle)
-            else:
-                # 如果OpenProcess失败，使用taskkill
-                subprocess.run(["taskkill", "/F", "/PID", str(current_pid)], check=True)
+                return
                 
-        elif platform.system() == "Linux" or platform.system() == "Darwin":
-            # Linux/macOS平台
+            # 方法2: 备用的taskkill命令
+            subprocess.run(["taskkill", "/F", "/PID", str(current_pid)], timeout=2, check=False)
+            
+        elif platform.system() in ("Linux", "Darwin"):
+            # 方法1: 调用C库发送SIGKILL
             try:
-                # 尝试加载正确的C库
-                if platform.system() == "Linux":
-                    libc = ctypes.CDLL("libc.so.6")
-                else:  # macOS
-                    libc = ctypes.CDLL("/usr/lib/libc.dylib")
-                
-                # 发送SIGKILL信号
+                libc = ctypes.CDLL("libc.so.6") if platform.system() == "Linux" else ctypes.CDLL("/usr/lib/libc.dylib")
                 libc.kill(current_pid, 9)
+                return
             except:
-                # 如果直接调用C库失败，使用os.kill
-                os.kill(current_pid, signal.SIGKILL)
+                pass
                 
-        else:
-            # 其他平台使用通用方法
+            # 方法2: 备用的os.kill
             os.kill(current_pid, signal.SIGKILL)
             
-        # 作为最后的手段
+        # 通用兜底方案
         os._exit(0)
         
     except Exception as e:
-        print(f"使用平台API强制退出失败: {e}")
-        # 最最最后的手段
-        os._exit(1)
+        print(f"强制退出异常: {e}")
+        os._exit(1)  # 终极兜底
 
 def quit_window(icon, item):
-    """处理托盘菜单的退出事件 - 使用平台特定API强制退出"""
-    # 在单独的线程中执行强制退出，避免阻塞
+    """处理退出事件，确保一次点击生效"""
+    # 直接在新线程中执行强制退出，跳过中间状态
     threading.Thread(target=force_quit_application, daemon=True).start()
 
 def on_shown():
-    # print('程序启动')
-    db.init()    # 初始化数据库
+    db.init()
 
 def on_loaded():
     print('DOM加载完毕')
-    pass
 
 def on_closing():
-    # 隐藏窗口而非直接关闭
     window.hide()
-    # 阻止默认关闭行为
-    return False
+    return False  # 阻止窗口关闭按钮的默认行为
 
 def on_closed():
-    try:
-        print("窗口已关闭...")
-        # 确保所有资源释放
-    except Exception as e:
-        print(f'关闭程序时出错: {e}')
+    print("窗口已关闭")
 
 def WebViewApp(ifCef=False):
+    global window, icon
     
     is_win = platform.system().lower() == 'windows'
-    if is_win:
-        Config.devEnv = sys.flags.dev_mode
-    else:
-        debug_mode = os.environ.get("DEBUG", "false").lower() == "true"
-        Config.devEnv = debug_mode
+    Config.devEnv = sys.flags.dev_mode if is_win else os.environ.get("DEBUG", "false").lower() == "true"
     
-    # 是否为开发环境
-    if Config.devEnv:
-        # 开发环境
-        MAIN_DIR = f'http://localhost:{Config.devPort}/'
-        template = os.path.join(MAIN_DIR, "")    # 设置页面，指向远程
-    else:
-        # 生产环境
-        MAIN_DIR = os.path.join(".", "web")
-        template = os.path.join(MAIN_DIR, "index.html")    # 设置页面，指向本地
-
-        # 修复某些情况下，打包后软件打开白屏的问题
+    MAIN_DIR = f'http://localhost:{Config.devPort}/' if Config.devEnv else os.path.join(".", "web")
+    template = MAIN_DIR if Config.devEnv else os.path.join(MAIN_DIR, "index.html")
+    
+    if not Config.devEnv:
         mimetypes.add_type('application/javascript', '.js')
-
-    # 系统分辨率
-    screens = webview.screens
-    screens = screens[0]
-    width = screens.width
-    height = screens.height
-    # 程序窗口大小
-    initWidth = int(width * 2 / 3)
-    initHeight = int(height * 4 / 5)
-    minWidth = int(initWidth / 1)
-    minHeight = int(initHeight / 2)
-
-    global window, icon
-    # 创建窗口
+    
+    screens = webview.screens[0]
+    initWidth, initHeight = int(screens.width * 2/3), int(screens.height * 4/5)
+    minWidth, minHeight = initWidth, int(initHeight / 2)
+    
     window = webview.create_window(
         title=Config.appName, 
         url=template, 
@@ -264,41 +196,28 @@ def WebViewApp(ifCef=False):
         height=initHeight, 
         min_size=(minWidth, minHeight)
     )
-
-    # 获取窗口实例
+    
     api.setWindow(window)
-
-    # 绑定事件
     window.events.shown += on_shown
     window.events.loaded += on_loaded
     window.events.closing += on_closing
     window.events.closed += on_closed
-
-    # 创建系统托盘图标
+    
     icon = create_tray_icon()
     icon.run_detached()
-
-    # CEF模式
-    guiCEF = 'cef' if ifCef else None
-
-    # 启动窗口
-    webview.start(debug=Config.devEnv, http_server=True, gui=guiCEF)
     
-    # 窗口关闭后执行清理
+    guiCEF = 'cef' if ifCef else None
+    webview.start(debug=Config.devEnv, http_server=True, gui=guiCEF)
 
 if __name__ == "__main__":
-    # 确保在Windows上正确处理多进程
     if platform.system() == "Windows":
         multiprocessing.freeze_support()
     
-    # 创建互斥锁，检查应用是否已在运行
     if not create_mutex():
-        sys.exit(0)  # 应用已在运行，退出当前实例
+        sys.exit(0)
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--cef", action="store_true", dest="if_cef", help="if_cef")
+    parser.add_argument("-c", "--cef", action="store_true", dest="if_cef")
     args = parser.parse_args()
-
-    ifCef = args.if_cef    # 是否开启cef模式
-
-    WebViewApp(ifCef)
+    
+    WebViewApp(args.if_cef)

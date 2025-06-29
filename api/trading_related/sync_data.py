@@ -13,7 +13,7 @@ from api.trading_related.additional_data import stock_zh_a_spot_em, stock_zh_a_s
 # 同步数据表
 def sync_data_stocks_data():
     try:
-        time.sleep(4)
+        time.sleep(8)
         TABLE_NAME_LIST = [{
             'table_name':'data_trade_date_hist',
             'diff': 30,
