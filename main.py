@@ -170,7 +170,7 @@ def quit_window(icon, item):
         window.destroy()
     if icon:
         icon.stop()
-    cleanup_resources()
+    # cleanup_resources()
     sys.exit(0)
 
 def on_shown():
@@ -185,7 +185,7 @@ def on_closing():
     # 隐藏窗口而非直接关闭
     window.hide()
     # 清理资源
-    cleanup_resources()
+    # cleanup_resources()
     # 阻止默认关闭行为
     return False
 
@@ -197,7 +197,7 @@ def on_closed():
         if icon:
             icon.stop()
         # 确保所有资源释放
-        cleanup_resources()
+        # cleanup_resources()
     except Exception as e:
         print(f'关闭程序时出错: {e}')
     finally:
@@ -268,7 +268,7 @@ def WebViewApp(ifCef=False):
     webview.start(debug=Config.devEnv, http_server=True, gui=guiCEF)
     
     # 窗口关闭后执行清理
-    cleanup_resources()
+    # cleanup_resources()
 
 if __name__ == "__main__":
     # 确保在Windows上正确处理多进程
