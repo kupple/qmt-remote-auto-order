@@ -106,11 +106,17 @@ def create_tray_icon():
         print(f"加载图标失败: {e}")
         # 如果找不到图标文件，创建一个默认的红色图标
         image = Image.new('RGB', (64, 64), color = 'red')
+        
+    # 创建菜单项
+    def default_action(icon, item):
+        show_window(icon, None)
+        return True
     
     # 创建菜单项
     menu = (
         pystray.MenuItem('显示', show_window),
-        pystray.MenuItem('退出', quit_window)
+        pystray.MenuItem('退出', quit_window),
+        pystray.MenuItem('default', default_action, default=True, visible=False)
     )
     
     # 创建托盘图标
