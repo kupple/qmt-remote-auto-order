@@ -19,10 +19,10 @@ def clean_database():
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
         tables = cursor.fetchall()
         
-        # 删除所有表的数据
+        # 删除所有表的数据，但保留 alembic_version 表
         for table in tables:
             table_name = table[0]
-            if table_name != 'sqlite_sequence':  # 不删除序列表
+            if table_name != 'sqlite_sequence' and table_name != 'alembic_version':  # 不删除序列表和版本表
                 cursor.execute(f"DELETE FROM {table_name}")
         
         # 提交事务
