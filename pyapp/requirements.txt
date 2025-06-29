@@ -22,3 +22,4 @@ python-dotenv
 ddddocr
 baostock
 onnxruntime==1.12.0;sys_platform == 'win32'
+aiohttp

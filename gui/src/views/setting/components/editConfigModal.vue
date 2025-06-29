@@ -3,7 +3,7 @@
     <el-form label-width="auto" :model="params" :rules="rules" ref="formRef">
       <el-form-item label="下单方式" prop="client_type">
         <el-radio-group v-model="params.client_type">
-          <el-radio-button label="同花顺下单模式" :value="1" />
+          <!-- <el-radio-button label="同花顺下单模式" :value="1" /> -->
           <el-radio-button label="QMT下单模式" :value="2" />
         </el-radio-group>
       </el-form-item>
@@ -137,7 +137,7 @@ const rules = {
 const params = reactive({
   mini_qmt_path: '',
   client_id: '',
-  client_type: 1,
+  client_type: 2,
   ths_path: '',
   ths_client_id: '',
   ths_pwd: ''

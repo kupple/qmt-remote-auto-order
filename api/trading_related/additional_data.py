@@ -4,6 +4,9 @@ from datetime import datetime
 from typing import List, Dict
 import math
 import baostock as bs
+import asyncio
+import aiohttp
+
 
 def get_all_trade_day():
     lg = bs.login()
@@ -22,12 +25,14 @@ def get_all_trade_day():
         # 获取一条记录，将记录合并在一起
         data_list.append(rs.get_row_data())
     result = pd.DataFrame(data_list, columns=rs.fields)
-    result = result[result['is_trading_day'] == '1']
-    
+    print(result)
+    trading_days = result[result['is_trading_day'] == '1']
+    trading_days.drop('is_trading_day', axis=1, inplace=True)
+    print("result", result)
     #### 登出系统 ####
     bs.logout()
 
-    return result
+    return trading_days
 
 
 def stock_xgsglb_em_on_today(symbol: str = "全部股票") -> pd.DataFrame:
@@ -478,93 +483,175 @@ def bond_zh_cov() -> pd.DataFrame:
     return big_df
 
 
+def fetch_paginated_data(url: str, base_params: Dict, timeout: int = 15):
+    """
+    东方财富-分页获取数据并合并结果
+    https://quote.eastmoney.com/f1.html?newcode=0.000001
+    :param url: 股票代码
+    :type url: str
+    :param base_params: 基础请求参数
+    :type base_params: dict
+    :param timeout: 请求超时时间
+    :type timeout: str
+    :return: 合并后的数据
+    :rtype: pandas.DataFrame
+    """
+    # 复制参数以避免修改原始参数
+    params = base_params.copy()
+    # 获取第一页数据，用于确定分页信息
+    r = requests.get(url, params=params, timeout=timeout)
+    data_json = r.json()
+    # 计算分页信息
+    per_page_num = len(data_json["data"]["diff"])
+    total_page = math.ceil(data_json["data"]["total"] / per_page_num)
+    # 存储所有页面数据
+    temp_list = []
+    # 添加第一页数据
+    temp_list.append(pd.DataFrame(data_json["data"]["diff"]))
+    # 获取剩余页面数据
+    for page in range(2, total_page + 1):
+        params.update({"pn": page})
+        r = requests.get(url, params=params, timeout=timeout)
+        data_json = r.json()
+        inner_temp_df = pd.DataFrame(data_json["data"]["diff"])
+        temp_list.append(inner_temp_df)
+    # 合并所有数据
+    temp_df = pd.concat(temp_list, ignore_index=True)
+    temp_df["f3"] = pd.to_numeric(temp_df["f3"], errors="coerce")
+    temp_df.sort_values(by=["f3"], ascending=False, inplace=True, ignore_index=True)
+    temp_df.reset_index(inplace=True)
+    temp_df["index"] = temp_df["index"].astype(int) + 1
+    return temp_df
 
-async def fetch_single_page(url: str, params: Dict) -> Dict:
-    """异步获取单页数据（原生实现）"""
-    # 解析URL
-    protocol, rest = url.split("://", 1)
-    host, path = rest.split("/", 1)
-    path = "/" + path
-    port = 443 if protocol == "https" else 80
-    
-    # 构建查询参数
-    query_string = "&".join([f"{k}={v}" for k, v in params.items()])
-    if query_string:
-        path += "?" + query_string
-    
-    # 创建SSL上下文（如果是HTTPS）
-    ssl_context = None
-    if protocol == "https":
-        import ssl
-        ssl_context = ssl.create_default_context()
-    
-    # 异步连接并发送请求
-    reader, writer = await asyncio.open_connection(host, port, ssl=ssl_context)
-    
-    # 构建HTTP请求
-    request = (
-        f"GET {path} HTTP/1.1\r\n"
-        f"Host: {host}\r\n"
-        f"User-Agent: Python/3.9\r\n"
-        f"Accept: application/json\r\n"
-        f"Connection: close\r\n"
-        f"\r\n"
-    )
-    
-    writer.write(request.encode())
-    await writer.drain()
-    
-    # 读取响应
-    response = await reader.read()
-    writer.close()
-    await writer.wait_closed()
-    
-    # 解析HTTP响应
-    response_str = response.decode("utf-8")
-    headers, body = response_str.split("\r\n\r\n", 1)
-    
-    # 简单检查状态码
-    status_line = headers.split("\r\n", 1)[0]
-    status_code = int(status_line.split(" ")[1])
-    
-    if status_code != 200:
-        return {"error": f"HTTP Error {status_code}", "headers": headers, "body": body[:100]}
-    
-    # 尝试解析JSON
-    try:
-        return json.loads(body)
-    except json.JSONDecodeError:
-        return {"error": "Failed to parse JSON", "body": body[:100]}
+
+def stock_zh_a_st_em() -> pd.DataFrame:
+    """
+    东方财富网-行情中心-沪深个股-风险警示板
+    https://quote.eastmoney.com/center/gridlist.html#st_board
+    :return: 风险警示板
+    :rtype: pandas.DataFrame
+    """
+    url = "https://40.push2.eastmoney.com/api/qt/clist/get"
+    params = {
+        "pn": "1",
+        "pz": "100",
+        "po": "1",
+        "np": "1",
+        "ut": "bd1d9ddb04089700cf9c27f6f7426281",
+        "fltt": "2",
+        "invt": "2",
+        "fid": "f3",
+        "fs": "m:0 f:4,m:1 f:4",
+        "fields": "f2,f3,f4,f5,f6,f7,f8,f9,f10,f12,f13,f14,f15,f16,f17,f18,f20,"
+        "f21,f23,f24,f25,f22,f11,f62,f128,f136,f115,f152",
+    }
+    temp_df = fetch_paginated_data(url, params)
+    temp_df.columns = [
+        "序号",
+        "最新价",
+        "涨跌幅",
+        "涨跌额",
+        "成交量",
+        "成交额",
+        "振幅",
+        "换手率",
+        "市盈率-动态",
+        "量比",
+        "_",
+        "代码",
+        "_",
+        "名称",
+        "最高",
+        "最低",
+        "今开",
+        "昨收",
+        "_",
+        "_",
+        "_",
+        "市净率",
+        "_",
+        "_",
+        "_",
+        "_",
+        "_",
+        "_",
+        "_",
+        "_",
+        "_",
+    ]
+    temp_df = temp_df[
+        [
+            "序号",
+            "代码",
+            "名称",
+            "最新价",
+            "涨跌幅",
+            "涨跌额",
+            "成交量",
+            "成交额",
+            "振幅",
+            "最高",
+            "最低",
+            "今开",
+            "昨收",
+            "量比",
+            "换手率",
+            "市盈率-动态",
+            "市净率",
+        ]
+    ]
+    temp_df["最新价"] = pd.to_numeric(temp_df["最新价"], errors="coerce")
+    temp_df["涨跌幅"] = pd.to_numeric(temp_df["涨跌幅"], errors="coerce")
+    temp_df["涨跌额"] = pd.to_numeric(temp_df["涨跌额"], errors="coerce")
+    temp_df["成交量"] = pd.to_numeric(temp_df["成交量"], errors="coerce")
+    temp_df["成交额"] = pd.to_numeric(temp_df["成交额"], errors="coerce")
+    temp_df["振幅"] = pd.to_numeric(temp_df["振幅"], errors="coerce")
+    temp_df["最高"] = pd.to_numeric(temp_df["最高"], errors="coerce")
+    temp_df["最低"] = pd.to_numeric(temp_df["最低"], errors="coerce")
+    temp_df["今开"] = pd.to_numeric(temp_df["今开"], errors="coerce")
+    temp_df["量比"] = pd.to_numeric(temp_df["量比"], errors="coerce")
+    temp_df["换手率"] = pd.to_numeric(temp_df["换手率"], errors="coerce")
+    return temp_df
+
+
+async def fetch_single_page(
+    session: aiohttp.ClientSession, url: str, params: Dict
+) -> Dict:
+    """异步获取单页数据"""
+    async with session.get(url, params=params, ssl=False) as response:
+        return await response.json()
+
 
 async def fetch_all_pages_async(url: str, base_params: Dict) -> List[Dict]:
-    """异步获取所有页面数据（原生实现）"""
+    """异步获取所有页面数据"""
     # 首先获取总数以计算页数
     first_page_params = base_params.copy()
     first_page_params["pn"] = "1"
 
-    first_page_data = await fetch_single_page(url, first_page_params)
+    async with aiohttp.ClientSession() as session:
+        first_page_data = await fetch_single_page(session, url, first_page_params)
 
-    # 检查是否成功获取数据
-    if first_page_data.get("rc") != 0 or not first_page_data.get("data"):
-        return [first_page_data]  # 返回错误信息
+        # 检查是否成功获取数据
+        if first_page_data.get("rc") != 0 or not first_page_data.get("data"):
+            return [first_page_data]  # 返回错误信息
 
-    total = first_page_data["data"]["total"]
-    page_size = int(base_params["pz"])
-    total_pages = (total + page_size - 1) // page_size
+        total = first_page_data["data"]["total"]
+        page_size = int(base_params["pz"])
+        total_pages = (total + page_size - 1) // page_size
 
-    # 限制页数，避免过大请求
-    total_pages = min(total_pages, 100)
+        # 限制页数，避免过大请求
+        total_pages = min(total_pages, 100)
 
-    # 创建所有页面的任务
-    tasks = []
-    for page in range(1, total_pages + 1):
-        page_params = base_params.copy()
-        page_params["pn"] = str(page)
-        tasks.append(fetch_single_page(url, page_params))
+        # 创建所有页面的任务
+        tasks = []
+        for page in range(1, total_pages + 1):
+            page_params = base_params.copy()
+            page_params["pn"] = str(page)
+            tasks.append(fetch_single_page(session, url, page_params))
 
-    # 并发执行所有任务
-    results = await asyncio.gather(*tasks)
-    return results
+        # 并发执行所有任务
+        results = await asyncio.gather(*tasks)
+        return results
 
 
 def process_data(page_results: List[Dict]) -> pd.DataFrame:
@@ -708,151 +795,9 @@ async def stock_zh_a_spot_em_async() -> pd.DataFrame:
 
 
 def stock_zh_a_spot_em() -> pd.DataFrame:
-    """
-    东方财富网-沪深京 A 股-实时行情 (同步接口)
-    https://quote.eastmoney.com/center/gridlist.html#hs_a_board
-    :return: 实时行情
-    :rtype: pandas.DataFrame
-    """
-    import nest_asyncio
-
-    nest_asyncio.apply()
     return asyncio.run(stock_zh_a_spot_em_async())
-
-
-
-def fetch_paginated_data(url: str, base_params: Dict, timeout: int = 15):
-    """
-    东方财富-分页获取数据并合并结果
-    https://quote.eastmoney.com/f1.html?newcode=0.000001
-    :param url: 股票代码
-    :type url: str
-    :param base_params: 基础请求参数
-    :type base_params: dict
-    :param timeout: 请求超时时间
-    :type timeout: str
-    :return: 合并后的数据
-    :rtype: pandas.DataFrame
-    """
-    # 复制参数以避免修改原始参数
-    params = base_params.copy()
-    # 获取第一页数据，用于确定分页信息
-    r = requests.get(url, params=params, timeout=timeout)
-    data_json = r.json()
-    # 计算分页信息
-    per_page_num = len(data_json["data"]["diff"])
-    total_page = math.ceil(data_json["data"]["total"] / per_page_num)
-    # 存储所有页面数据
-    temp_list = []
-    # 添加第一页数据
-    temp_list.append(pd.DataFrame(data_json["data"]["diff"]))
-    # 获取剩余页面数据
-    for page in range(2, total_page + 1):
-        params.update({"pn": page})
-        r = requests.get(url, params=params, timeout=timeout)
-        data_json = r.json()
-        inner_temp_df = pd.DataFrame(data_json["data"]["diff"])
-        temp_list.append(inner_temp_df)
-    # 合并所有数据
-    temp_df = pd.concat(temp_list, ignore_index=True)
-    temp_df["f3"] = pd.to_numeric(temp_df["f3"], errors="coerce")
-    temp_df.sort_values(by=["f3"], ascending=False, inplace=True, ignore_index=True)
-    temp_df.reset_index(inplace=True)
-    temp_df["index"] = temp_df["index"].astype(int) + 1
-    return temp_df
-
-
-def stock_zh_a_st_em() -> pd.DataFrame:
-    """
-    东方财富网-行情中心-沪深个股-风险警示板
-    https://quote.eastmoney.com/center/gridlist.html#st_board
-    :return: 风险警示板
-    :rtype: pandas.DataFrame
-    """
-    url = "https://40.push2.eastmoney.com/api/qt/clist/get"
-    params = {
-        "pn": "1",
-        "pz": "100",
-        "po": "1",
-        "np": "1",
-        "ut": "bd1d9ddb04089700cf9c27f6f7426281",
-        "fltt": "2",
-        "invt": "2",
-        "fid": "f3",
-        "fs": "m:0 f:4,m:1 f:4",
-        "fields": "f2,f3,f4,f5,f6,f7,f8,f9,f10,f12,f13,f14,f15,f16,f17,f18,f20,"
-        "f21,f23,f24,f25,f22,f11,f62,f128,f136,f115,f152",
-    }
-    temp_df = fetch_paginated_data(url, params)
-    temp_df.columns = [
-        "序号",
-        "最新价",
-        "涨跌幅",
-        "涨跌额",
-        "成交量",
-        "成交额",
-        "振幅",
-        "换手率",
-        "市盈率-动态",
-        "量比",
-        "_",
-        "代码",
-        "_",
-        "名称",
-        "最高",
-        "最低",
-        "今开",
-        "昨收",
-        "_",
-        "_",
-        "_",
-        "市净率",
-        "_",
-        "_",
-        "_",
-        "_",
-        "_",
-        "_",
-        "_",
-        "_",
-        "_",
-    ]
-    temp_df = temp_df[
-        [
-            "序号",
-            "代码",
-            "名称",
-            "最新价",
-            "涨跌幅",
-            "涨跌额",
-            "成交量",
-            "成交额",
-            "振幅",
-            "最高",
-            "最低",
-            "今开",
-            "昨收",
-            "量比",
-            "换手率",
-            "市盈率-动态",
-            "市净率",
-        ]
-    ]
-    temp_df["最新价"] = pd.to_numeric(temp_df["最新价"], errors="coerce")
-    temp_df["涨跌幅"] = pd.to_numeric(temp_df["涨跌幅"], errors="coerce")
-    temp_df["涨跌额"] = pd.to_numeric(temp_df["涨跌额"], errors="coerce")
-    temp_df["成交量"] = pd.to_numeric(temp_df["成交量"], errors="coerce")
-    temp_df["成交额"] = pd.to_numeric(temp_df["成交额"], errors="coerce")
-    temp_df["振幅"] = pd.to_numeric(temp_df["振幅"], errors="coerce")
-    temp_df["最高"] = pd.to_numeric(temp_df["最高"], errors="coerce")
-    temp_df["最低"] = pd.to_numeric(temp_df["最低"], errors="coerce")
-    temp_df["今开"] = pd.to_numeric(temp_df["今开"], errors="coerce")
-    temp_df["量比"] = pd.to_numeric(temp_df["量比"], errors="coerce")
-    temp_df["换手率"] = pd.to_numeric(temp_df["换手率"], errors="coerce")
-    return temp_df
-
 
 if __name__ == "__main__":
     stock_zh_a_spot_em_df = stock_zh_a_spot_em()
     print(stock_zh_a_spot_em_df)
-    stock_zh_a_st_em()
+    # stock_zh_a_st_em()
