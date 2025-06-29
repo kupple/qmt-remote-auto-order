@@ -66,7 +66,7 @@ class GlobalParams():
         self.is_wx_connected = False
         self.unique_id = get_system_unique_id()
         self.orm = ORM()
-        self.client_type = None 
+        self.client_type = 2 
 
         
         # Disable asyncio debug logging

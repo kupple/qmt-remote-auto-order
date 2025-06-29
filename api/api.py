@@ -114,7 +114,7 @@ class API(System):
     def get_setting_config(self):
         config = G.orm.get_setting_config()
         G.run_model_type = config['run_model_type']
-        G.client_type = config['client_type']
+        G.client_type = 2
         return config
 
     def save_config(self, data):
