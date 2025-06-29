@@ -12,8 +12,8 @@ import webview
 import threading
 import multiprocessing
 import ctypes
-from ctypes import wintypes
 import time
+import signal
 
 from api.api import API
 from pyapp.config.config import Config
@@ -73,49 +73,6 @@ def activate_existing_instance():
     # 此处简化处理，仅打印提示
     print("尝试激活已运行的实例...")
 
-def release_mutex():
-    """释放系统级互斥锁并删除临时文件"""
-    global mutex, lock_file
-    
-    try:
-        if mutex:
-            if platform.system() == "Windows":
-                ctypes.windll.kernel32.ReleaseMutex(mutex)
-            else:
-                import fcntl
-                fcntl.flock(mutex, fcntl.LOCK_UN)
-                mutex.close()
-                # 删除锁文件
-                if lock_file and os.path.exists(lock_file):
-                    os.remove(lock_file)
-        mutex = None
-        lock_file = None
-    except Exception as e:
-        print(f"释放互斥锁时出错: {e}")
-
-def terminate_background_threads():
-    """终止所有后台线程"""
-    for thread in threading.enumerate():
-        if thread is not threading.current_thread() and thread.is_alive():
-            # 守护线程会自动终止
-            if hasattr(thread, 'daemon') and thread.daemon:
-                continue
-                
-            # 对于可中断的线程，设置退出标志
-            if hasattr(thread, 'exit_flag'):
-                thread.exit_flag = True
-            else:
-                # 尝试加入线程等待其结束（超时设置为1秒）
-                try:
-                    thread.join(timeout=1.0)
-                except Exception:
-                    pass
-
-def cleanup_resources():
-    """清理所有资源"""
-    terminate_background_threads()
-    release_mutex()
-
 def create_tray_icon():
     # 创建系统托盘图标
     try:
@@ -148,7 +105,7 @@ def create_tray_icon():
     )
     
     # 创建托盘图标
-    icon = pystray.Icon("name", image, "应用名称", menu)
+    icon = pystray.Icon("name", image, "自动下单工具", menu)
     
     # 添加双击事件
     def on_double_click(icon, event):
@@ -165,13 +122,83 @@ def show_window(icon, item):
         window.show()
         window.restore()
 
+def force_quit_application():
+    """使用平台特定的API强制终止应用程序"""
+    current_pid = os.getpid()
+    
+    try:
+        print(f"正在使用平台特定API强制终止进程 {current_pid}...")
+        
+        # 尝试正常清理资源
+        try:
+            # 断开WebSocket连接
+            api.disconnect()
+            
+            # 销毁窗口
+            if window:
+                window.destroy()
+            
+            # 释放互斥锁资源
+            if mutex:
+                if platform.system() == "Windows":
+                    ctypes.windll.kernel32.ReleaseMutex(mutex)
+                else:
+                    mutex.close()
+            
+            # 停止托盘图标
+            if icon:
+                icon.stop()
+                
+        except Exception as e:
+            print(f'正常清理资源时出错: {e}')
+        
+        if platform.system() == "Windows":
+            # Windows平台
+            kernel32 = ctypes.windll.kernel32
+            
+            # 打开进程
+            PROCESS_TERMINATE = 0x0001
+            handle = kernel32.OpenProcess(PROCESS_TERMINATE, False, current_pid)
+            
+            if handle:
+                # 终止进程
+                kernel32.TerminateProcess(handle, 0)
+                kernel32.CloseHandle(handle)
+            else:
+                # 如果OpenProcess失败，使用taskkill
+                subprocess.run(["taskkill", "/F", "/PID", str(current_pid)], check=True)
+                
+        elif platform.system() == "Linux" or platform.system() == "Darwin":
+            # Linux/macOS平台
+            try:
+                # 尝试加载正确的C库
+                if platform.system() == "Linux":
+                    libc = ctypes.CDLL("libc.so.6")
+                else:  # macOS
+                    libc = ctypes.CDLL("/usr/lib/libc.dylib")
+                
+                # 发送SIGKILL信号
+                libc.kill(current_pid, 9)
+            except:
+                # 如果直接调用C库失败，使用os.kill
+                os.kill(current_pid, signal.SIGKILL)
+                
+        else:
+            # 其他平台使用通用方法
+            os.kill(current_pid, signal.SIGKILL)
+            
+        # 作为最后的手段
+        os._exit(0)
+        
+    except Exception as e:
+        print(f"使用平台API强制退出失败: {e}")
+        # 最最最后的手段
+        os._exit(1)
+
 def quit_window(icon, item):
-    if window:
-        window.destroy()
-    if icon:
-        icon.stop()
-    # cleanup_resources()
-    sys.exit(0)
+    """处理托盘菜单的退出事件 - 使用平台特定API强制退出"""
+    # 在单独的线程中执行强制退出，避免阻塞
+    threading.Thread(target=force_quit_application, daemon=True).start()
 
 def on_shown():
     # print('程序启动')
@@ -184,25 +211,15 @@ def on_loaded():
 def on_closing():
     # 隐藏窗口而非直接关闭
     window.hide()
-    # 清理资源
-    # cleanup_resources()
     # 阻止默认关闭行为
     return False
 
 def on_closed():
     try:
-        print("正在关闭应用...")
-        # 断开 WebSocket 连接
-        api.disconnect()
-        if icon:
-            icon.stop()
+        print("窗口已关闭...")
         # 确保所有资源释放
-        # cleanup_resources()
     except Exception as e:
         print(f'关闭程序时出错: {e}')
-    finally:
-        # 强制退出程序
-        os._exit(0)
 
 def WebViewApp(ifCef=False):
     
@@ -268,7 +285,6 @@ def WebViewApp(ifCef=False):
     webview.start(debug=Config.devEnv, http_server=True, gui=guiCEF)
     
     # 窗口关闭后执行清理
-    # cleanup_resources()
 
 if __name__ == "__main__":
     # 确保在Windows上正确处理多进程
