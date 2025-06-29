@@ -147,7 +147,7 @@ const getSetting = async () => {
   const res = await getSettingConfig()
   params.mini_qmt_path = res.mini_qmt_path
   params.client_id = res.client_id
-  params.client_type = res.client_type
+  params.client_type = 2
   params.ths_path = res.ths_path
   params.ths_client_id = res.ths_client_id
   params.ths_pwd = res.ths_pwd
