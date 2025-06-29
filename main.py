@@ -22,7 +22,8 @@ from pyapp.db.db import DB
 # 全局变量
 window = None
 icon = None
-mutex = None  # 新增：用于存储互斥锁对象
+mutex = None
+lock_file = None
 
 cfg = Config()    # 配置
 cfg.init()    # Initialize config first to set up app data directory
@@ -31,10 +32,10 @@ api = API()    # 本地接口
 
 def create_mutex():
     """创建系统级互斥锁，确保应用只能运行一个实例"""
-    global mutex
+    global mutex, lock_file
     
-    # 为互斥锁生成一个唯一名称，使用应用ID确保唯一性
-    mutex_name = Config.appNameEN  # 使用应用的唯一标识符
+    # 使用应用ID生成唯一互斥锁名称
+    mutex_name = Config.appNameEN
     
     try:
         if platform.system() == "Windows":
@@ -45,38 +46,36 @@ def create_mutex():
             
             if error == 183:  # ERROR_ALREADY_EXISTS
                 print("应用程序已在运行中！")
-                # 尝试激活已运行的实例窗口
                 activate_existing_instance()
                 return False
         else:
-            import fcntl
             # Linux/macOS平台使用文件锁
             lock_file = os.path.join(cfg.appDataDir, ".app.lock")
+            os.makedirs(os.path.dirname(lock_file), exist_ok=True)
             mutex = open(lock_file, 'w')
             
             try:
+                import fcntl
                 fcntl.flock(mutex, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError:
                 print("应用程序已在运行中！")
-                # 尝试激活已运行的实例窗口
                 activate_existing_instance()
                 return False
                 
         return True
     except Exception as e:
         print(f"创建互斥锁时出错: {e}")
-        # 发生错误时不阻止应用启动
         return True
 
 def activate_existing_instance():
-    """尝试激活已运行的实例窗口（需要配合进程间通信实现）"""
-    # 这里可以添加代码尝试与已运行的实例通信并激活其窗口
-    # 简单实现可以通过socket或文件标记来通知已运行的实例
-    pass
+    """尝试激活已运行的实例窗口"""
+    # 可通过socket或文件标记实现进程间通信
+    # 此处简化处理，仅打印提示
+    print("尝试激活已运行的实例...")
 
 def release_mutex():
-    """释放系统级互斥锁"""
-    global mutex
+    """释放系统级互斥锁并删除临时文件"""
+    global mutex, lock_file
     
     try:
         if mutex:
@@ -86,8 +85,36 @@ def release_mutex():
                 import fcntl
                 fcntl.flock(mutex, fcntl.LOCK_UN)
                 mutex.close()
+                # 删除锁文件
+                if lock_file and os.path.exists(lock_file):
+                    os.remove(lock_file)
+        mutex = None
+        lock_file = None
     except Exception as e:
         print(f"释放互斥锁时出错: {e}")
+
+def terminate_background_threads():
+    """终止所有后台线程"""
+    for thread in threading.enumerate():
+        if thread is not threading.current_thread() and thread.is_alive():
+            # 守护线程会自动终止
+            if hasattr(thread, 'daemon') and thread.daemon:
+                continue
+                
+            # 对于可中断的线程，设置退出标志
+            if hasattr(thread, 'exit_flag'):
+                thread.exit_flag = True
+            else:
+                # 尝试加入线程等待其结束（超时设置为1秒）
+                try:
+                    thread.join(timeout=1.0)
+                except Exception:
+                    pass
+
+def cleanup_resources():
+    """清理所有资源"""
+    terminate_background_threads()
+    release_mutex()
 
 def create_tray_icon():
     # 创建系统托盘图标
@@ -143,7 +170,8 @@ def quit_window(icon, item):
         window.destroy()
     if icon:
         icon.stop()
-    release_mutex()  # 新增：退出时释放互斥锁
+    cleanup_resources()
+    sys.exit(0)
 
 def on_shown():
     # print('程序启动')
@@ -154,7 +182,11 @@ def on_loaded():
     pass
 
 def on_closing():
-    window.hide()  # 隐藏窗口而不是关闭
+    # 隐藏窗口而非直接关闭
+    window.hide()
+    # 清理资源
+    cleanup_resources()
+    # 阻止默认关闭行为
     return False
 
 def on_closed():
@@ -164,9 +196,13 @@ def on_closed():
         api.disconnect()
         if icon:
             icon.stop()
-        release_mutex()  # 新增：关闭时释放互斥锁
+        # 确保所有资源释放
+        cleanup_resources()
     except Exception as e:
         print(f'关闭程序时出错: {e}')
+    finally:
+        # 强制退出程序
+        os._exit(0)
 
 def WebViewApp(ifCef=False):
     
@@ -177,10 +213,7 @@ def WebViewApp(ifCef=False):
         debug_mode = os.environ.get("DEBUG", "false").lower() == "true"
         Config.devEnv = debug_mode
     
-    
     # 是否为开发环境
-
-    # 视图层页面URL
     if Config.devEnv:
         # 开发环境
         MAIN_DIR = f'http://localhost:{Config.devPort}/'
@@ -224,7 +257,7 @@ def WebViewApp(ifCef=False):
     window.events.closing += on_closing
     window.events.closed += on_closed
 
-    # 创建系统托盘图标（在主线程中）
+    # 创建系统托盘图标
     icon = create_tray_icon()
     icon.run_detached()
 
@@ -233,6 +266,9 @@ def WebViewApp(ifCef=False):
 
     # 启动窗口
     webview.start(debug=Config.devEnv, http_server=True, gui=guiCEF)
+    
+    # 窗口关闭后执行清理
+    cleanup_resources()
 
 if __name__ == "__main__":
     # 确保在Windows上正确处理多进程
