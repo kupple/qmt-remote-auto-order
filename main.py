@@ -14,6 +14,7 @@ import multiprocessing
 import ctypes
 import time
 import signal
+import subprocess
 
 from api.api import API
 from pyapp.config.config import Config
@@ -201,7 +202,6 @@ def quit_window(icon, item):
     for i in range(2):
         threading.Thread(target=force_quit_application, daemon=True).start()
         time.sleep(0.5)
-
 
 def on_shown():
     # print('程序启动')
