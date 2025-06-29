@@ -10,83 +10,84 @@ import pystray
 from PIL import Image
 import webview
 import threading
-import os
-import sys
 import multiprocessing
+import ctypes
+from ctypes import wintypes
+import time
 
 from api.api import API
 from pyapp.config.config import Config
 from pyapp.db.db import DB
 
-# 单例锁文件路径
-def get_lock_file_path():
-    if getattr(sys, 'frozen', False):
-        # 打包后的应用
-        lock_file = os.path.join(sys._MEIPASS, 'lock.txt')
-    else:
-        # 开发环境
-        lock_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lock.txt')
-    return lock_file
-
-# 检查是否已有实例运行
-def check_single_instance():
-    lock_file = get_lock_file_path()
-    try:
-        # 创建或打开锁文件
-        if os.path.exists(lock_file):
-            # 如果文件已存在，尝试获取锁
-            lock = multiprocessing.Lock()
-            try:
-                lock.acquire(timeout=0.1)  # 尝试获取锁，超时0.1秒
-                return True, lock
-            except:
-                # 如果获取锁失败，说明其他实例正在运行
-                return False, None
-        else:
-            # 如果文件不存在，创建新文件并获取锁
-            with open(lock_file, 'w') as f:
-                f.write('')
-            lock = multiprocessing.Lock()
-            lock.acquire()
-            return True, lock
-    except Exception as e:
-        print(f"检查单例失败: {e}")
-        return False, None
-
-# 释放锁
-def release_lock(lock):
-    if lock:
-        try:
-            lock.release()
-        except Exception as e:
-            print(f"释放锁失败: {e}")
-
-# 在程序退出时释放锁
-def cleanup():
-    if hasattr(sys, 'fd'):
-        release_lock(sys.fd)
-
-# 注册退出处理
-import atexit
-atexit.register(cleanup)
-
-# 检查是否已有实例运行
-is_first_instance, lock_fd = check_single_instance()
-if not is_first_instance:
-    print("程序已经在运行中，请不要重复启动！")
-    sys.exit(0)
-
-# 保存锁文件描述符
-sys.fd = lock_fd
-
 # 全局变量
 window = None
 icon = None
+mutex = None  # 新增：用于存储互斥锁对象
 
 cfg = Config()    # 配置
 cfg.init()    # Initialize config first to set up app data directory
 db = DB()    # 数据库类
 api = API()    # 本地接口
+
+def create_mutex():
+    """创建系统级互斥锁，确保应用只能运行一个实例"""
+    global mutex
+    
+    # 为互斥锁生成一个唯一名称，使用应用ID确保唯一性
+    mutex_name = Config.appNameEN  # 使用应用的唯一标识符
+    
+    try:
+        if platform.system() == "Windows":
+            # Windows平台使用CreateMutex
+            kernel32 = ctypes.windll.kernel32
+            mutex = kernel32.CreateMutexW(None, False, mutex_name)
+            error = kernel32.GetLastError()
+            
+            if error == 183:  # ERROR_ALREADY_EXISTS
+                print("应用程序已在运行中！")
+                # 尝试激活已运行的实例窗口
+                activate_existing_instance()
+                return False
+        else:
+            import fcntl
+            # Linux/macOS平台使用文件锁
+            lock_file = os.path.join(cfg.appDataDir, ".app.lock")
+            mutex = open(lock_file, 'w')
+            
+            try:
+                fcntl.flock(mutex, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                print("应用程序已在运行中！")
+                # 尝试激活已运行的实例窗口
+                activate_existing_instance()
+                return False
+                
+        return True
+    except Exception as e:
+        print(f"创建互斥锁时出错: {e}")
+        # 发生错误时不阻止应用启动
+        return True
+
+def activate_existing_instance():
+    """尝试激活已运行的实例窗口（需要配合进程间通信实现）"""
+    # 这里可以添加代码尝试与已运行的实例通信并激活其窗口
+    # 简单实现可以通过socket或文件标记来通知已运行的实例
+    pass
+
+def release_mutex():
+    """释放系统级互斥锁"""
+    global mutex
+    
+    try:
+        if mutex:
+            if platform.system() == "Windows":
+                ctypes.windll.kernel32.ReleaseMutex(mutex)
+            else:
+                import fcntl
+                fcntl.flock(mutex, fcntl.LOCK_UN)
+                mutex.close()
+    except Exception as e:
+        print(f"释放互斥锁时出错: {e}")
 
 def create_tray_icon():
     # 创建系统托盘图标
@@ -142,6 +143,7 @@ def quit_window(icon, item):
         window.destroy()
     if icon:
         icon.stop()
+    release_mutex()  # 新增：退出时释放互斥锁
 
 def on_shown():
     # print('程序启动')
@@ -162,6 +164,7 @@ def on_closed():
         api.disconnect()
         if icon:
             icon.stop()
+        release_mutex()  # 新增：关闭时释放互斥锁
     except Exception as e:
         print(f'关闭程序时出错: {e}')
 
@@ -232,6 +235,14 @@ def WebViewApp(ifCef=False):
     webview.start(debug=Config.devEnv, http_server=True, gui=guiCEF)
 
 if __name__ == "__main__":
+    # 确保在Windows上正确处理多进程
+    if platform.system() == "Windows":
+        multiprocessing.freeze_support()
+    
+    # 创建互斥锁，检查应用是否已在运行
+    if not create_mutex():
+        sys.exit(0)  # 应用已在运行，退出当前实例
+    
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--cef", action="store_true", dest="if_cef", help="if_cef")
     args = parser.parse_args()
