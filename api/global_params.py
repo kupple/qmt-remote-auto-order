@@ -15,7 +15,6 @@ class DatabaseLogHandler(logging.Handler):
         self.run_model_type = run_model_type
         self.user_id = user_id
         self.orm = orm
-        self.client_type = None 
 
     def emit(self, record: logging.LogRecord) -> None:
         try:
@@ -67,6 +66,8 @@ class GlobalParams():
         self.is_wx_connected = False
         self.unique_id = get_system_unique_id()
         self.orm = ORM()
+        self.client_type = None 
+
         
         # Disable asyncio debug logging
         asyncio.get_event_loop().set_debug(False)
