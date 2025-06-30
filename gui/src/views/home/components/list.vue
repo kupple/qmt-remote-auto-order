@@ -68,7 +68,7 @@
           <el-descriptions-item label="持仓市值">{{ fundsDic.market_value }}</el-descriptions-item>
           <el-descriptions-item label="总资产">{{ fundsDic.total_asset }}</el-descriptions-item>
         </el-descriptions>
-        <el-button size="small" type="primary" style="width: 100px; margin-top: 10px" @click="getAccountInfoAction">获取账号信息</el-button>
+        <el-button size="small"  style="width: 100px; margin-top: 10px" @click="getAccountInfoAction">获取账号信息</el-button>
         <el-divider>功能</el-divider>
         <el-form :model="form" label-width="100px" v-if="settingConfig.client_type == 2">
           <el-form-item label="自动逆回购">
@@ -95,6 +95,7 @@
           </el-form-item>
         </el-form>
         <div v-else class="ths-functional-area">
+          <el-switch v-model="form.show_terminal" @change="(e) => controlThsWindow(e)" active-text="显示终端" inactive-text="隐藏终端" />
           <el-button size="small" type="primary" style="width: 100px; margin-top: 10px" @click="openThsShortcutAction">打开同花顺下单</el-button>
         </div>
       </div>
@@ -111,10 +112,26 @@ import { useCommonStore } from '@/store/common.js'
 import { getUserInfo } from '@/api/auth'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter, useRoute } from 'vue-router'
-import { getSettingConfig, runTask, getTaskList, saveConfig, setAutomatically, getUniqueID, getAccountInfo, openThsShortcut } from '@/api/comm_tube'
+import { 
+  getSettingConfig, 
+  runTask,
+  getTaskList,
+  saveConfig,
+  setAutomatically,
+  getUniqueID,
+  getAccountInfo,
+  openThsShortcut,
+  controlThsWindow,
+  getThsWindowState 
+} from '@/api/comm_tube'
 
 const router = useRouter() // 使用useRouter函数创建router实例
 const route = useRoute()
+
+const getThsWindowStateAction = async () => {
+  const res = await getThsWindowState()
+  form.show_terminal = res.show_terminal
+}
 
 const settingConfig = computed(() => {
   return useCommonStore().settingConfig
@@ -155,7 +172,8 @@ const form = reactive({
   auto_national_debt: true,
   auto_buy_stock_ipo: true,
   auto_buy_purchase_ipo: true,
-  run_model_type: 1
+  run_model_type: 1,
+  show_terminal: true
 })
 
 const getConfig = async () => {
@@ -244,6 +262,7 @@ const goToDetail = (row) => {
 onMounted(async () => {
   await getConfig()
   await getTaskListAction()
+  getThsWindowStateAction()
 })
 </script>
 
@@ -390,8 +409,8 @@ onMounted(async () => {
     .ths-functional-area {
       display: flex;
       flex-direction: column;
-      // justify-content: center;
-      // align-items: center;
+      justify-content: center;
+      align-items: center;
     }
   }
 }

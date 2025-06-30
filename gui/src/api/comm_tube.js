@@ -138,3 +138,12 @@ export const getAccountInfo = () => {
 export const openThsShortcut = () => {
   return window.pywebview.api.open_ths_shortcut_action()
 }
+
+export const controlThsWindow = (show) => {
+  return window.pywebview.api.control_ths_window_action(show)
+}
+
+export const getThsWindowState = () => {
+  return window.pywebview.api.get_ths_window_state_action()
+}
+  

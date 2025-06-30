@@ -16,6 +16,16 @@ from api.trading_related.deal import convert_stock_suffix
 from datetime import datetime
 import os
 
+if sys.platform.startswith('darwin'):
+    pass
+else:
+    import win32api
+    import win32gui
+    import win32ui
+    import win32con
+    import win32clipboard
+    import win32process
+
 def timestamp_to_date(timestamp):
     """
     将 Unix 时间戳转换为 'YYYY-MM-DD' 格式的日期字符串
@@ -281,4 +291,34 @@ def transition_code(data,taskDic):
         return get_template_order_count_type_1(taskDic,data,config,token)
     else:
         return get_template_order_count_type_2(taskDic,data,config,token)
+
+
+def control_ths_window(show: bool):
+    """
+    控制同花顺交易软件窗口的显示或隐藏
+    :param show: True 显示窗口，False 隐藏窗口
+    """
+    # 获取窗口句柄
+    hwnd = win32gui.FindWindow(None, "网上股票交易系统5.0")
+    if hwnd:
+        if show:
+            win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)   # 恢复窗口
+            win32gui.ShowWindow(hwnd, win32con.SW_SHOW)   # 显示窗口
+            win32gui.SetForegroundWindow(hwnd)   # 将窗口置于最前面
+            # 设置窗口大小和位置
+            win32gui.MoveWindow(hwnd, 0, 0, 1024, 768, True)   # 设置窗口为1024x768
+        else:
+            win32gui.ShowWindow(hwnd, win32con.SW_HIDE)   # 隐藏窗口
+    
+    
+# 获取同花顺交易软件窗口的显示状态
+def get_ths_window_state() -> bool:
+    """
+    获取同花顺交易软件窗口的显示状态
+    :return: True 窗口可见，False 窗口隐藏
+    """
+    hwnd = win32gui.FindWindow(None, "网上股票交易系统5.0")
+    if hwnd:
+        return win32gui.IsWindowVisible(hwnd)
+    return False   # 窗口不存在时返回隐藏状态
 
