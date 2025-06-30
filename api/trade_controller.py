@@ -135,7 +135,8 @@ class TradeController:
       
   # 购买国债逆回购
   def buy_reverse_repo(self):
-
+    if G.client_type == 1:
+      return
     G.logger.info("正在执行自动购入国债逆回购",extra={
             "showMessage": True
     })
@@ -152,6 +153,8 @@ class TradeController:
       })
     
   def auto_buy_new_stock(self):
+    if G.client_type == 1:
+      return
     G.logger.info("正在执行自动打新",extra={
             "showMessage": True
     })
@@ -170,6 +173,8 @@ class TradeController:
       self.qmt_trader.buy(codeSt,limit,price,order_remark='打新')
 
   def auto_buy_convertible_bond(self):
+    if G.client_type == 1:
+      return
     G.logger.info("正在执行自动打债",extra={
             "showMessage": True
     })
