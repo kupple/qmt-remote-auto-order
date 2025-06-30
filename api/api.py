@@ -27,7 +27,7 @@ from dotenv import load_dotenv
 load_dotenv()
 from .global_params import G
 from .trading_related.sync_data import sync_data_stocks_data
-from .tools.common import transition_code,revert_transition_code
+from .tools.common import transition_code,revert_transition_code,create_ths_shortcut,open_ths_shortcut
 
 AUTO_CONNECTION_WS = int(os.getenv('AUTO_CONNECTION_WS',1))
 USE_FIXED_WS_URL = int(os.getenv('USE_FIXED_WS_URL',0))
@@ -118,6 +118,8 @@ class API(System):
         return config
 
     def save_config(self, data):
+        if "client_type" in data and  data['client_type'] == 1:
+            create_ths_shortcut(data['ths_path'])
         G.orm.save_config(data)
     
     
@@ -291,3 +293,6 @@ class API(System):
     def is_process_exist_action(self):
         return self.trade_controller.process_check_loop()
         
+    def open_ths_shortcut_action(self):
+        config = G.orm.get_setting_config()
+        return open_ths_shortcut(config['ths_path'] + '/autoxiadan.lnk')

@@ -95,7 +95,7 @@
           </el-form-item>
         </el-form>
         <div v-else class="ths-functional-area">
-          <el-button size="small" type="primary" style="width: 100px; margin-top: 10px" @click="getAccountInfoAction">打开同花顺下单</el-button>
+          <el-button size="small" type="primary" style="width: 100px; margin-top: 10px" @click="openThsShortcutAction">打开同花顺下单</el-button>
         </div>
       </div>
     </div>
@@ -111,7 +111,7 @@ import { useCommonStore } from '@/store/common.js'
 import { getUserInfo } from '@/api/auth'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter, useRoute } from 'vue-router'
-import { getSettingConfig, runTask, getTaskList, saveConfig, setAutomatically, getUniqueID, getAccountInfo } from '@/api/comm_tube'
+import { getSettingConfig, runTask, getTaskList, saveConfig, setAutomatically, getUniqueID, getAccountInfo, openThsShortcut } from '@/api/comm_tube'
 
 const router = useRouter() // 使用useRouter函数创建router实例
 const route = useRoute()
@@ -138,6 +138,10 @@ const autoAutomaticReverseAtion = async (type, e) => {
   }
 
   await saveConfig(subDic)
+}
+
+const openThsShortcutAction = () => {
+  openThsShortcut()
 }
 
 const fundsDic = reactive({

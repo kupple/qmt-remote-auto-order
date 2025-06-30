@@ -131,7 +131,10 @@ export const getUniqueID = () => {
   return window.pywebview.api.get_unique_id()
 }
   
-
 export const getAccountInfo = () => {
   return window.pywebview.api.get_account_info()
+}
+
+export const openThsShortcut = () => {
+  return window.pywebview.api.open_ths_shortcut()
 }

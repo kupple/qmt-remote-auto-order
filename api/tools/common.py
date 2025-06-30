@@ -153,7 +153,75 @@ def revert_transition_code(data):
     except Exception as e:
         G.logger.error(f"还原错误: {e}")
         return "还原错误"
+
+# 打开同花顺
+def open_ths_shortcut(file_path):
+    """打开Windows快捷方式文件"""
+    try:
+        # 检查文件是否存在
+        if not os.path.exists(file_path):
+            print(f"错误：文件不存在 - {file_path}")
+            return False
+        
+        # 检查是否为.lnk文件
+        if not file_path.lower().endswith('.lnk'):
+            print(f"错误：不是有效的快捷方式文件 - {file_path}")
+            return False
+        
+        # 使用shell命令打开快捷方式
+        subprocess.run(['start', '', file_path], shell=True, check=True)
+        print(f"成功打开：{file_path}")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"错误：无法打开文件 - {e}")
+        return False
+    except Exception as e:
+        print(f"未知错误：{e}")
+        return False
+
     
+# 创建同花顺快捷方式
+def create_ths_shortcut(exe_path):
+    """为指定的exe文件在同级目录创建快捷方式"""
+    try:
+        # 创建的快捷方式名称
+        exe_dir = os.path.dirname(exe_path)
+        shortcut_name = f"autoxiadan.lnk"
+        shortcut_path = os.path.join(exe_dir, shortcut_name)
+        
+        # 检查快捷方式是否已存在
+        if os.path.exists(shortcut_path):
+            print(f"快捷方式已存在：{shortcut_path}")
+            return True
+
+        # 检查文件是否存在
+        if not os.path.exists(exe_path):
+            print(f"错误：文件不存在 - {exe_path}")
+            return False
+        
+            # 检查是否为exe文件
+        if not exe_path.lower().endswith('.exe'):
+            print(f"错误：不是有效的exe文件 - {exe_path}")
+            return False
+        
+        # 创建快捷方式对象
+        shell = win32com.client.Dispatch("WScript.Shell")
+        shortcut = shell.CreateShortCut(shortcut_path)
+        
+        # 设置快捷方式属性
+        shortcut.TargetPath = exe_path
+        shortcut.WorkingDirectory = exe_dir   # 设置工作目录为exe所在目录
+        shortcut.Description = f"快捷方式：{os.path.basename(exe_path)}"
+        
+        # 保存快捷方式
+        shortcut.Save()
+        
+        print(f"成功创建快捷方式：{shortcut_path}")
+        return True
+    except Exception as e:
+        print(f"错误：创建快捷方式失败 - {e}")
+        return False
+
 
 def is_process_exist():
     app_name = "XtMiniQmt.exe"
@@ -193,10 +261,7 @@ def is_process_exist():
     except Exception:
         return False
 
-        
-
-
-
+    
     # 转译代码 
 def transition_code(data,taskDic):
     config =  G.orm.get_setting_config()
