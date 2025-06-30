@@ -14,6 +14,7 @@ from api.tools.template import get_template_order_count_type_1,get_template_orde
 from api.global_params import G
 from api.trading_related.deal import convert_stock_suffix
 from datetime import datetime
+import os
 
 def timestamp_to_date(timestamp):
     """
