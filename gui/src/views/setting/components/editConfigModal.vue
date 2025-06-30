@@ -3,7 +3,7 @@
     <el-form label-width="auto" :model="params" :rules="rules" ref="formRef">
       <el-form-item label="下单方式" prop="client_type">
         <el-radio-group v-model="params.client_type">
-          <!-- <el-radio-button label="同花顺下单模式" :value="1" /> -->
+          <el-radio-button label="同花顺下单模式" :value="1" />
           <el-radio-button label="QMT下单模式" :value="2" />
         </el-radio-group>
       </el-form-item>
@@ -147,7 +147,7 @@ const getSetting = async () => {
   const res = await getSettingConfig()
   params.mini_qmt_path = res.mini_qmt_path
   params.client_id = res.client_id
-  params.client_type = 2
+  params.client_type = res.client_type
   params.ths_path = res.ths_path
   params.ths_client_id = res.ths_client_id
   params.ths_pwd = res.ths_pwd
