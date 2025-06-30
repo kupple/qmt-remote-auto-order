@@ -298,9 +298,13 @@ class API(System):
         return open_ths_shortcut(config['ths_path'] + '/autoxiadan.lnk')
     
     def get_ths_window_state_action(self):
+        if sys.platform.startswith('darwin'):
+            return True
         return get_ths_window_state()
     
     def control_ths_window_action(self,show: bool):
+        if sys.platform.startswith('darwin'):
+            return True
         control_ths_window(show)
     
         

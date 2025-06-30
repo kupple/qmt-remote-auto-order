@@ -4,7 +4,8 @@ export const getSettingConfig = async () => {
   const settingConfig = useCommonStore().settingConfig
   if(settingConfig === null || Object.keys(settingConfig).length <= 1){
     const res = await window.pywebview.api.get_setting_config()
-    await saveConfig(res)
+    useCommonStore().setSettingConfig(res)
+    // await saveConfig(res)
     return res
   }
   return settingConfig
@@ -146,4 +147,3 @@ export const controlThsWindow = (show) => {
 export const getThsWindowState = () => {
   return window.pywebview.api.get_ths_window_state_action()
 }
-  

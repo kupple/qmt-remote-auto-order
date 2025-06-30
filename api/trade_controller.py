@@ -31,8 +31,12 @@ class TradeController:
     self._thread = None
     self.qmt_is_connect = False
     self.acc_is_connect = False
-    self.is_need_reconnection = False
-    self.is_need_reconnection_lock =  True
+    self.is_qmt_need_reconnection = False
+    self.is_qmt_need_reconnection_lock =  True
+    
+    self.ths_is_connect = False
+    self.is_ths_need_reconnection = False
+    self.is_ths_need_reconnection_lock =  True
     self.ths_auto = ThsAuto()
 
     self.consumer_thread = self.ths_queue.start_consumer(self.ths_deal_order)
@@ -74,15 +78,15 @@ class TradeController:
           })
           self.qmt_is_connect = event
           if event:
-            if self.is_need_reconnection == True and self.is_need_reconnection_lock == False:          
-              self.is_need_reconnection = False
+            if self.is_qmt_need_reconnection == True and self.is_qmt_need_reconnection_lock == False:          
+              self.is_qmt_need_reconnection = False
               config = G.orm.get_setting_config()
               # 已配置才可以选择
               if config['mini_qmt_path'] != "" and config['client_id'] != "":
                 G.logger.info("正在重新连接QMT",extra={
                   "showMessage": True
                 })
-                self.is_need_reconnection_lock = True
+                self.is_qmt_need_reconnection_lock = True
                 # 在主线程中运行connect_qmt
                 self.connect_qmt({
                   "mini_qmt_path": config['mini_qmt_path'],
@@ -91,12 +95,22 @@ class TradeController:
           else:
             # 如果之前连过才给他重连
             # if self.acc_is_connect:
-            self.is_need_reconnection = True
+            self.is_qmt_need_reconnection = True
         else:
+          
+          if event == True and self.is_ths_need_reconnection == False and self.is_ths_need_reconnection == False:
+            self.is_ths_need_reconnection = True
+          # 启动绑定客户端
+          if self.is_ths_need_reconnection == True:
+              self.is_ths_need_reconnection = False
+              if sys.platform.startswith('win'):
+                self.ths_auto.bind_client()
+            
           System.system_py2js(self,'remoteCallBack',  {
               "type": "thsProcessCheck",
               "event": event
           })
+          self.ths_is_connect = event
     except Exception as e:
       error_msg = f"进程检查出错: {str(e)}"
       if G.logger:
@@ -128,10 +142,10 @@ class TradeController:
         "message": message,
         "event": self.acc_is_connect
       })
-      self.is_need_reconnection_lock = False
+      self.is_qmt_need_reconnection_lock = False
     except Exception as e:
       G.logger.error("连接QMT失败! code 1980" + str(e))
-      self.is_need_reconnection_lock = False
+      self.is_qmt_need_reconnection_lock = False
       
   # 购买国债逆回购
   def buy_reverse_repo(self):
