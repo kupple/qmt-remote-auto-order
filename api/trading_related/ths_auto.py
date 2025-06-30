@@ -242,7 +242,8 @@ class ThsAuto:
             if ctrl > 0 and win32gui.IsWindowVisible(ctrl):
                 data[key] = get_text(ctrl)
         return {
-            'code': 0, 'status': 'succeed',
+            'code': 0, 
+            'status': 'succeed',
             'data': data,
         }
 

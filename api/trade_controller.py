@@ -612,6 +612,15 @@ class TradeController:
       else:
         return self.qmt_trader.balance()
     else:
-      balance = self.ths_auto.get_balance()
-      print(balance)
-      return balance
+      result = self.ths_auto.get_balance()
+      if result['code'] != 0:
+        G.logger.error("同花顺没有正常运行,请打开或重新打开同花顺客户端",extra={
+            "showMessage": True
+          })
+      else:
+        return {
+          "cash": result['data']['资金余额'],
+          "frozen_cash": result['data']['冻结金额'],
+          "market_value": result['data']['股票市值'],
+          "total_asset": result['data']['总资产'],
+        }
