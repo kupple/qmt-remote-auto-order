@@ -119,7 +119,7 @@ class API(System):
 
     def save_config(self, data):
         if "client_type" in data and  data['client_type'] == 1:
-            create_ths_shortcut(data['ths_path'])
+            create_ths_shortcut(data['ths_path']+ "/xiadan.exe")
         G.orm.save_config(data)
     
     
