@@ -604,9 +604,14 @@ class TradeController:
   
   
   def get_account_info(self):
-    if self.qmt_is_connect == False or self.acc_is_connect == False:
-       G.logger.error("QMT没有正常运行,请打开或重新打开qmt客户端",extra={
-          "showMessage": True
-        })
+    if G.client_type == 2:
+      if self.qmt_is_connect == False or self.acc_is_connect == False:
+        G.logger.error("QMT没有正常运行,请打开或重新打开qmt客户端",extra={
+            "showMessage": True
+          })
+      else:
+        return self.qmt_trader.balance()
     else:
-      return self.qmt_trader.balance()
+      balance = self.ths_auto.get_balance()
+      print(balance)
+      return balance
