@@ -230,7 +230,7 @@ class ThsAuto:
         return 0
 
     def get_balance(self):
-        # self.bind_client()
+        self.bind_client()
         self.active_mian_window()
         self.switch_to_normal()
         hot_key(['F4'])

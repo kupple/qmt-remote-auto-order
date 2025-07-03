@@ -258,7 +258,10 @@ class API(System):
         list = G.orm.query_position_by_task_id(task_id)
         for item in list:
             if item['security_code']:
-                item['security_name'] = G.stock_map["all_stock_code"][item['security_code']]['name']
+                if item['security_code'] in G.stock_map["all_stock_code"]:
+                    item['security_name'] = G.stock_map["all_stock_code"][item['security_code']]['name']
+                else:
+                    item['security_name'] = "其他"
         return list
 
     
