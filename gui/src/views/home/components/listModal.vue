@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="dialogVisible" :title="editDic ? '编辑任务' : '新建任务'" width="60vw" center>
+  <el-dialog v-model="dialogVisible" :title="editDic ? '编辑任务' : '新建开仓'" width="60vw" center>
     <el-form :model="form" label-width="120px">
       <el-form-item label="任务名称" required>
         <el-input style="width: 50%" v-model="form.name" placeholder="请输入任务名称" />
@@ -63,6 +63,7 @@
       <el-form-item label="下单平台">
         <el-radio-group v-model="form.platform">
           <el-radio disabled :value="1">聚宽</el-radio>
+          <el-radio disabled :value="10">API调用方式</el-radio>
         </el-radio-group>
       </el-form-item>
       <!-- <el-form-item v-else label="实际分配金额">
@@ -77,13 +78,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, reactive } from 'vue'
+import { getUserInfo } from '@/api/auth'
+import { createTask, getSettingConfig, getUniqueID } from '@/api/comm_tube'
+import { bindStrategyKey } from '@/api/user'
 import { useCommonStore } from '@/store/common.js'
 import { QuestionFilled } from '@element-plus/icons-vue'
-import { createTask, checkStrategyCodeExists, getSettingConfig,getUniqueID } from '@/api/comm_tube'
-import { getUserInfo } from '@/api/auth'
-import { bindStrategyKey } from '@/api/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { computed, reactive, ref } from 'vue'
 const taskList = computed(() => useCommonStore().taskList)
 const emit = defineEmits(['getTaskList', 'callBack'])
 const dialogVisible = ref(false)

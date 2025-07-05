@@ -10,7 +10,7 @@ export const routes = [
     component: () => import('../views/loading/index.vue'),
     show: false,
     meta: {
-      title: '自动远程下单',
+      title: '自动开仓管理',
       show: false,
       showBack: false
     }
@@ -18,7 +18,7 @@ export const routes = [
   {
     path: '/home',
     name: 'Home',
-    chName: '远程下单',
+    chName: '开仓管理',
     icon: 'House',
     component: () => import('../views/home/index.vue'),
     redirect: '/home/list',
@@ -37,23 +37,23 @@ export const routes = [
         name: 'HomeList',
         component: () => import('../views/home/components/list.vue'),
         meta: {
-          title: '自动远程下单',
+          title: '开仓管理',
           showBack: false
         }
       }
     ]
   },
-  // {
-  //   path: '/order',
-  //   name: 'Order',
-  //   chName: '订单列表',
-  //   icon: 'List',
-  //   component: () => import('../views/order/index.vue'),
-  //   meta: {
-  //     title: '订单列表',
-  //     showBack: false
-  //   }
-  // },
+  {
+    path: '/api',
+    name: 'api',
+    chName: 'API服务',
+    icon: 'List',
+    component: () => import('../views/httpserver/index.vue'),
+    meta: {
+      title: 'API服务',
+      showBack: false
+    }
+  },
   {
     path: '/logging',
     name: 'Logging',

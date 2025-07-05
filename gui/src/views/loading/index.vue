@@ -13,11 +13,11 @@
 </template>
 
 <script setup>
+import { getToken, getUserInfo } from '@/api/auth'
+import { connectQMT, connectWs, getSettingConfig, programStart } from '@/api/comm_tube'
 import { Loading } from '@element-plus/icons-vue'
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { connectWs, getSettingConfig, connectQMT } from '@/api/comm_tube'
-import { getToken, getUserInfo } from '@/api/auth'
 const router = useRouter()
 
 onMounted(() => {
@@ -38,6 +38,7 @@ onMounted(() => {
       }
     }
     router.push('/home/list')
+    programStart()
   }, 1000)
 })
 </script>

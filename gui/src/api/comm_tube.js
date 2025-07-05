@@ -147,3 +147,15 @@ export const controlThsWindow = (show) => {
 export const getThsWindowState = () => {
   return window.pywebview.api.get_ths_window_state_action()
 }
+
+export const openHttpServer = (open,host,port) => {
+  return window.pywebview.api.open_http_server_action(open,host,port)
+}
+
+export const isHttpServerRunning = () => {
+  return window.pywebview.api.is_http_server_running_action()
+}
+
+export const programStart = ()=>{
+  return window.pywebview.api.program_start()
+}

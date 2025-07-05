@@ -1,4 +1,4 @@
-from .tools.sysConfig import get_system_unique_id
+from .tools.sys_config import get_system_unique_id
 from .db.orm import ORM
 import logging
 from api.system import System

@@ -9,9 +9,9 @@ from api.system import System
 import requests
 import json
 import time
-from .tools.sysConfig import get_system_unique_id
+from .tools.sys_config import get_system_unique_id
 from datetime import datetime,timezone
-from api.tools.tokenManager import generate_token
+from api.tools.token_manager import generate_token
 from .global_params import G
 
 class Remote:
@@ -115,7 +115,7 @@ class Remote:
         try:
             TOKEN = None
             if self.ways == 2:
-                TOKEN = G.orm.getStorageVar('qmt_token')
+                TOKEN = G.orm.get_storage_var('qmt_token')
             else:
                 config = G.orm.get_setting_config()
                 unique_id = get_system_unique_id()

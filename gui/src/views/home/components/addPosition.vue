@@ -8,9 +8,9 @@
         <el-form-item label="数量" required>
           <el-input-number step-strictly :step="100" v-model="form.volume" placeholder="请输入数量" type="number" :min="100" />
         </el-form-item>
-        <el-form-item label="平均成本(仅显示)" required>
+        <!-- <el-form-item label="平均成本(仅显示)" required>
           <el-input v-model="form.average_price" placeholder="请输入平均成本" type="number"  @input="handleAllocationAmountInput" style="width: 200px;"/>
-        </el-form-item>
+        </el-form-item> -->
         <el-form-item>
           <el-button type="primary" @click="handleSubmit">保存</el-button>
           <el-button @click="dialogVisible = false">取消</el-button>
@@ -20,11 +20,10 @@
   </template>
   
   <script setup>
-  import { ref, computed, onMounted, reactive } from 'vue'
-  import { useCommonStore } from '@/store/common.js'
-  import { QuestionFilled } from '@element-plus/icons-vue'
   import { addPosition, checkPositionExists } from '@/api/comm_tube'
-  import { ElMessage } from 'element-plus'
+import { useCommonStore } from '@/store/common.js'
+import { ElMessage } from 'element-plus'
+import { computed, reactive, ref } from 'vue'
 
   const emit = defineEmits(['callBack'])
   const taskList = computed(() => useCommonStore().taskList)
@@ -70,10 +69,10 @@
       ElMessage.error('请输入数量')
       return
     }
-    if (form.average_price <= 0) {
-      ElMessage.error('请输入平均成本')
-      return
-    }
+    // if (form.average_price <= 0) {
+    //   ElMessage.error('请输入平均成本')
+    //   return
+    // }
     const exists = await checkPositionExists(form.security_code, form.task_id)
     if (exists) {
       ElMessage.error('该股票已存在')

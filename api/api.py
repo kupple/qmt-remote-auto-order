@@ -6,6 +6,7 @@ usage: 在Javascript中调用window.pywebview.api.<methodname>(<parameters>)
 '''
 
 
+import time
 from api.system import System
 from api.db.orm import ORM
 from api.remote import Remote
@@ -16,7 +17,7 @@ from api.trading_related.task_scheduler import TaskScheduler
 from api.trading_related.strategy_analyzer import analyze_stock_data
 import threading
 from api.system import System
-from .tools.sysConfig import get_os_type
+from .tools.sys_config import get_os_type
 import subprocess
 import webview
 import os
@@ -28,7 +29,7 @@ load_dotenv()
 from .global_params import G
 from .trading_related.sync_data import sync_data_stocks_data
 from .tools.common import transition_code,revert_transition_code,create_ths_shortcut,open_ths_shortcut,get_ths_window_state,control_ths_window
-
+from api.httpserver.request_api import APIService
 AUTO_CONNECTION_WS = int(os.getenv('AUTO_CONNECTION_WS',1))
 USE_FIXED_WS_URL = int(os.getenv('USE_FIXED_WS_URL',0))
 WS_URL_FIXED = os.getenv('WS_URL_FIXED')
@@ -52,6 +53,8 @@ class API(System):
         """
         self.trade_controller = TradeController()
         self.remote = Remote(self.trade_controller)
+        self.http_service = APIService(self.trade_controller)
+        
         self.thread1 = None
         
         self.task_scheduler = TaskScheduler(self.trade_controller)
@@ -64,7 +67,10 @@ class API(System):
         
         self.loop = asyncio.get_event_loop()
         self.loop.run_in_executor(None, sync_data_stocks_data)
-
+        
+        
+        
+            
     def setWindow(self, window):
         '''获取窗口实例'''
         System._window = window
@@ -100,7 +106,7 @@ class API(System):
             G.logger.error(f"注册表操作失败: {e}")        
 
     def storage_get(self, key):
-        value = G.orm.getStorageVar(key)
+        value = G.orm.get_storage_var(key)
         if key == 'qmt_user_info':
             G.user_id = json.loads(value)['id'] if value else None
 
@@ -109,7 +115,7 @@ class API(System):
 
     def storage_set(self, key, val):
         '''设置存储变量'''
-        G.orm.setStorageVar(key, val)
+        G.orm.set_storage_var(key, val)
 
     def get_setting_config(self):
         config = G.orm.get_setting_config()
@@ -310,4 +316,26 @@ class API(System):
             return True
         control_ths_window(show)
     
+    def open_http_server_action(self,open,host,port):
+        if open:
+            G.orm.set_storage_var("open_api_server", "1")
+            G.orm.set_storage_var("http_server_host", host)
+            G.orm.set_storage_var("http_server_port", port)
+            self.http_service.start(host=host,port=port)
+        else:
+            G.orm.set_storage_var("open_api_server", "0")
+            self.http_service.stop()
+
+    def is_http_server_running_action(self):
+        return self.http_service.is_running()
+        
+    def program_start(self):
+        if G.orm.get_storage_var('open_api_server') == '1':
+            host = G.orm.get_storage_var('http_server_host')
+            port = G.orm.get_storage_var('http_server_port')
+            self.http_service.start(host=host,port=port)
+            G.logger.info("api服务已启动 host:" + host + " port:" + port,extra={
+                "showMessage": True
+            })
+
         

@@ -7,7 +7,7 @@
             <el-button type="primary" @click="openModal">创建一个跟随策略任务</el-button>
           </el-empty>
         </div>
-        <el-button v-if="taskList.length > 0" type="primary" class="create-task-btn" @click="openModal">新建任务</el-button>
+        <el-button v-if="taskList.length > 0" type="primary" class="create-task-btn" @click="openModal">新建开仓</el-button>
         <div class="task-list" v-if="taskList.length > 0">
           <div v-for="(item, idx) in taskList" :key="idx" :class="{ 'task-cell': true, 'task-cell-activate': item.is_open == 1 }">
             <div class="cell-left">
@@ -105,25 +105,25 @@
 </template>
 
 <script setup>
-import ListModal from './listModal.vue'
-import { ref, computed, watch, nextTick, onMounted, onUnmounted, reactive } from 'vue'
-import { QuestionFilled, Setting, VideoPlay, VideoPause, Odometer, Refresh, Promotion } from '@element-plus/icons-vue'
-import { useCommonStore } from '@/store/common.js'
 import { getUserInfo } from '@/api/auth'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { useRouter, useRoute } from 'vue-router'
-import { 
-  getSettingConfig, 
-  runTask,
-  getTaskList,
-  saveConfig,
-  setAutomatically,
-  getUniqueID,
-  getAccountInfo,
-  openThsShortcut,
-  controlThsWindow,
-  getThsWindowState 
+import {
+    controlThsWindow,
+    getAccountInfo,
+    getSettingConfig,
+    getTaskList,
+    getThsWindowState,
+    getUniqueID,
+    openThsShortcut,
+    runTask,
+    saveConfig,
+    setAutomatically
 } from '@/api/comm_tube'
+import { useCommonStore } from '@/store/common.js'
+import { Odometer, Promotion, QuestionFilled, Refresh, Setting } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import ListModal from './listModal.vue'
 
 const router = useRouter() // 使用useRouter函数创建router实例
 const route = useRoute()

@@ -9,7 +9,7 @@ import sys
 from api.db.orm import ORM
 import json
 import re
-from api.tools.tokenManager import generate_token,verify_token
+from api.tools.token_manager import generate_token,verify_token
 from api.tools.template import get_template_order_count_type_1,get_template_order_count_type_2
 from api.global_params import G
 from api.trading_related.deal import convert_stock_suffix
@@ -279,7 +279,7 @@ def transition_code(data,taskDic):
     run_model_type = config['run_model_type']
 
     if run_model_type == 2:
-        token = G.orm.getStorageVar('qmt_token')
+        token = G.orm.get_storage_var('qmt_token')
     else:
         unique_id = G.unique_id
         plaintext = {

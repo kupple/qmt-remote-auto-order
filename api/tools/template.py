@@ -1,4 +1,4 @@
-from api.tools.sysConfig import ws_to_http
+from api.tools.sys_config import ws_to_http
 import re
 
 def get_template_order_count_type_1(taskDic, data, config,token):

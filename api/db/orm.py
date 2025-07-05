@@ -6,7 +6,7 @@ from api.db.models import (
 )
 from pyapp.db.db import DB
 from sqlalchemy import select, update, insert, and_, or_, desc, func
-from api.tools.sysConfig import generate_random_letters
+from api.tools.sys_config import generate_random_letters
 class ORM:
     '''操作数据库类'''
 
@@ -25,7 +25,7 @@ class ORM:
         finally:
             dbSession.close()
 
-    def getStorageVar(self, key):
+    def get_storage_var(self, key):
         '''获取储存变量'''
         resVal = ''
         dbSession = DB.session()
@@ -42,7 +42,7 @@ class ORM:
         dbSession.close()
         return resVal
 
-    def setStorageVar(self, key, val):
+    def set_storage_var(self, key, val):
         '''更新储存变量'''
         dbSession = DB.session()
         with dbSession.begin():
@@ -706,3 +706,12 @@ class ORM:
             return [date.trade_date for date in dbSession.query(DATA_TRADE_DATE_HIST.trade_date).all()]
     
 
+
+    ############################################################################################################## 
+    
+    def get_positions_on_api(self, strategy_code):
+        with DB.session() as dbSession:
+            trades = dbSession.query(TaskList).where(TaskList.strategy_code == strategy_code).first()
+            positions = dbSession.query(Positions).where(Positions.task_id == trades.id).where(Positions.is_mock == 0).all()
+            return [position.toDict() for position in positions]
+        
