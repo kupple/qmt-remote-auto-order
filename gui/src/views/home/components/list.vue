@@ -22,12 +22,14 @@
                 >
               </div>
               <div class="cell-order_count_type">
+                <el-tag round effect="plain" disable-transitions v-if="item.platform == 1">聚宽</el-tag>
+                <el-tag round effect="plain" disable-transitions v-else type="danger">API调用</el-tag>
                 <el-tag round effect="plain" disable-transitions v-if="item.task_type == 1">自建策略</el-tag>
                 <el-tag round effect="plain" disable-transitions v-else type="danger">他人策略</el-tag>
                 <el-tag round effect="plain" style="margin-left: 10px" disable-transitions v-if="item.order_count_type == 1" type="success">跟随策略</el-tag>
-                <el-tag round effect="plain" style="margin-left: 10px" disable-transitions v-else type="primary">动态调整</el-tag>
-                <el-tag round effect="plain" type="warning" style="margin-left: 10px" disable-transitions v-if="item.dynamic_calculation_type == 1 && item.order_count_type == 2">固定仓位</el-tag>
-                <el-tag round effect="plain" type="danger" hit style="margin-left: 10px" disable-transitions v-if="item.dynamic_calculation_type == 2 && item.order_count_type == 2">同步仓位</el-tag>
+                <el-tag round effect="plain" style="margin-left: 10px" disable-transitions v-else type="primary">
+                  动态调整->{{ item.dynamic_calculation_type == 1 ? '固定仓位' : '同步仓位' }}
+                </el-tag>
                 <!-- <span class="order_count_amount" v-if="item.order_count_type == 2"> 起始金额:{{ item.allocation_amount }} </span> -->
               </div>
             </div>
@@ -89,10 +91,10 @@
               <el-icon style="margin-left: 10px; color: #999; font-size: 18px"><QuestionFilled /></el-icon>
             </el-tooltip>
           </el-form-item>
-          <el-divider>系统</el-divider>
+          <!-- <el-divider>系统</el-divider>
           <el-form-item label="开机自启动">
             <el-switch size="small" v-model="form.auto_startup" @change="(e) => autoAutomaticReverseAtion(4, e)" />
-          </el-form-item>
+          </el-form-item> -->
         </el-form>
         <div v-else class="ths-functional-area">
           <el-switch v-model="form.show_terminal" @change="(e) => controlThsWindow(e)" active-text="显示终端" inactive-text="隐藏终端" />
@@ -107,16 +109,16 @@
 <script setup>
 import { getUserInfo } from '@/api/auth'
 import {
-    controlThsWindow,
-    getAccountInfo,
-    getSettingConfig,
-    getTaskList,
-    getThsWindowState,
-    getUniqueID,
-    openThsShortcut,
-    runTask,
-    saveConfig,
-    setAutomatically
+  controlThsWindow,
+  getAccountInfo,
+  getSettingConfig,
+  getTaskList,
+  getThsWindowState,
+  getUniqueID,
+  openThsShortcut,
+  runTask,
+  saveConfig,
+  setAutomatically
 } from '@/api/comm_tube'
 import { useCommonStore } from '@/store/common.js'
 import { Odometer, Promotion, QuestionFilled, Refresh, Setting } from '@element-plus/icons-vue'
@@ -328,11 +330,13 @@ onMounted(async () => {
           flex-direction: column;
           position: relative;
           color: #fff;
-          // width: 100%;
-          flex: 0.4;
+          width: 50%;
           .task-name {
             font-size: 18px;
             font-weight: bold;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
           }
           .strategy_code {
             margin-top: 8px;
@@ -340,8 +344,6 @@ onMounted(async () => {
             cursor: pointer;
             display: flex;
             flex-direction: column;
-            // margin-bottom: 6px;
-            // gap: 2px;
           }
           .cell-order_count_type {
             margin-top: 10px;
@@ -358,6 +360,7 @@ onMounted(async () => {
           margin-top: 30px;
           flex: 1;
           justify-content: flex-end;
+          // min-width: 100px;
           .cell-right-row {
             display: flex;
             flex-direction: column;

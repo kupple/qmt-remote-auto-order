@@ -4,19 +4,25 @@
       <el-form-item label="任务名称" required>
         <el-input style="width: 50%" v-model="form.name" placeholder="请输入任务名称" />
       </el-form-item>
-      <el-form-item label="创建类型" required v-if="isEdit == false">
+      <el-form-item label="下单平台">
+        <el-radio-group v-model="form.platform">
+          <el-radio  :value="1">聚宽</el-radio>
+          <el-radio  :value="10">API调用方式</el-radio>
+        </el-radio-group>
+      </el-form-item>
+      <el-form-item label="创建类型" required v-if="isEdit == false && form.platform != 10">
         <el-radio-group v-model="form.task_type">
-          <el-radio-button label="创建策略" :value="1" />
-          <el-radio-button label="导入他人分享策略" :value="2" />
+          <el-radio label="创建策略" :value="1" />
+          <el-radio label="导入他人分享策略" :value="2" />
         </el-radio-group>
       </el-form-item>
       <el-form-item label="任务编号" v-if="form.task_type == 1 && isEdit == false">
-        <el-input style="width: 50%" v-model="form.strategy_code" placeholder="请输入任务编号" maxlength="6" />
+        <el-input style="width: 50%" v-model="form.strategy_code" placeholder="请输入任务编号,不输入则随机生成" maxlength="6" />
       </el-form-item>
       <el-form-item label="分享码" v-if="form.task_type == 2 && isEdit == false">
         <el-input style="width: 50%" v-model="form.share_secret" placeholder="请输入分享秘钥" maxlength="6" />
       </el-form-item>
-      <el-form-item label="下单类型" v-if="isEdit == false">
+      <el-form-item label="下单类型" v-if="isEdit == false && form.platform != 10">
         <el-radio-group v-model="form.order_count_type">
           <el-radio style="margin-right: 5px" :value="1">仓位跟随策略</el-radio>
           <el-tooltip effect="dark" content="仓位分配完全跟随端策略，优点简单快速" placement="top">
@@ -28,7 +34,7 @@
           </el-tooltip>
         </el-radio-group>
       </el-form-item>
-      <el-form-item label="动态资金模式" v-if="form.order_count_type === 2">
+      <el-form-item label="动态资金模式" v-if="form.order_count_type === 2 && form.platform != 10">
         <el-radio-group v-model="form.dynamic_calculation_type">
           <el-radio style="margin-right: 5px" :value="1">固定模式</el-radio>
           <el-tooltip effect="dark" content="交易金额不会超过分配金额" placement="top">
@@ -59,12 +65,6 @@
             <el-input v-model="form.lower_limit_of_fees" placeholder="请输入账号分配金额" type="number" :min="0" />
           </div>
         </div>
-      </el-form-item>
-      <el-form-item label="下单平台">
-        <el-radio-group v-model="form.platform">
-          <el-radio disabled :value="1">聚宽</el-radio>
-          <el-radio disabled :value="10">API调用方式</el-radio>
-        </el-radio-group>
       </el-form-item>
       <!-- <el-form-item v-else label="实际分配金额">
         <el-input style="width: 50%" v-model="form.allocationAmount" placeholder="请输入账号分配金额" type="number" :min="0" @input="handleAllocationAmountInput" />

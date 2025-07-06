@@ -36,7 +36,7 @@
               <span style="color: purple">POST</span> <span style="color: #26a69a">{{ settindDic.host }}:{{ settindDic.port }}/api/order</span>
               <br>Content-Type: application/json
             </code>
-            <pre>
+            <pre style="margin:0px">
 Body 请求体：
 {
     "strategy_code": "123456",
@@ -45,8 +45,7 @@ Body 请求体：
     "price": 20,
     "order_type": 1,
     "is_buy": true
-}
-            </pre>
+}</pre>
             <h4>说明：</h4>
             <code>
               strategy_code: 策略唯一编号
@@ -56,6 +55,8 @@ Body 请求体：
               <br>order_type: 1: 市价单 2: 限价单
               <br>is_buy: true: 买入 false: 卖出
             </code>
+            <h4>返回：</h4>
+            <code> code: 200 </code>      
           </div>
         </el-collapse-item>
         <!-- <el-collapse-item title="获取今日成交" name="3">
