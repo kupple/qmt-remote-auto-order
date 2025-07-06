@@ -17,24 +17,52 @@
     <div class="api-container-bottom">
       <h5 style="margin: 10px 0px">api说明</h5>
       <el-collapse expand-icon-position="left">
-        <el-collapse-item title="获取开仓信息" name="4">
-          <div>Simplify the process: keep operating process simple and intuitive;</div>
-          <div>Definite and clear: enunciate your intentions clearly so that the users can quickly understand and make decisions;</div>
-          <div>Easy to identify: the interface should be straightforward, which helps the users to identify and frees them from memorizing and recalling.</div>
-        </el-collapse-item>
         <el-collapse-item title="获取持仓列表" name="1">
-          <div>Consistent with real life: in line with the process and logic of real life, and comply with languages and habits that the users are used to;</div>
-          <div>Consistent within interface: all elements should be consistent, such as: design style, icons and texts, position of elements, etc.</div>
+          <div class="api-introduction">
+            <h4>请求：</h4>
+            <code>
+              <span style="color: purple">GET</span> <span style="color: #26a69a">{{ settindDic.host }}:{{ settindDic.port }}/api/positions</span>?strategy_code=<span style="color: #42a5f5">123456</span>
+            </code>
+            <h4>说明：</h4>
+            <code>strategy_code: 策略唯一编号</code>
+            <h4>返回：</h4>
+            <code> security_code: 证券代码,<br> volume: 证券数量,<br> price: 证券价格,<br> amount: 证券金额,<br> average_price: 平均价格,<br> created_at: 创建时间,<br> updated_at: 更新时间,<br> delete_time: 删除时间 </code>
+          </div>
         </el-collapse-item>
         <el-collapse-item title="下单(买入/卖出)" name="2">
-          <div>Operation feedback: enable the users to clearly perceive their operations by style updates and interactive effects;</div>
-          <div>Visual feedback: reflect current state by updating or rearranging elements of the page.</div>
+          <div class="api-introduction">
+            <h4>请求：</h4>
+            <code>
+              <span style="color: purple">POST</span> <span style="color: #26a69a">{{ settindDic.host }}:{{ settindDic.port }}/api/order</span>
+              <br>Content-Type: application/json
+            </code>
+            <pre>
+Body 请求体：
+{
+    "strategy_code": "123456",
+    "stock_code": "600031.SH",
+    "volume": 100,
+    "price": 20,
+    "order_type": 1,
+    "is_buy": true
+}
+            </pre>
+            <h4>说明：</h4>
+            <code>
+              strategy_code: 策略唯一编号
+              <br>stock_code: 证券代码
+              <br>volume: 证券数量
+              <br>price: 证券价格
+              <br>order_type: 1: 市价单 2: 限价单
+              <br>is_buy: true: 买入 false: 卖出
+            </code>
+          </div>
         </el-collapse-item>
-        <el-collapse-item title="获取今日成交" name="3">
+        <!-- <el-collapse-item title="获取今日成交" name="3">
           <div>Simplify the process: keep operating process simple and intuitive;</div>
           <div>Definite and clear: enunciate your intentions clearly so that the users can quickly understand and make decisions;</div>
           <div>Easy to identify: the interface should be straightforward, which helps the users to identify and frees them from memorizing and recalling.</div>
-        </el-collapse-item>
+        </el-collapse-item> -->
       </el-collapse>
     </div>
   </div>
@@ -73,6 +101,18 @@ const openHttpServerAction = (open) => {
 </script>
 
 <style scoped lang="less">
+.api-introduction{
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  user-select: text;
+  background: #f5f5f5;
+  h4{
+    margin:15px 0px;
+    font-size: 16px;
+    font-weight: 900;
+  }
+}
 .api-container {
   padding: 10px;
   display: flex;
@@ -105,7 +145,7 @@ const openHttpServerAction = (open) => {
   .api-container-bottom {
     padding: 10px;
     background: #fff;
-    // overflow-y: auto;
+    overflow-y: auto;
   }
 }
 </style>

@@ -162,21 +162,11 @@ class ORM:
         """保存订单"""
         dbSession = DB.session()
         with dbSession.begin():
-            order = Orders(
-                security_code=data['security_code'],
-                style=data['style'],
-                price=data['price'],
-                volume=data['amount'],
-                avg_cost=data['avg_cost'],
-                commission=data['commission'],
-                is_buy=data['is_buy'],
-                add_time=data['add_time'],
-                platform=data['platform'],
-                run_params=data['run_params'],
-                fix_result_order_id=data['fix_result_order_id'],
-                strategy_code=data['strategy_code'],
-                positions=data['positions']
-            )
+            order = Orders()
+            for key, value in data.items():
+                if hasattr(order, key) and value is not None:
+                    setattr(order, key, value)
+            
             dbSession.add(order)
             dbSession.flush()
             last_id = order.id
@@ -708,6 +698,11 @@ class ORM:
 
 
     ############################################################################################################## 
+    
+    def get_shippings_on_api(self):
+        with DB.session() as dbSession:
+            shippings = dbSession.query(TaskList).all()
+            return [shipping.toDict() for shipping in shippings]
     
     def get_positions_on_api(self, strategy_code):
         with DB.session() as dbSession:

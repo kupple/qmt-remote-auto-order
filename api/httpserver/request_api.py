@@ -31,29 +31,24 @@ class APIService:
         werkzeug_logger.addHandler(handler)
 
     def _register_routes(self):
-        def shutdown_server():
-            # Try Werkzeug shutdown first
-            func = request.environ.get('werkzeug.server.shutdown')
-            if func is not None:
-                func()
-                return 'Server shutting down...'
-            
-            # For production servers, we'll terminate the thread
-            self._is_running = False
-            if self.server is not None:
-                self.server.shutdown()
-            return 'Server shutting down...'
+
+        # 示例路由：获取持仓
+        @self.app.route('/api/shippings', methods=['GET'])
+        def shippings():
+            res = G.orm.get_shippings_on_api()
+            return jsonify({
+                            'code':200,
+                            'data': res,
+                            })
 
         # 示例路由：获取资源
         @self.app.route('/api/positions', methods=['GET'])
         def positions():
             # Required parameters
             strategy_code = request.args.get('strategy_code')
-            if not strategy_code:
-                
+            if not strategy_code:                
                 return jsonify({'error': 'strategy_code is required'}), 400
 
-            
             res = G.orm.get_positions_on_api(strategy_code)
             return jsonify({
                             'code':200,
@@ -64,11 +59,41 @@ class APIService:
         @self.app.route('/api/order', methods=['POST'])
         def order():
             data = request.get_json()
-            return jsonify({"message": f"Item {data.get('name')} created"}), 201
+            print(data)
+            strategy_code = data.get('strategy_code')
+            stock_code = data.get('stock_code')
+            volume = data.get('volume')
+            price = data.get('price')
+            order_type = data.get('order_type',1)
+            is_buy = data.get('is_buy',1)
+            if not strategy_code:                
+                return jsonify({'error': 'strategy_code is required'}), 400
+            if not stock_code:                
+                return jsonify({'error': 'stock_code is required'}), 400
+            if not volume:                
+                return jsonify({'error': 'volume is required'}), 400
+            if not price:                
+                return jsonify({'error': 'price is required'}), 400
+            if not order_type:                
+                return jsonify({'error': 'order_type is required'}), 400
+            if not is_buy:                
+                return jsonify({'error': 'is_buy is required'}), 400
+            
+            ok,message = self.trade_controller.manage_api_trader(data)
+            if not ok:
+                return jsonify({
+                    'code':400,
+                    'data': message,
+                }), 400
+            return jsonify({
+                'code':200,
+                'data': "下单成功",
+            })
 
         # 示例路由：获取特定资源
         @self.app.route('/api/today_trades', methods=['GET'])
         def today_trades():
+            
             return jsonify({"TodayTrades": "TodayTrades"})
 
         # 示例路由：更新资源

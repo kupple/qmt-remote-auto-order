@@ -290,10 +290,11 @@ class TradeController:
                    is_buy=True,
                    order_time=None,
                    order_style_str='', 
-                   strategy_name='', 
+                   task_id='', 
                    order_remark='',
                    is_mock_state=1,
                    ):
+    
     price_type, optimal_price = get_qmt_price_type(stock_code, order_style_str, is_buy, price)
     order_type = OrderType.STOCK_BUY if is_buy == 1 else OrderType.STOCK_SELL
     
@@ -307,18 +308,17 @@ class TradeController:
           "order_type": order_type,
           "order_time": order_time,
           "price_type": price_type,
-          "strategy_name": strategy_name,
+          "strategy_name": task_id,
           "order_remark": order_remark
         })
       else:
-        # 如果是QMT类型
         self.qmt_trader.place_order(
           stock_code=stock_code,
-          volume=volume,
+          volume=int(volume),
           price=optimal_price,
           order_type=order_type,
           price_type=price_type,
-          strategy_name=strategy_name,
+          strategy_name=task_id,
           order_remark=order_remark
         ) 
     elif is_mock_state == 1:
@@ -329,7 +329,7 @@ class TradeController:
           order_type=order_type,
           order_time=order_time,
           price_type=price_type,
-          strategy_name=strategy_name,
+          strategy_name=task_id,
           order_remark=order_remark
         )
     elif is_mock_state == 2:
@@ -346,7 +346,7 @@ class TradeController:
             order_type=order_type,
             price_type=price_type,
             order_time=order_time,
-            strategy_name=strategy_name,
+            strategy_name=task_id,
             order_remark=order_remark
           ) 
       else:
@@ -357,13 +357,66 @@ class TradeController:
           "order_type": order_type,
           "order_time": order_time,
           "price_type": price_type,
-          "strategy_name": strategy_name,
+          "strategy_name": task_id,
           "order_remark": order_remark
         })
     else:
       G.logger.error("is_mock_state参数错误")
+  
+  def manage_api_trader(self,data):
+    try:
+      if G.run_model_type == 2:
+        user_id = G.user_id
+      else:
+        user_id = G.unique_id
+      taskList =  G.orm.get_task_list({"user_id":str(user_id)})
+      task = next((item for item in taskList if item.get('strategy_code') == data['strategy_code']), None)
+      if not task:
+        G.logger.info("任务不存在: {}".format(data['strategy_code']),extra={
+          "showMessage": True
+        })
+        return False, "任务不存在"
+      
+      strategy_code = data.get('strategy_code')
+      stock_code = data.get('stock_code')
+      volume = data.get('volume')
+      price = data.get('price')
+      order_type = data.get('order_type',1)
+      is_buy = data.get('is_buy',1)
+      
+      saveData = {
+        'security_code':stock_code,
+        'style':order_type,
+        'platform':'api',
+        'strategy_code':strategy_code,
+        'is_buy':is_buy,
+        'add_time':datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'amount':volume,
+        'price':price,
+        'status':0,
+      }
+      orderId = G.orm.save_order(saveData)
+      orderId = str(orderId)
+      
+      self.place_order(
+          stock_code=stock_code,
+          volume=volume,
+          price=price,
+          is_buy=True if is_buy == 1 else False,
+          order_time=None,
+          order_style_str=order_type,
+          task_id=str(task['id']),
+          order_remark=orderId,
+          is_mock_state=0
+      )
+      return True, "下单成功"
+    except Exception as e:
+      G.logger.error("manage_api_trader参数错误: {}".format(e),extra={
+        "showMessage": True
+      })
+      return False, str(e)
   # 下单协议{code:code,price:price,amount:amount,type:type}
-  def manage_qmt_trader(self,data):    
+  def manage_platform_trader(self,data):    
     print(data)
     try:    
       strategy_code = data['strategy_code']
@@ -504,7 +557,7 @@ class TradeController:
               is_buy=True if is_buy == 1 else False,
               order_time=timestamp_ms,
               order_style_str=style,
-              strategy_name=str(task['id']),
+              task_id=str(task['id']),
               order_remark=orderId,
               is_mock_state=1
             )
@@ -561,7 +614,7 @@ class TradeController:
                 is_buy=True if is_buy == 1 else False,
                 order_time=None,
                 order_style_str=style,
-                strategy_name=str(task['id']),
+                task_id=str(task['id']),
                 order_remark=orderId,
                 is_mock_state=is_mock_state
             )
@@ -571,7 +624,7 @@ class TradeController:
           })
     except Exception as e:
         import traceback
-        error_msg = f"manage_qmt_trader error: {str(e)}\n{traceback.format_exc()}"
+        error_msg = f"manage_platform_trader error: {str(e)}\n{traceback.format_exc()}"
         G.logger.error(error_msg,extra={
           "showMessage": True
         })

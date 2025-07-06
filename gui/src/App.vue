@@ -1,6 +1,6 @@
 <script setup>
-import MainContainer from './components/layout/index.vue'
-import { useRemoteStore } from '@/store/remote.js'
+import { useRemoteStore } from '@/store/remote.js';
+import MainContainer from './components/layout/index.vue';
 
 window["remoteCallBack"] = (res) => {
   const dic = JSON.parse(res);

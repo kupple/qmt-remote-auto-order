@@ -123,6 +123,12 @@ class qmt_trader:
         stock_code = self.adjust_stock(stock=stock_code)
         order_volume = volume
         if order_volume > 0:
+            if self.xt_trader == None:
+                G.logger.error(
+                    "QMT账号未订阅或未连接qmt",
+                    extra={"showMessage": True}
+                )
+                return
             fix_result_order_id = self.xt_trader.order_stock_async(
                 account=self.acc,
                 stock_code=stock_code,

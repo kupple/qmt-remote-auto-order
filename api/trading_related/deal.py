@@ -273,21 +273,33 @@ def get_qmt_price_type(security, order_style_str, is_buy=True, price=0):
         return xtconstant.LATEST_PRICE,optimal_price
     
     
-    # 解析订单类型字符串
-    if not order_style_str:
-        # 默认为市价单
-        order_type = 'MarketOrderStyle'
-    else:
-        # 使用正则表达式解析订单类型和参数
-        match = re.match(r'(\w+)\((.*)\)', order_style_str.strip())
-        if not match:
-            # 无法解析，默认为市价单
+    #判断order_style_str是否是int类型
+    #判断order_style_str是否是int类型
+    order_type = 'MarketOrderStyle'
+    limit_price = None
+    if type(order_style_str) == int:
+        if order_style_str == 1:
             order_type = 'MarketOrderStyle'
             limit_price = None
+        elif order_style_str == 2:
+            order_type = 'LimitOrderStyle'
+            limit_price = price
+    else:
+        # 解析订单类型字符串
+        if not order_style_str:
+            # 默认为市价单
+            order_type = 'MarketOrderStyle'
         else:
-            order_type = match.group(1)
-            param = match.group(2).strip()
-            limit_price = float(param) if param else None
+            # 使用正则表达式解析订单类型和参数
+            match = re.match(r'(\w+)\((.*)\)', order_style_str.strip())
+            if not match:
+                # 无法解析，默认为市价单
+                order_type = 'MarketOrderStyle'
+                limit_price = None
+            else:
+                order_type = match.group(1)
+                param = match.group(2).strip()
+                limit_price = float(param) if param else None
     
     
     # 处理限价单

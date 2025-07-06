@@ -73,7 +73,7 @@ class Remote:
                     #     G.logger.warning("请先在个人页面配置好qmt路径和资金账号",extra={
                     #         "showMessage": True
                     #     })
-                    self.trade_controller.manage_qmt_trader(content)
+                    self.trade_controller.manage_platform_trader(content)
 
         except websockets.exceptions.ConnectionClosed:
             G.logger.warning("已断开服务器连接",extra={
