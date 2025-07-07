@@ -22,12 +22,12 @@
                 >
               </div>
               <div class="cell-order_count_type">
-                <el-tag round effect="plain" disable-transitions v-if="item.platform == 1">聚宽</el-tag>
-                <el-tag round effect="plain" disable-transitions v-else type="danger">API调用</el-tag>
-                <el-tag round effect="plain" disable-transitions v-if="item.task_type == 1">自建策略</el-tag>
-                <el-tag round effect="plain" disable-transitions v-else type="danger">他人策略</el-tag>
-                <el-tag round effect="plain" style="margin-left: 10px" disable-transitions v-if="item.order_count_type == 1" type="success">跟随策略</el-tag>
-                <el-tag round effect="plain" style="margin-left: 10px" disable-transitions v-else type="primary">
+                <el-tag style="margin-right: 5px" round effect="plain" disable-transitions v-if="item.platform == 10">API调用</el-tag>
+                <el-tag style="margin-right: 5px" round effect="plain" disable-transitions v-else type="danger">聚宽</el-tag>
+                <el-tag round effect="plain" disable-transitions v-if="item.task_type == 1 && item.platform != 10">自建策略</el-tag>
+                <el-tag round effect="plain" disable-transitions v-if="item.task_type == 2 && item.platform != 10" type="danger">他人策略</el-tag>
+                <el-tag round effect="plain" style="margin-left: 5px" disable-transitions v-if="item.order_count_type == 1" type="success">跟随策略</el-tag>
+                <el-tag round effect="plain" style="margin-left: 5px" disable-transitions v-else type="primary">
                   动态调整->{{ item.dynamic_calculation_type == 1 ? '固定仓位' : '同步仓位' }}
                 </el-tag>
                 <!-- <span class="order_count_amount" v-if="item.order_count_type == 2"> 起始金额:{{ item.allocation_amount }} </span> -->

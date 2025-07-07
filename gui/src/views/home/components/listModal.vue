@@ -141,6 +141,7 @@ const showModal = (dic) => {
     form.share_secret = dic.share_secret
     form.host_user_email = dic.host_user_email
     form.strategy_keys_id = dic.strategy_keys_id
+    form.platform = dic.platform
   } else {
     editDic.value = null
     isEdit.value = false
@@ -200,7 +201,8 @@ const handleSubmit = async () => {
     share_secret: form.share_secret,
     host_user_email: host_user_email,
     strategy_keys_id: strategy_keys_id,
-    user_id: user_id
+    user_id: user_id,
+    platform: form.platform
   }
   if (dic.id === undefined) {
     dic.mock_allocation_amount = 100000
