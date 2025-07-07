@@ -54,10 +54,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, reactive } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { chooseDirectory, connectQMT, getSettingConfig, saveConfig, testConnect } from '@/api/comm_tube'
 import { QuestionFilled } from '@element-plus/icons-vue'
-import { getSettingConfig, saveConfig, testConnect, connectQMT, chooseDirectory } from '@/api/comm_tube'
+import { ElMessage } from 'element-plus'
+import { reactive, ref } from 'vue'
 const formRef = ref(null)
 const dialogVisible = ref(false)
 const emit = defineEmits(['callBack'])
@@ -66,7 +66,7 @@ const accountArr = ref([])
 const hasQmtBeenSelect = ref(false)
 
 const connectionAction = () => {
-  testConnect(params.mini_qmt_path).then((res) => {
+  testConnect(params.mini_qmt_path,params.client_type).then((res) => {
     if (res.is_connect) {
       if (res.account_arr.length == 0) {
         ElMessage({
