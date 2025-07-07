@@ -54,6 +54,16 @@ class APIService:
                             'code':200,
                             'data': res,
                             })
+        # 示例路由：获取资源
+        @self.app.route('/api/account_fund', methods=['GET'])
+        def account_fund():
+            # Required parameters
+
+            res = self.trade_controller.get_account_info() 
+            return jsonify({
+                            'code':200,
+                            'data': res,
+                            })
 
         # 示例路由：创建资源
         @self.app.route('/api/order', methods=['POST'])

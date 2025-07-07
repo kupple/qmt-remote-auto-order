@@ -17,6 +17,16 @@
     <div class="api-container-bottom">
       <h5 style="margin: 10px 0px">api说明</h5>
       <el-collapse expand-icon-position="left">
+        <el-collapse-item title="获取账号资金" name="1">
+          <div class="api-introduction">
+            <h4>请求：</h4>
+            <code>
+              <span style="color: purple">GET</span> <span style="color: #26a69a">{{ settindDic.host }}:{{ settindDic.port }}/api/account_fund</span>
+            </code>
+            <h4>返回：</h4>
+            <code> cash: 现金<br> frozen_cash: 冻结资金<br> market_value: 市值<br> total_asset: 总资产 </code>
+          </div>
+        </el-collapse-item>
         <el-collapse-item title="获取持仓列表" name="1">
           <div class="api-introduction">
             <h4>请求：</h4>
