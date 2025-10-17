@@ -32,11 +32,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, reactive } from 'vue'
+import { createTask } from '@/api/comm_tube'
 import { useCommonStore } from '@/store/common.js'
-import { QuestionFilled } from '@element-plus/icons-vue'
-import { createTask, checkStrategyCodeExists } from '@/api/comm_tube'
 import { ElMessage } from 'element-plus'
+import { computed, reactive, ref } from 'vue'
 const taskList = computed(() => useCommonStore().taskList)
 const emit = defineEmits(['callBack'])
 const dialogVisible = ref(false)

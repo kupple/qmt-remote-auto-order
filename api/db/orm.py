@@ -694,8 +694,9 @@ class ORM:
     def get_trade_date_list(self):
         with DB.session() as dbSession:
             return [date.trade_date for date in dbSession.query(DATA_TRADE_DATE_HIST.trade_date).all()]
+        
+        
     
-
 
     ############################################################################################################## 
     

@@ -28,17 +28,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { getUserInfo, clearAuth } from '@/api/auth'
-import { useRouter } from 'vue-router'
-import { SwitchButton } from '@element-plus/icons-vue'
-import editConfigModal from './editConfigModal.vue'
+import { clearAuth, getUserInfo } from '@/api/auth'
+import { disconnect, getSettingConfig, saveConfig } from '@/api/comm_tube'
 import dayjs from "dayjs"
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import editConfigModal from './editConfigModal.vue'
 const router = useRouter()
 const userInfo = ref(null)
 const editConfigModalRef = ref(null)
-import { getSettingConfig,saveConfig,disconnect } from '@/api/comm_tube'
 const params = reactive({
   mini_qmt_path: '',
   client_id: '',
@@ -63,19 +62,6 @@ onMounted(async () => {
     editConfigModalRef.value.showModal()
   }
 })
-
-const formatDate = (dateString) => {
-  if (!dateString) return '-'
-  const date = new Date(dateString)
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  })
-}
 
 // 获取配置文件
 const getSetting = async () => {

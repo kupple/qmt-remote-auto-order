@@ -27,7 +27,7 @@
             <code> cash: 现金<br> frozen_cash: 冻结资金<br> market_value: 市值<br> total_asset: 总资产 </code>
           </div>
         </el-collapse-item>
-        <el-collapse-item title="获取持仓列表" name="1">
+        <el-collapse-item title="获取持仓列表" name="2">
           <div class="api-introduction">
             <h4>请求：</h4>
             <code>
@@ -39,7 +39,7 @@
             <code> security_code: 证券代码,<br> volume: 证券数量,<br> price: 证券价格,<br> amount: 证券金额,<br> average_price: 平均价格,<br> created_at: 创建时间,<br> updated_at: 更新时间,<br> delete_time: 删除时间 </code>
           </div>
         </el-collapse-item>
-        <el-collapse-item title="下单(买入/卖出)" name="2">
+        <el-collapse-item title="下单(买入/卖出)" name="3">
           <div class="api-introduction">
             <h4>请求：</h4>
             <code>

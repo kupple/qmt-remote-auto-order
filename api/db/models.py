@@ -230,6 +230,26 @@ class Positions(BaseModel):
     is_mock = Column(Integer, doc='是否回测', nullable=True, server_default='0', index=True)
     def __str__(self):
         return f"Positions: {self.security_code}"
+    
+
+class Account(BaseModel):
+    __tablename__ = "account"
+    
+    remark = Column(String(), doc='备注', nullable=True)
+    status = Column(Integer(), doc='状态0是禁用1是启用', nullable=True)
+    is_connected = Column(Integer(), doc='是否连接', nullable=True)
+    is_main = Column(Integer(), doc='是否主账号', nullable=True)
+    
+    mini_qmt_path = Column(String(), doc='路径', nullable=True)
+    client_id = Column(String(), doc='客户ID', nullable=True)
+    client_type = Column(Integer(), doc='账户类型', nullable=True)
+    ths_path = Column(String(), doc='同花顺路径', nullable=True)
+    ths_client_id = Column(String(), doc='同花顺客户ID', nullable=True)
+    ths_pwd = Column(String(), doc='同花顺密码', nullable=True)
+    is_main = Column(Integer(), doc='是否主账号', nullable=True)
+
+    def __str__(self):
+        return f"Account: {self.id}"    
 
 class Backtest(BaseModel):
     __tablename__ = "backtest"
