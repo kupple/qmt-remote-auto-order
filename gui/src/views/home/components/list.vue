@@ -27,9 +27,7 @@
                 <el-tag round effect="plain" disable-transitions v-if="item.task_type == 1 && item.platform != 10">自建策略</el-tag>
                 <el-tag round effect="plain" disable-transitions v-if="item.task_type == 2 && item.platform != 10" type="danger">他人策略</el-tag>
                 <el-tag round effect="plain" style="margin-left: 5px" disable-transitions v-if="item.order_count_type == 1" type="success">跟随策略</el-tag>
-                <el-tag round effect="plain" style="margin-left: 5px" disable-transitions v-else type="primary">
-                  动态调整->{{ item.dynamic_calculation_type == 1 ? '固定仓位' : '同步仓位' }}
-                </el-tag>
+                <el-tag round effect="plain" style="margin-left: 5px" disable-transitions v-else type="primary"> 动态调整->{{ item.dynamic_calculation_type == 1 ? '固定仓位' : '同步仓位' }} </el-tag>
                 <!-- <span class="order_count_amount" v-if="item.order_count_type == 2"> 起始金额:{{ item.allocation_amount }} </span> -->
               </div>
             </div>
@@ -70,7 +68,17 @@
           <el-descriptions-item label="持仓市值">{{ fundsDic.market_value }}</el-descriptions-item>
           <el-descriptions-item label="总资产">{{ fundsDic.total_asset }}</el-descriptions-item>
         </el-descriptions>
-        <el-button size="small"  style="width: 100px; margin-top: 10px" @click="getAccountInfoAction">获取账号信息</el-button>
+        <el-row style="margin-top: 10px" :gutter="5">
+          <el-col :span="24">
+            <el-button size="small" style="width: 100%" @click="getAccountInfoAction">获取账号信息</el-button>
+          </el-col>
+          <el-col :span="12" style="margin-top: 5px">
+            <el-button type="primary" size="small" style="width: 100%" @click="squareAllAction">一键回补</el-button>
+          </el-col>
+          <el-col :span="12" style="margin-top: 5px">
+            <el-button type="danger" size="small" style="width: 100%" @click="clearAllAction">一键清仓</el-button>
+          </el-col>
+        </el-row>
         <el-divider>功能</el-divider>
         <el-form :model="form" label-width="100px" v-if="settingConfig.client_type == 2">
           <el-form-item label="自动逆回购">
@@ -91,10 +99,16 @@
               <el-icon style="margin-left: 10px; color: #999; font-size: 18px"><QuestionFilled /></el-icon>
             </el-tooltip>
           </el-form-item>
-          <!-- <el-divider>系统</el-divider>
+          <el-form-item label="废单重下">
+            <el-switch size="small" v-model="form.auto_re_order" @change="(e) => autoAutomaticReverseAtion(3, e)" />
+            <el-tooltip effect="dark" content="开启后10点10分自动申购新债" placement="top">
+              <el-icon style="margin-left: 10px; color: #999; font-size: 18px"><QuestionFilled /></el-icon>
+            </el-tooltip>
+          </el-form-item>
+          <el-divider>系统</el-divider>
           <el-form-item label="开机自启动">
             <el-switch size="small" v-model="form.auto_startup" @change="(e) => autoAutomaticReverseAtion(4, e)" />
-          </el-form-item> -->
+          </el-form-item>
         </el-form>
         <div v-else class="ths-functional-area">
           <el-switch v-model="form.show_terminal" @change="(e) => controlThsWindow(e)" active-text="显示终端" inactive-text="隐藏终端" />
@@ -108,18 +122,7 @@
 
 <script setup>
 import { getUserInfo } from '@/api/auth'
-import {
-  controlThsWindow,
-  getAccountInfo,
-  getSettingConfig,
-  getTaskList,
-  getThsWindowState,
-  getUniqueID,
-  openThsShortcut,
-  runTask,
-  saveConfig,
-  setAutomatically
-} from '@/api/comm_tube'
+import { controlThsWindow, getAccountInfo, getSettingConfig, getTaskList, getThsWindowState, getUniqueID, openThsShortcut, runTask, saveConfig, setAutomatically } from '@/api/comm_tube'
 import { useCommonStore } from '@/store/common.js'
 import { Odometer, Promotion, QuestionFilled, Refresh, Setting } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -202,6 +205,24 @@ const convertToCodeAction = async (row) => {
 const shareAction = (row) => {
   router.push(`/share?strategy_code=${row.strategy_code}`)
   return
+}
+const squareAllAction = async () => {
+  ElMessageBox.confirm('确定要回补吗？', '确定要回补吗？', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async () => {
+    ElMessage.success('该功能尚未开发')
+  })
+}
+const clearAllAction = async () => {
+  ElMessageBox.confirm('确定要清仓吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async () => {
+    ElMessage.success('该功能尚未开发')
+  })
 }
 
 const getAccountInfoAction = async () => {

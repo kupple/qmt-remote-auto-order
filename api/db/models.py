@@ -73,6 +73,7 @@ class Setting(BaseModel):
     auto_national_debt = Column(Integer, doc='自动逆回购', nullable=True, server_default='0')
     auto_buy_stock_ipo = Column(Integer, doc='自动打新股', nullable=True, server_default='0')
     auto_buy_purchase_ipo = Column(Integer, doc='自动打新债·', nullable=True, server_default='0')
+    auto_reorder = Column(Integer, doc='自动重下单', nullable=True, server_default='0')
     auto_startup = Column(Integer, doc='开机自启动', nullable=True, server_default='0')
     account = Column(String(), doc='账号·', nullable=True)
     client_type = Column(Integer, doc='客户端类型', nullable=True, server_default='1')
@@ -99,6 +100,7 @@ class Setting(BaseModel):
                 auto_national_debt=0,
                 auto_buy_stock_ipo=0,
                 auto_buy_purchase_ipo=0,
+                auto_reorder=0,
                 auto_startup=0,
                 account='',
                 client_type=1,
