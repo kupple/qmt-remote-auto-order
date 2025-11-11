@@ -443,4 +443,3 @@ class qmt_data:
 if __name__=='__main__':
     data=qmt_data()
     data.subscribe_quote()
-    print(data.get_full_tick())

@@ -159,3 +159,18 @@ export const isHttpServerRunning = () => {
 export const programStart = ()=>{
   return window.pywebview.api.program_start()
 }
+
+export const resetRemotePosition = (task_id) => {
+  return window.pywebview.api.reset_remote_position(task_id)
+}
+export const getRemotePosition = (task_id) => {
+  return window.pywebview.api.get_remote_position(task_id)
+}
+
+export const clearAllStockByTaskId = (task_id) => {
+  return window.pywebview.api.clear_all_stock_by_task_id(task_id)
+}
+
+export const syncPositionActionByTaskId = (task_id) => {
+  return window.pywebview.api.sync_position_action_by_task_id(task_id)
+}

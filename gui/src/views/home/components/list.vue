@@ -72,12 +72,6 @@
           <el-col :span="24">
             <el-button size="small" style="width: 100%" @click="getAccountInfoAction">获取账号信息</el-button>
           </el-col>
-          <el-col :span="12" style="margin-top: 5px">
-            <el-button type="primary" size="small" style="width: 100%" @click="squareAllAction">一键回补</el-button>
-          </el-col>
-          <el-col :span="12" style="margin-top: 5px">
-            <el-button type="danger" size="small" style="width: 100%" @click="clearAllAction">一键清仓</el-button>
-          </el-col>
         </el-row>
         <el-divider>功能</el-divider>
         <el-form :model="form" label-width="100px" v-if="settingConfig.client_type == 2">
@@ -99,12 +93,7 @@
               <el-icon style="margin-left: 10px; color: #999; font-size: 18px"><QuestionFilled /></el-icon>
             </el-tooltip>
           </el-form-item>
-          <el-form-item label="废单重下">
-            <el-switch size="small" v-model="form.auto_re_order" @change="(e) => autoAutomaticReverseAtion(3, e)" />
-            <el-tooltip effect="dark" content="开启后10点10分自动申购新债" placement="top">
-              <el-icon style="margin-left: 10px; color: #999; font-size: 18px"><QuestionFilled /></el-icon>
-            </el-tooltip>
-          </el-form-item>
+          <el-button type="danger" size="small" style="width: 100%" @click="clearAllAction">一键清仓</el-button>
           <el-divider>系统</el-divider>
           <el-form-item label="开机自启动">
             <el-switch size="small" v-model="form.auto_startup" @change="(e) => autoAutomaticReverseAtion(4, e)" />

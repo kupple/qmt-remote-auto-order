@@ -1,7 +1,7 @@
 from datetime import datetime
 from api.db.models import (
     PPXStorageVar, Setting, TaskList, Orders, Entrusts, 
-    Trades, Backtest,Positions,Logger,
+    Trades, Backtest,Positions,Logger,RemotePositions,
     DATA_TABLE_RECORD,DATA_ALL_STOCKS,DATA_ST_STOCKS,DATA_TRADE_DATE_HIST
 )
 from pyapp.db.db import DB
@@ -213,7 +213,7 @@ class ORM:
             'data': data_list,
             'total': total
         }
-
+    
     def update_order(self, order_id, **kwargs):
         """更新订单信息"""
         if not kwargs:
@@ -694,9 +694,63 @@ class ORM:
     def get_trade_date_list(self):
         with DB.session() as dbSession:
             return [date.trade_date for date in dbSession.query(DATA_TRADE_DATE_HIST.trade_date).all()]
-        
-        
+
+
+    # 重置远程持仓为0
+    def reset_remote_position(self, task_id):
+        dbSession = DB.session()
+        with dbSession.begin():
+            stmt = RemotePositions.__table__.delete().where(RemotePositions.task_id == task_id)
+            dbSession.execute(stmt)
+        dbSession.close()
+        return True    
     
+    def get_remote_position(self, task_id):
+        dbSession = DB.session()
+        with dbSession.begin():
+            stmt = select(RemotePositions).where(RemotePositions.task_id == task_id)
+            result = dbSession.execute(stmt).scalars().all()
+            return [position.toDict() for position in result]
+
+    def save_remote_position(self, data):
+        """保存远程持仓（如果已存在则更新volume，否则插入新记录；如果volume为0则删除该记录）"""
+        dbSession = DB.session()
+        with dbSession.begin():
+            # 查询是否已存在该security_code和task_id的记录
+            stmt = select(RemotePositions).where(
+                RemotePositions.security_code == data['security_code'],
+                RemotePositions.task_id == data['task_id']
+            )
+            result = dbSession.execute(stmt).scalar_one_or_none()
+            if data['volume'] == 0:
+                # 如果volume为0，删除该记录（如果存在）
+                if result:
+                    delete_stmt = (
+                        RemotePositions.__table__.delete()
+                        .where(
+                            RemotePositions.security_code == data['security_code'],
+                            RemotePositions.task_id == data['task_id']
+                        )
+                    )
+                    dbSession.execute(delete_stmt)
+            else:
+                if result:
+                    # 已存在，则更新volume
+                    update_stmt = (
+                        update(RemotePositions)
+                        .where(
+                            RemotePositions.security_code == data['security_code'],
+                            RemotePositions.task_id == data['task_id']
+                        )
+                        .values(volume=data['volume'])
+                    )
+                    dbSession.execute(update_stmt)
+                else:
+                    # 不存在，则插入新记录
+                    insert_stmt = insert(RemotePositions).values(data)
+                    dbSession.execute(insert_stmt)
+        dbSession.close()
+        return True
 
     ############################################################################################################## 
     

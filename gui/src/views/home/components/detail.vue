@@ -30,12 +30,12 @@
                 {{ (row.average_price * row.volume).toFixed(2) }}
               </template>
             </el-table-column>
-            <el-table-column fixed="right" label="操作" align="center" width="200" v-if="taskDic.order_count_type == 2">
+            <el-table-column fixed="right" label="操作" align="center" :width="isEdit ? 200 : 100" v-if="taskDic.order_count_type == 2">
               <template #default="{ row }">
                 <el-button v-if="!row.is_edit" @click="editPosition(row)" type="primary" size="small">编辑</el-button>
                 <div v-else style="display: flex; align-items: center">
                   <el-button @click="savePosition(row)" type="success" size="small">保存</el-button>
-                  <el-button @click="editPosition(row)" type="info" size="small">取消</el-button>
+                  <el-button @click="editPosition(row)" size="small">取消</el-button>
                   <el-button @click="deletePosition(row)" type="danger" size="small">删除</el-button>
                 </div>
               </template>
@@ -75,17 +75,25 @@
         </div>
       </div>
       <div class="bottom-container-right">
-        <el-descriptions :column="2">
-          <el-descriptions-item>
-            <template #label> 开始时间 </template>
-            {{ taskDic.start_time }}
-          </el-descriptions-item>
-        </el-descriptions>
-        <el-divider content-position="center">操作</el-divider>
+        <div class="remote-position-container">
+          <span class="section-title">远程持股</span>
+          <el-table max-height="30vh" :data="remotePositionList" stripe style="width: 100%; margin-top: 10px" size="small">
+            <el-table-column prop="security_code" label="股票代码" />
+            <el-table-column prop="security_name" label="股票名称" />
+            <el-table-column prop="volume" label="数量" />
+          </el-table>
+          <el-button style="margin-top: 10px" size="small" @click="resetRemotePositionAction" plain>一键重置持仓</el-button>
+          <el-text style="font-size: 12px; display: block; margin-top: 10px">上一次更新: {{ taskDic['updated_at'] }}</el-text>
+        </div>
         <div class="btn-container">
-          <el-button class="btn" type="primary" @click="convertToCodeAction" plain>一键转换</el-button>
-          <el-button class="btn" type="primary" @click="editTask" plain>编辑</el-button>
-          <el-button class="btn" type="danger" @click="deleteStock" plain>删除</el-button>
+          <span class="section-title">操作</span>
+          <div class="btn-container-inner">
+            <el-button size="small" @click="convertToCodeAction" plain>一键转换代码</el-button>
+            <el-button size="small" @click="editTask" plain>编辑</el-button>
+            <el-button size="small" @click="syncPositionAction" plain>一键同步持仓</el-button>
+            <el-button size="small" type="danger" @click="clearAllStockAction" plain>一键清仓</el-button>
+            <el-button size="small" type="danger" @click="deleteStock" plain>删除</el-button>
+          </div>
         </div>
       </div>
     </div>
@@ -96,7 +104,7 @@
 </template>
 
 <script setup>
-import { deletePositionById, deleteTask, getPositionByTaskId, getTaskDetail, queryTradeToday, updatePosition } from '@/api/comm_tube'
+import { deletePositionById, deleteTask, getPositionByTaskId, getTaskDetail, queryTradeToday, updatePosition, resetRemotePosition, getRemotePosition, clearAllStockByTaskId,syncPositionActionByTaskId } from '@/api/comm_tube'
 import { unbindStrategyKey } from '@/api/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, ref } from 'vue'
@@ -108,13 +116,41 @@ const router = useRouter()
 const route = useRoute()
 const listModalRef = ref(null)
 const run_params = ref('sim_trade')
+const isEdit = ref(false)
 // 今日委托
 const todayTradeList = ref([])
 // 当前持仓
 const currentPositionList = ref([])
 const addPositionRef = ref(null)
 const adjustmentModalRef = ref(null)
+const remotePositionList = ref([])
 
+const getRemotePositionList = async () => {
+  const positions = await getRemotePosition(taskDic.value.id)
+  remotePositionList.value = positions
+}
+
+const resetRemotePositionAction = async () => {
+  ElMessageBox.confirm('确定要重置远程持仓吗？此操作不可恢复。', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  })
+    .then(async () => {
+      await resetRemotePosition(taskDic.value.id)
+      ElMessage({
+        type: 'success',
+        message: '重置成功'
+      })
+      await getRemotePositionList()
+    })
+    .catch(() => {
+      ElMessage({
+        type: 'info',
+        message: '已取消重置'
+      })
+    })
+}
 
 const openAdjustmentModal = () => {
   adjustmentModalRef.value.showModal({
@@ -131,6 +167,7 @@ onMounted(async () => {
   await getTaskDetailAction()
   await queryTradeTodayAction()
   await getCurrentPositionList()
+  await getRemotePositionList()
 })
 
 const queryTradeTodayAction = async () => {
@@ -139,6 +176,11 @@ const queryTradeTodayAction = async () => {
   todayTradeList.value = list
 }
 const editPosition = (row) => {
+  if (!isEdit.value) {
+    isEdit.value = true
+  } else {
+    isEdit.value = false
+  }
   currentPositionList.value = currentPositionList.value.map((item) => {
     if (item.security_code === row.security_code) {
       return {
@@ -161,6 +203,44 @@ const getCurrentPositionList = async () => {
     })
 }
 
+const syncPositionAction = async () => {
+  ElMessageBox.confirm('确定要同步持仓吗？此操作不可恢复。', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  })
+    .then(async () => {
+      await syncPositionActionByTaskId(taskDic.value.id)
+      ElMessage({
+        type: 'success',
+        message: '同步成功'
+      })
+    })
+    .catch(() => {
+      ElMessage({
+        type: 'info',
+        message: '已取消同步'
+      })
+    })
+}
+
+const clearAllStockAction = async () => {
+  ElMessageBox.confirm('确定要清仓吗？此操作不可恢复。', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  })
+    .then(async () => {
+      await clearAllStockByTaskId(taskDic.value.id)
+    })
+    .catch(() => {
+      ElMessage({
+        type: 'info',
+        message: '已取消清仓'
+      })
+    })
+}
+
 const goToHome = () => {
   router.go(-1)
 }
@@ -172,15 +252,15 @@ const deleteStock = () => {
     cancelButtonText: '否'
   })
     .then(async ({ value }) => {
-        if (taskDic.value.task_type == 2) {
-          await unbindStrategyKey({ strategy_keys_id: taskDic.value.strategy_keys_id })
-        }
-        deleteTask({ id: taskDic.value.id })
-        ElMessage({
-          type: 'success',
-          message: '删除成功'
-        })
-        goToHome()
+      if (taskDic.value.task_type == 2) {
+        await unbindStrategyKey({ strategy_keys_id: taskDic.value.strategy_keys_id })
+      }
+      deleteTask({ id: taskDic.value.id })
+      ElMessage({
+        type: 'success',
+        message: '删除成功'
+      })
+      goToHome()
     })
     .catch(() => {
       ElMessage({
@@ -197,6 +277,7 @@ const editTask = async () => {
   listModalRef.value.showModal(taskDic.value)
 }
 const savePosition = async (row) => {
+  isEdit.value = false
   await updatePosition(row.id, {
     volume: row.volume
   })
@@ -210,6 +291,7 @@ const addPositionAction = () => {
   addPositionRef.value.showModal(taskDic.value.id)
 }
 const deletePosition = async (row) => {
+  isEdit.value = false
   await deletePositionById(row.id)
   await getCurrentPositionList()
   ElMessage({
@@ -253,7 +335,7 @@ const deletePosition = async (row) => {
     flex: 1;
     overflow: hidden;
     .bottom-container-left {
-      width: 70%;
+      width: 65%;
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
@@ -303,21 +385,31 @@ const deletePosition = async (row) => {
       }
     }
     .bottom-container-right {
-      flex: 2;
-      background: #fff;
-      padding: 10px;
-      height: 100%;
-      overflow: auto;
-    }
-  }
-  .btn-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-    align-items: flex-start;
-    gap: 10px;
-    .btn {
-      margin-left: 0px;
+      flex: 1;
+      min-height: 100%;
+
+      .remote-position-container {
+        padding: 10px;
+        background: #fff;
+      }
+      .btn-container {
+        padding: 10px;
+        background: #fff;
+        margin-top: 10px;
+        display: flex;
+        flex-direction: column;
+        .btn-container-inner {
+          display: flex;
+          flex-wrap: wrap;
+          background: #fff;
+          gap: 10px;
+          margin-top: 10px;
+          justify-content: flex-start;
+          .el-button + .el-button {
+            margin-left: 0px;
+          }
+        }
+      }
     }
   }
 }

@@ -232,6 +232,15 @@ class Positions(BaseModel):
     is_mock = Column(Integer, doc='是否回测', nullable=True, server_default='0', index=True)
     def __str__(self):
         return f"Positions: {self.security_code}"
+
+
+class RemotePositions(BaseModel):
+    __tablename__ = "remote_positions"
+    security_code = Column(String(), doc='证券代码', nullable=True)
+    volume = Column(Integer, doc='数量', nullable=True)
+    task_id = Column(Integer, doc='任务ID', nullable=True)
+    def __str__(self):
+        return f"RemotePositions: {self.security_code}"
     
 
 class Account(BaseModel):

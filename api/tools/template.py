@@ -87,11 +87,24 @@ def qmt_auto_orders(method_name, *args, **kwargs):
                         pindex=pindex)
     if orderInfo == None:
         return None
+
+    positions = [
+        {{
+            'security': v.security,
+            'price': v.price,
+            'total_amount': v.total_amount,
+            'avg_cost': v.avg_cost,
+        }}
+        for v in g.context.portfolio.positions.values()
+    ]
+    total_value = g.context.portfolio.total_value
+
     jsonDic = json.dumps({{
         'method': method_name,
         'run_params': g.run_params,
         'state':'run',
         'strategy_code':'{strategy_code}',
+        'positions':positions,
         'params': {{
             'security':security,
             'value':value,
@@ -100,7 +113,8 @@ def qmt_auto_orders(method_name, *args, **kwargs):
             'amount':orderInfo.amount,
             'avg_cost':orderInfo.avg_cost,
             'is_buy':orderInfo.is_buy,
-            'add_time':orderInfo.add_time.strftime("%Y-%m-%d %H:%M:%S")
+            'add_time':orderInfo.add_time.strftime("%Y-%m-%d %H:%M:%S"),
+            'total_value':total_value
         }}
     }})
     url = "{server_url}/send_message"
@@ -259,7 +273,14 @@ def qmt_auto_orders(method_name, *args, **kwargs):
     style_str = f"{{type(style).__name__}}({{getattr(style, 'limit_price', '')}})" if style else None
     side = args[3] if len(args) > 3 else kwargs.get('side','long')
     pindex = args[4] if len(args) > 4 else kwargs.get('pindex',0)
-    total_value = g.context.portfolio.total_value
+    
+
+    orderInfo = system_method(security, value,
+                        style=style,
+                        side=side,
+                        pindex=pindex)
+    if orderInfo == None:
+        return None
 
     positions = [
         {{
@@ -270,13 +291,7 @@ def qmt_auto_orders(method_name, *args, **kwargs):
         }}
         for v in g.context.portfolio.positions.values()
     ]    
-
-    orderInfo = system_method(security, value,
-                        style=style,
-                        side=side,
-                        pindex=pindex)
-    if orderInfo == None:
-        return None
+    total_value = g.context.portfolio.total_value
         
     jsonDic = json.dumps({{
         'method': method_name,

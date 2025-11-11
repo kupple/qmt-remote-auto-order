@@ -301,3 +301,21 @@ INSERT INTO alembic_version (version_num) VALUES ('9b65683001b8') RETURNING vers
 
 UPDATE alembic_version SET version_num='a4e1e167b159' WHERE alembic_version.version_num = '9b65683001b8';
 
+-- Running upgrade a4e1e167b159 -> 6badaf17893b
+
+CREATE TABLE remote_positions (
+    security_code VARCHAR, 
+    volume INTEGER, 
+    task_id INTEGER, 
+    id INTEGER NOT NULL, 
+    created_at DATETIME DEFAULT (DATETIME(CURRENT_TIMESTAMP, 'localtime')), 
+    updated_at DATETIME DEFAULT (DATETIME(CURRENT_TIMESTAMP, 'localtime')), 
+    PRIMARY KEY (id)
+);
+
+UPDATE alembic_version SET version_num='6badaf17893b' WHERE alembic_version.version_num = 'a4e1e167b159';
+
+-- Running upgrade 6badaf17893b -> 1a69ebe0c486
+
+UPDATE alembic_version SET version_num='1a69ebe0c486' WHERE alembic_version.version_num = '6badaf17893b';
+
