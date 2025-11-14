@@ -37,6 +37,15 @@
       <el-form-item label="比例调整(倍数)" v-if="form.order_count_type === 1">
         <el-input-number step="0.1" min="0" max="100000" v-model="form.position_ratio" placeholder="请输入仓位调整金额" type="number"/>
       </el-form-item>
+      <el-form-item label="固定撮合价格" >
+        <el-switch
+          v-model="form.open_mandatory_limit_order"
+          active-text="启用"
+          inactive-text="禁用"
+          :active-value="1"
+          :inactive-value="0"
+        />  
+      </el-form-item>
       <el-form-item label="动态资金模式" v-if="form.order_count_type === 2 && form.platform != 10">
         <el-radio-group v-model="form.dynamic_calculation_type">
           <el-radio style="margin-right: 5px" :value="1">固定模式</el-radio>
@@ -110,7 +119,8 @@ const form = reactive({
   lower_limit_of_fees: 0,
   task_type: 1,
   share_secret: '',
-  position_ratio: 1
+  position_ratio: 1,
+  open_mandatory_limit_order: 0
 })
 const editDic = ref({})
 
@@ -147,6 +157,7 @@ const showModal = (dic) => {
     form.strategy_keys_id = dic.strategy_keys_id
     form.platform = dic.platform
     form.position_ratio = dic.position_ratio
+    form.open_mandatory_limit_order = dic.open_mandatory_limit_order
   } else {
     editDic.value = null
     isEdit.value = false
@@ -157,6 +168,7 @@ const showModal = (dic) => {
     form.lower_limit_of_fees = 5
     form.allocation_amount = 100000
     form.position_ratio = 1
+    form.open_mandatory_limit_order = 0
   }
 }
 const handleSubmit = async () => {
@@ -209,7 +221,8 @@ const handleSubmit = async () => {
     strategy_keys_id: strategy_keys_id,
     user_id: user_id,
     platform: form.platform,
-    position_ratio: form.position_ratio
+    position_ratio: form.position_ratio,
+    open_mandatory_limit_order: form.open_mandatory_limit_order
   }
   if (dic.id === undefined) {
     dic.mock_allocation_amount = 100000
@@ -217,7 +230,6 @@ const handleSubmit = async () => {
     dic.mock_lower_limit_of_fees = 5
     dic.accruing_amounts = dic.allocation_amount
     dic.can_use_amount = dic.allocation_amount
-    dic.position_ratio = 1
   }
   await createTask(dic)
   emit('getTaskList')

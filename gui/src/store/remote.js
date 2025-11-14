@@ -1,9 +1,9 @@
 // frontend/src/store/user.js
 import router from '@/router/index.js'
+import { useCommonStore } from '@/store/common.js'
 import dayjs from 'dayjs'
 import { ElMessage } from 'element-plus'
 import { defineStore } from 'pinia'
-import { useCommonStore } from '@/store/common.js'
 
 import { clearAuth } from '@/api/auth'
 export const useRemoteStore = defineStore('remote', {
@@ -74,7 +74,7 @@ export const useRemoteStore = defineStore('remote', {
         } else if (params.data.run_params == 'sim_trade') {
           st = `接收到来自模拟的信号单: `
         }
-        st += `任务编号为${params.data.strategy_code} 股票为${params.data.params.security} 数量为${params.data.params.amount} 方向为${params.data.params.is_buy ? '买入' : '卖出'}`
+        st += `任务编号为${params.data.strategy_code} 股票为${params.data.params.security} 数量为${params.data.params.amount} 价格为${params.data.params.price} 方向为${params.data.params.is_buy ? '买入' : '卖出'}`
         params.message = st
       } else {
         this.clientId = params.unique_id

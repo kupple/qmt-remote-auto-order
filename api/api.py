@@ -387,75 +387,123 @@ class API(System):
         # 获取任务详情
         task_detail = G.orm.get_task_detail({"id": task_id})
 
-        # 获取全推行情
-        full_tick = self.trade_controller.qmt_trader.data.get_full_tick(
-            [item["security_code"] for item in remote_stock_list]
-        )
-        # 计算所有股票的总市值
-        remote_total_value = sum(full_tick[item["security_code"]]["lastPrice"] * item["volume"] for item in remote_stock_list)
+        if task_detail['order_count_type'] == 1:
+            for stocksItem in remote_stock_list:
+                remote_num = (stocksItem["volume"] * task_detail["position_ratio"]) // 100 * 100
+                remote_num = int(remote_num)
 
-        dynamic_calculation_type = task_detail["dynamic_calculation_type"]
-
-        allocation_amount = 0
-        if dynamic_calculation_type == 1:
-            allocation_amount = task_detail["allocation_amount"]
-        elif dynamic_calculation_type == 2:
-            can_use_amount = task_detail["can_use_amount"]
-            position_total_value = sum(full_tick[item["security_code"]]["lastPrice"] * item["volume"] for item in local_stock_list)
-            allocation_amount = round(can_use_amount + position_total_value, 2)
-        
-        if allocation_amount == 0:
-            print("可用资金不足")
-            return False
-
-        for item in remote_stock_list:
-            security_code = item["security_code"]
-            volume = item["volume"]
-            price = full_tick[security_code]["lastPrice"]
-            stock_value = price * volume
-            actual_stock_value = stock_value * allocation_amount / remote_total_value
-            stock_volume = actual_stock_value / price
-            stock_volume = (stock_volume // 100) * 100
-
-            local_stock_item = next((x for x in local_stock_list if x["security_code"] == item["security_code"]), 0)
-            final_amount = 0
-            is_buy = 1
-            if stock_volume > local_stock_item["volume"]:
+            local_stock_item = next((x for x in local_stock_list if x["security_code"] == stocksItem["security_code"]), 0)
+            if remote_num > local_stock_item["volume"]:
                 is_buy = 1
-                final_amount = abs(stock_volume - local_stock_item["volume"])
+                final_amount = abs(remote_num - local_stock_item["volume"])
             else:
                 is_buy = 0
-                final_amount = abs(local_stock_item["volume"] - stock_volume)
-            
-            saveData = {
-                "security_code": item["security_code"],
-                "style": 1,
-                "platform": "joinquant",
-                "run_params": 'sim_trade',
-                "strategy_code": task_detail["strategy_code"],
-                "fix_result_order_id": None,
-                "is_buy": is_buy,
-                "avg_cost": price,
-                "commission": 0,
-                "add_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "amount": final_amount,
-                "price": price,
-                "status": 0,
-                "positions": [item["security_code"] for item in remote_stock_list],
-                "total_value": remote_total_value,
-            }
-            print(saveData)
-            orderId = G.orm.save_order(saveData)
-            orderId = str(orderId)
-            self.trade_controller.place_order(
-                stock_code=item["security_code"],
-                volume=final_amount,
-                price=price,
-                is_buy=True if is_buy == 1 else False,
-                order_time=None,
-                task_id=str(task_detail["id"]),
-                order_remark=orderId,
+                final_amount = abs(local_stock_item["volume"] - remote_num)
+                if stock_volume > local_stock_item["volume"]:
+                    is_buy = 1
+                    final_amount = abs(stock_volume - local_stock_item["volume"])
+                else:
+                    is_buy = 0
+                    final_amount = abs(local_stock_item["volume"] - stock_volume)
+                
+                saveData = {
+                    "security_code": item["security_code"],
+                    "style": 1,
+                    "platform": "joinquant",
+                    "run_params": 'sim_trade',
+                    "strategy_code": task_detail["strategy_code"],
+                    "fix_result_order_id": None,
+                    "is_buy": is_buy,
+                    "avg_cost": price,
+                    "commission": 0,
+                    "add_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "amount": final_amount,
+                    "price": price,
+                    "status": 0,
+                    "positions": [item["security_code"] for item in remote_stock_list],
+                    "total_value": remote_total_value,
+                }
+                orderId = G.orm.save_order(saveData)
+                orderId = str(orderId)
+                self.trade_controller.place_order(
+                    stock_code=item["security_code"],
+                    volume=final_amount,
+                    price=price,
+                    is_buy=True if is_buy == 1 else False,
+                    order_time=None,
+                    task_id=str(task_detail["id"]),
+                    order_remark=orderId,
+                )
+        else:
+            # 获取全推行情
+            full_tick = self.trade_controller.qmt_trader.data.get_full_tick(
+                [item["security_code"] for item in remote_stock_list]
             )
+            # 计算所有股票的总市值
+            remote_total_value = sum(full_tick[item["security_code"]]["lastPrice"] * item["volume"] for item in remote_stock_list)
+
+            dynamic_calculation_type = task_detail["dynamic_calculation_type"]
+
+            allocation_amount = 0
+            if dynamic_calculation_type == 1:
+                allocation_amount = task_detail["allocation_amount"]
+            elif dynamic_calculation_type == 2:
+                can_use_amount = task_detail["can_use_amount"]
+                position_total_value = sum(full_tick[item["security_code"]]["lastPrice"] * item["volume"] for item in local_stock_list)
+                allocation_amount = round(can_use_amount + position_total_value, 2)
+            
+            if allocation_amount == 0:
+                print("可用资金不足")
+                return False
+
+            for item in remote_stock_list:
+                security_code = item["security_code"]
+                volume = item["volume"]
+                price = full_tick[security_code]["lastPrice"]
+                stock_value = price * volume
+                actual_stock_value = stock_value * allocation_amount / remote_total_value
+                stock_volume = actual_stock_value / price
+                stock_volume = (stock_volume // 100) * 100
+
+                local_stock_item = next((x for x in local_stock_list if x["security_code"] == item["security_code"]), 0)
+                final_amount = 0
+                is_buy = 1
+                if stock_volume > local_stock_item["volume"]:
+                    is_buy = 1
+                    final_amount = abs(stock_volume - local_stock_item["volume"])
+                else:
+                    is_buy = 0
+                    final_amount = abs(local_stock_item["volume"] - stock_volume)
+                
+                saveData = {
+                    "security_code": item["security_code"],
+                    "style": 1,
+                    "platform": "joinquant",
+                    "run_params": 'sim_trade',
+                    "strategy_code": task_detail["strategy_code"],
+                    "fix_result_order_id": None,
+                    "is_buy": is_buy,
+                    "avg_cost": price,
+                    "commission": 0,
+                    "add_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "amount": final_amount,
+                    "price": price,
+                    "status": 0,
+                    "positions": [item["security_code"] for item in remote_stock_list],
+                    "total_value": remote_total_value,
+                }
+                print(saveData)
+                orderId = G.orm.save_order(saveData)
+                orderId = str(orderId)
+                self.trade_controller.place_order(
+                    stock_code=item["security_code"],
+                    volume=final_amount,
+                    price=price,
+                    is_buy=True if is_buy == 1 else False,
+                    order_time=None,
+                    task_id=str(task_detail["id"]),
+                    order_remark=orderId,
+                )
 
             
             

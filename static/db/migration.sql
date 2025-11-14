@@ -325,3 +325,9 @@ ALTER TABLE tasklist ADD COLUMN position_ratio NUMERIC DEFAULT '1';
 
 UPDATE alembic_version SET version_num='07ab3e87c195' WHERE alembic_version.version_num = '1a69ebe0c486';
 
+-- Running upgrade 07ab3e87c195 -> 1dfc206b5893
+
+ALTER TABLE tasklist ADD COLUMN open_mandatory_limit_order INTEGER DEFAULT '0';
+
+UPDATE alembic_version SET version_num='1dfc206b5893' WHERE alembic_version.version_num = '07ab3e87c195';
+

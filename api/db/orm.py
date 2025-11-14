@@ -1,4 +1,5 @@
 from datetime import datetime
+import json
 from api.db.models import (
     PPXStorageVar, Setting, TaskList, Orders, Entrusts, 
     Trades, Backtest,Positions,Logger,RemotePositions,
@@ -7,6 +8,24 @@ from api.db.models import (
 from pyapp.db.db import DB
 from sqlalchemy import select, update, insert, and_, or_, desc, func
 from api.tools.sys_config import generate_random_letters
+def _convert_stock_suffix(stock_code: str) -> str:
+    """转换股票代码后缀"""
+    if not stock_code:
+        return stock_code
+
+    if "." not in stock_code:
+        if stock_code.startswith(("0", "3", "2")):
+            return f"{stock_code}.SZ"
+        if stock_code.startswith(("6", "9", "7")):
+            return f"{stock_code}.SH"
+        return stock_code
+
+    code, exchange = stock_code.rsplit(".", 1)
+    if exchange.upper() == "XSHG":
+        return f"{code}.SH"
+    if exchange.upper() == "XSHE":
+        return f"{code}.SZ"
+    return stock_code
 class ORM:
     '''操作数据库类'''
 
@@ -749,6 +768,54 @@ class ORM:
                     # 不存在，则插入新记录
                     insert_stmt = insert(RemotePositions).values(data)
                     dbSession.execute(insert_stmt)
+        dbSession.close()
+        return True
+
+    def save_remote_positions(self, task_id, positions_arr):
+        """重置并批量保存远程持仓"""
+        normalized_positions = positions_arr
+        if isinstance(normalized_positions, str):
+            try:
+                normalized_positions = json.loads(normalized_positions)
+            except json.JSONDecodeError:
+                normalized_positions = []
+
+        if not normalized_positions:
+            return True
+
+        dbSession = DB.session()
+        with dbSession.begin():
+            stmt = RemotePositions.__table__.delete().where(
+                RemotePositions.task_id == task_id
+            )
+            dbSession.execute(stmt)
+
+            insert_data = []
+            for position in normalized_positions:
+                security_code = (
+                    position.get("security_code")
+                    or position.get("security")
+                    or ""
+                )
+                if not security_code:
+                    continue
+                security_code = _convert_stock_suffix(security_code)
+                volume_val = position.get("volume")
+                if volume_val is None:
+                    volume_val = position.get("total_amount", 0)
+                try:
+                    volume = int(volume_val)
+                except (TypeError, ValueError):
+                    continue
+                insert_data.append(
+                    {
+                        "security_code": security_code,
+                        "volume": volume,
+                        "task_id": task_id,
+                    }
+                )
+            if insert_data:
+                dbSession.execute(insert(RemotePositions), insert_data)
         dbSession.close()
         return True
 

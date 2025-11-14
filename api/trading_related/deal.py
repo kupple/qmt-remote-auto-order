@@ -58,7 +58,7 @@ def is_auction_period(stock_code: str, check_time: datetime = None) -> bool:
 
 
 def calculate_max_possible_price(stock_code: str, previous_close: float, current_price: float,
-                                direction: str, is_st: bool = False, auction_period: bool = False) -> float:
+                                direction: str, is_st: bool = False, auction_period: bool = False,limit_up = False) -> float:
     """
     计算在当前规则下允许的最大可能成交价格
     
@@ -91,28 +91,40 @@ def calculate_max_possible_price(stock_code: str, previous_close: float, current
     # 根据板块和交易时段设置价格笼子
     if is_science_innovation or is_gem:
         # 科创板和创业板：全天有价格笼子
-        cage_upper = round(current_price * 1.02, 2)
-        cage_lower = round(current_price * 0.98, 2)
+        cage_upper = round(current_price * 1.01, 2)
+        cage_lower = round(current_price * 0.99, 2)
     elif is_star and not auction_period:
         # 北交所：连续竞价有价格笼子
-        cage_upper = round(current_price * 1.05, 2)
-        cage_lower = round(current_price * 0.95, 2)
+        cage_upper = round(current_price * 1.03, 2)
+        cage_lower = round(current_price * 0.97, 2)
     elif is_main_board and not auction_period:
         # 主板：连续竞价有价格笼子（修正逻辑）
-        cage_upper = round(current_price * 1.02, 2)
-        cage_lower = round(current_price * 0.98, 2)
-    
-    # 应用涨跌停限制和价格笼子
-    if direction.lower() == 'buy':
-        # 买入方向：最终价格为 价格笼子上限 和 涨停价 的较小值
-        final_price = min(limit_up, cage_upper)
-        return round(final_price, 2)
-    elif direction.lower() == 'sell':
-        # 卖出方向：最终价格为 价格笼子下限 和 跌停价 的较大值
-        final_price = max(limit_down, cage_lower)
-        return round(final_price, 2)
+        cage_upper = round(current_price * 1.01, 2)
+        cage_lower = round(current_price * 0.99, 2)
     else:
-        raise ValueError("交易方向必须是 'buy' 或 'sell'")
+        cage_upper = round(current_price * 1.01, 2)
+        cage_lower = round(current_price * 0.99, 2)
+    
+    if limit_up == True:
+        # 应用涨跌停限制和价格笼子
+        if direction.lower() == 'buy':
+            # 买入方向：最终价格为 价格笼子上限 和 涨停价 的较小值
+            final_price = min(limit_up, cage_upper)
+            print(limit_up, cage_upper)
+            return round(final_price, 2)
+        elif direction.lower() == 'sell':
+            # 卖出方向：最终价格为 价格笼子下限 和 跌停价 的较大值
+            final_price = max(limit_down, cage_lower)
+            return round(final_price, 2)
+        else:
+            raise ValueError("交易方向必须是 'buy' 或 'sell'")
+    else:
+        if direction.lower() == 'buy':
+            return round(cage_upper, 2)
+        elif direction.lower() == 'sell':
+            return round(cage_lower, 2)
+        else:
+            raise ValueError("交易方向必须是 'buy' 或 'sell'")
 
 def calculate_price_limits(stock_code: str, previous_close: float, is_st: bool) -> tuple[float, float]:
     """
@@ -233,27 +245,27 @@ def stockcode_mapping_dic(security):
     return stockDic
 
 # 按比率买卖股票
-def count_stock_price(security,price,is_buy):
+def count_stock_price(security,price,is_buy,is_mock_state = 0):
     # 获取上一个收盘价格
     close=G.stock_map["all_stock_code"][security]["close"]
     is_data_synced = G.stock_map["is_data_synced"]
     is_st = security in G.stock_map["st_stock_code"]
+
     # 如果数据未同步，使用最新价
-    if is_data_synced:
-        optimal_price = calculate_max_possible_price(
-            security, 
-            close, 
-            price,
-            "buy" if is_buy else "sell",
-            is_st,
-            False)
-        return optimal_price
-    else:
-        return price
+    optimal_price = calculate_max_possible_price(
+        security, 
+        close, 
+        price,
+        "buy" if is_buy else "sell",
+        is_st,
+        False,
+        is_data_synced and is_mock_state == 0, #同步完就True 否则不判断涨停
+    )
+    return optimal_price
     
     
 
-def get_qmt_price_type(security, order_style_str, is_buy=True, price=0):
+def get_qmt_price_type(security, order_style_str, is_buy=True, price=0, open_mandatory_limit_order=0,is_mock_state = 0):
     # 提取交易所代码
     exchange = security.split('.')[-1]
     cleanCode = security.split('.')[0]
@@ -268,8 +280,8 @@ def get_qmt_price_type(security, order_style_str, is_buy=True, price=0):
     
     # 如果是ST股票，且是卖出类型 且是上海股票
     if is_st and is_zhishu:
-        G.logger.warning("上海ST股票，使用最新价报单")
-        optimal_price = count_stock_price(security,price,is_buy)
+        # G.logger.warning("上海ST股票，使用最新价报单")
+        optimal_price = count_stock_price(security,price,is_buy,is_mock_state)
         return xtconstant.LATEST_PRICE,optimal_price
     
     
@@ -300,7 +312,11 @@ def get_qmt_price_type(security, order_style_str, is_buy=True, price=0):
                 order_type = match.group(1)
                 param = match.group(2).strip()
                 limit_price = float(param) if param else None
-    
+
+    if open_mandatory_limit_order == 1:
+        optimal_price = count_stock_price(security,price,is_buy,is_mock_state)
+        # 默认使用最新价
+        return xtconstant.FIX_PRICE,optimal_price
     
     # 处理限价单
     if order_type == 'LimitOrderStyle':

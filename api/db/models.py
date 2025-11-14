@@ -142,6 +142,7 @@ class TaskList(BaseModel):
     is_simulation = Column(Integer(), doc='是否仿真回测', nullable=True, server_default='0')
     position_ratio = Column(Numeric(), doc='比例调整', nullable=True, server_default='1')
     platform = Column(Integer(), doc='平台', nullable=True, server_default='1')
+    open_mandatory_limit_order = Column(Integer(), doc='是否强制使用限价单', nullable=True, server_default='0')
     def __str__(self):
         return f"Task: {self.name}"
 

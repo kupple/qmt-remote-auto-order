@@ -54,7 +54,6 @@ class TradeController:
     # 同花顺处理订单
     def ths_deal_order(self, order):
         result = self.ths_auto.get_balance()
-        print(result)
         # order_type = order['order_type']
         # if order_type == OrderType.STOCK_BUY:
         #   self.ths_auto.buy(order['stock_code'],order['volume'],order['price'])
@@ -239,7 +238,9 @@ class TradeController:
     #  计算配置仓位
     def order_on_pro_rata_basis(self,orderDic:dict,task:dict,backtest_id:int = None)->int:
         if task['order_count_type'] == 1:
-            return orderDic['amount']
+            num = (orderDic['amount'] * task['position_ratio']) // 100 * 100
+            num = int(num)
+            return num
         else:
             # 获取当前持仓
             total_value = round(orderDic['total_value'],2)
@@ -254,7 +255,6 @@ class TradeController:
                 actual_position_volume += orderDic['amount']
             else:
                 actual_position_volume -= orderDic['amount']
-            print(actual_position_volume)
             dynamic_calculation_type = task['dynamic_calculation_type']
             accruing_amounts = 0
         
@@ -311,12 +311,22 @@ class TradeController:
         task_id="",
         order_remark="",
         is_mock_state=1,
+        open_mandatory_limit_order=0,
     ):
 
         price_type, optimal_price = get_qmt_price_type(
-            stock_code, order_style_str, is_buy, price
+            stock_code, 
+            order_style_str,
+            is_buy, 
+            price,
+            is_mock_state,
+            open_mandatory_limit_order
         )
+
         order_type = OrderType.STOCK_BUY if is_buy == 1 else OrderType.STOCK_SELL
+        System.system_py2js(self,'remoteCallBack',  {
+            "message": "下单数量: " + str(volume) + " 价格: " + str(optimal_price) + " 股票代码: " + stock_code + " 方向: " + ("买入" if is_buy == 1 else "卖出"),
+        })
 
         if is_mock_state == 0:
             # 如果是同花顺类型
@@ -488,7 +498,6 @@ class TradeController:
                 "total_value": total_value,
             }
 
-            print(saveData)
 
             if G.run_model_type == 2:
                 user_id = G.user_id
@@ -588,7 +597,7 @@ class TradeController:
                     orderId = G.orm.save_order(saveData)
                     orderId = str(orderId)
 
-                    G.orm.save_remote_position({"security_code": security, "volume": amount, "task_id": task["id"]})
+                    G.orm.save_remote_positions(task["id"], positions_arr)
 
                     # 将字符串转换为 datetime 对象
                     dt = datetime.strptime(add_time, "%Y-%m-%d %H:%M:%S")
@@ -615,6 +624,7 @@ class TradeController:
                             task_id=str(task["id"]),
                             order_remark=orderId,
                             is_mock_state=1,
+                            open_mandatory_limit_order=task['open_mandatory_limit_order']
                         )
                     else:
                         G.logger.error("异常Code 121", extra={"showMessage": True})
@@ -630,9 +640,7 @@ class TradeController:
                     return
 
                     # 保存持仓信息到数据库
-                G.orm.save_remote_position(
-                    {"security_code": security, "volume": amount, "task_id": task["id"]}
-                )
+                G.orm.save_remote_positions(task["id"], positions_arr)
 
                 # 没有检测没有连接不往下执行
                 if self.acc_is_connect == False:
@@ -677,6 +685,7 @@ class TradeController:
                         task_id=str(task["id"]),
                         order_remark=orderId,
                         is_mock_state=is_mock_state,
+                        open_mandatory_limit_order=task['open_mandatory_limit_order']
                     )
                 else:
                     G.logger.info(
