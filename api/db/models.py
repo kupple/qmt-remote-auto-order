@@ -140,6 +140,7 @@ class TaskList(BaseModel):
     mock_allocation_amount = Column(Numeric(), doc='回测分配金额', nullable=True)
     user_id = Column(String(), doc='用户id', nullable=True)
     is_simulation = Column(Integer(), doc='是否仿真回测', nullable=True, server_default='0')
+    position_ratio = Column(Numeric(), doc='比例调整', nullable=True, server_default='1')
     platform = Column(Integer(), doc='平台', nullable=True, server_default='1')
     def __str__(self):
         return f"Task: {self.name}"

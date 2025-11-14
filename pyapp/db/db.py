@@ -19,33 +19,15 @@ class DB:
 
     def init(self):
         '''初始化数据库'''
-        # 迁移数据库到本地电脑
-        dbAppDataDir = os.path.join(Config.appDataDir, 'static', 'db')    # 本地电脑
+        # 迁移数据库到程序目录
+        dbAppDataDir = os.path.join(Config.codeDir, 'static', 'db')
         if not os.path.isdir(dbAppDataDir):
-            # 新建本地电脑文件夹
-            os.makedirs(dbAppDataDir)
-        DB.dbPath = os.path.join(dbAppDataDir, 'base.db')    # 本地数据库
-        dbVerionPath = os.path.join(dbAppDataDir, 'version')    # 本地数据库版本
-        appdbVerionPath = os.path.join(Config.staticDir, 'db', 'version')    # 程序包中数据库版本
-        ifCopy = False
+            os.makedirs(dbAppDataDir, exist_ok=True)
+        DB.dbPath = os.path.join(dbAppDataDir, 'base.db')
+        dbVerionPath = os.path.join(dbAppDataDir, 'version')
+        appdbVerionPath = os.path.join(Config.staticDir, 'db', 'version')
         if not os.path.exists(DB.dbPath):
-            # 数据库不存在时，新建数据库
-            ifCopy = True
-        elif Config.ifCoverDB:
-            # 配置信息为强制覆盖 且 数据库版本为新 时，覆盖数据库
-            if not os.path.exists(dbVerionPath):
-                ifCopy = True
-            else:
-                dbVerion = ''
-                with open(dbVerionPath, 'r') as f:
-                    dbVerion = f.read()
-                appdbVerion = ''
-                with open(appdbVerionPath, 'r') as f:
-                    appdbVerion = f.read()
-                if dbVerion != appdbVerion:
-                    ifCopy = True
-        if ifCopy:
-            dbStaticPath = os.path.join(Config.staticDir, 'db', 'base.db')    # 程序包
+            dbStaticPath = os.path.join(Config.staticDir, 'db', 'base.db')
             copyfile(dbStaticPath, DB.dbPath)
             copyfile(appdbVerionPath, dbVerionPath)
 

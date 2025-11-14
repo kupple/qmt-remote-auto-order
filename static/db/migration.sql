@@ -319,3 +319,9 @@ UPDATE alembic_version SET version_num='6badaf17893b' WHERE alembic_version.vers
 
 UPDATE alembic_version SET version_num='1a69ebe0c486' WHERE alembic_version.version_num = '6badaf17893b';
 
+-- Running upgrade 1a69ebe0c486 -> 07ab3e87c195
+
+ALTER TABLE tasklist ADD COLUMN position_ratio NUMERIC DEFAULT '1';
+
+UPDATE alembic_version SET version_num='07ab3e87c195' WHERE alembic_version.version_num = '1a69ebe0c486';
+

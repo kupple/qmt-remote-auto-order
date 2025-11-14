@@ -237,85 +237,67 @@ class TradeController:
         )
 
     #  计算配置仓位
-    def order_on_pro_rata_basis(
-        self, orderDic: dict, task: dict, backtest_id: int = None
-    ) -> int:
-        if task["order_count_type"] == 1:
-            return orderDic["amount"]
+    def order_on_pro_rata_basis(self,orderDic:dict,task:dict,backtest_id:int = None)->int:
+        if task['order_count_type'] == 1:
+            return orderDic['amount']
         else:
             # 获取当前持仓
-            total_value = round(orderDic["total_value"], 2)
-
-            remote_positions = json.loads(orderDic["positions"])
+            total_value = round(orderDic['total_value'],2)
+            is_buy = orderDic['is_buy']
             
-            actual_position_dic = next(
-                (
-                    p
-                    for p in remote_positions
-                    if convert_stock_suffix(p["security"]) == orderDic["security_code"]
-                ),
-                None,
-            )
-            # 实际持仓的持仓列表
-            positions_arr = G.orm.query_position_by_task_or_backtest_id(
-                backtest_id=backtest_id, task_id=task["id"]
-            )
+            # 实际持仓
+            actual_position_volume = 0
+            positions = json.loads(orderDic['positions'])
+            actual_position_volume = next((p['total_amount'] for p in positions if convert_stock_suffix(p['security']) == orderDic['security_code']), 0)
             
-            position_obj = next((p for p in positions_arr if p.get("security_code") == orderDic["security_code"]), None)
-            # 清仓的情况 返回原本持有最多的股票
-            if actual_position_dic == None:
-                if position_obj:
-                    return position_obj["volume"]
-                else:
-                    return None
+            if is_buy == 1:
+                actual_position_volume += orderDic['amount']
             else:
-
-                dynamic_calculation_type = task["dynamic_calculation_type"]
-                accruing_amounts = 0 
-                # 固定仓位模式
-                if dynamic_calculation_type == 1:
-                    if backtest_id:
-                        accruing_amounts = G.orm.query_backtest_by_id(backtest_id)[
-                            "initial_capital"
-                        ]
-                    else:
-                        accruing_amounts = task["allocation_amount"]
-                # 根据盈亏分配
-                elif dynamic_calculation_type == 2:
-                    can_use_amount = 0
-                    if backtest_id:
-                        can_use_amount = G.orm.query_backtest_by_id(backtest_id)[
-                            "can_use_amount"
-                        ]
-                    else:
-                        can_use_amount = task["can_use_amount"]
-
-                    position_total_value = 0
-                    for position in positions_arr:
-                        for order_position in remote_positions:
-                            if position["security_code"] == convert_stock_suffix(
-                                order_position["security"]
-                            ):
-                                position_total_value += (
-                                    position["volume"] * order_position["price"]
-                                )
-                                continue                                              
-                    accruing_amounts = round(can_use_amount + position_total_value, 2)
-
-                remote_stock_amount = orderDic['price'] * actual_position_dic['total_amount']
+                actual_position_volume -= orderDic['amount']
+            print(actual_position_volume)
+            dynamic_calculation_type = task['dynamic_calculation_type']
+            accruing_amounts = 0
+        
+        
+            positions_arr = G.orm.query_position_by_task_or_backtest_id(backtest_id=backtest_id,task_id=task['id'])
+            position_total_value = 0
+            for position in positions_arr:
+                for order_position in positions:
+                    if position['security_code'] == convert_stock_suffix(order_position['security']):
+                        position_total_value += position['volume'] * order_position['price']
+                        continue
+            
+            # 固定仓位模式
+            if dynamic_calculation_type == 1:
+                if backtest_id:
+                    accruing_amounts = G.orm.query_backtest_by_id(backtest_id)['initial_capital']
+                else:
+                    accruing_amounts = task['allocation_amount']
+            # 根据盈亏分配
+            elif dynamic_calculation_type == 2:
+                can_use_amount = 0
+                if backtest_id:
+                    can_use_amount = G.orm.query_backtest_by_id(backtest_id)['can_use_amount']
+                else:
+                    can_use_amount = task['can_use_amount']
+                    accruing_amounts = round(can_use_amount + position_total_value,2)
                 
-                # 得出实际的仓位
-                map_stock_volume =  remote_stock_amount * accruing_amounts / total_value
-
-                map_stock_volume = map_stock_volume / orderDic['price']
-
-                map_stock_volume = (map_stock_volume // 100) * 100
-
-                # 没持仓的情况
-                if position_obj == None:
-                    return map_stock_volume
-
-                return abs(map_stock_volume - position_obj["volume"])
+            
+            # 计算配置仓位
+            allocation_amount = round(actual_position_volume * accruing_amounts / total_value,2)
+            print(allocation_amount,accruing_amounts,actual_position_volume,total_value)
+            final_amount = 0
+            allocation_amount = (allocation_amount // 100) * 100
+            allocation_amount = int(allocation_amount)
+            
+            position = next((item for item in positions_arr if item.get('security_code') == orderDic['security_code']), None)
+            if position:
+                final_amount = abs(allocation_amount - position['volume'])
+            else:
+                if is_buy == 1:
+                    final_amount = allocation_amount
+            
+            return final_amount
 
     # 统一处理-下单接口
     def place_order(
