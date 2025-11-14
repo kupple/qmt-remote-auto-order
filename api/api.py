@@ -22,7 +22,7 @@ import subprocess
 import webview
 import os
 import logging
-import datetime
+from datetime import datetime
 import sys
 from api.trading_related.deal import convert_stock_suffix
 from dotenv import load_dotenv
@@ -361,13 +361,32 @@ class API(System):
     # 一键清空持仓股票
     def clear_all_stock_by_task_id(self, task_id):
         stock_list = G.orm.query_position_by_task_id(task_id)
-
+        task_detail = G.orm.get_task_detail({"id": task_id})
         # 获取全推行情
         full_tick = self.trade_controller.qmt_trader.data.get_full_tick(
             [item["security_code"] for item in stock_list]
         )
 
         for item in stock_list:
+            price = full_tick[item["security_code"]]["lastPrice"]
+            saveData = {
+                "security_code": item["security_code"],
+                "style": 1,
+                "platform": "joinquant",
+                "run_params": 'sim_trade',
+                "strategy_code": task_detail["strategy_code"],
+                "fix_result_order_id": None,
+                "is_buy": 0,
+                "avg_cost": price,
+                "commission": 0,
+                "add_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "amount": item['volume'],
+                "price": price,
+                "status": 0,
+                "positions": json.dumps([x["security_code"] for x in stock_list]),
+            }
+            orderId = G.orm.save_order(saveData)
+            orderId = str(orderId)
             self.trade_controller.place_order(
                 stock_code=item["security_code"],
                 volume=item["volume"],
@@ -375,6 +394,7 @@ class API(System):
                 is_buy=False,
                 order_time=None,
                 task_id=task_id,
+                order_remark=orderId,
                 is_mock_state=0,
             )
         return True
@@ -387,27 +407,31 @@ class API(System):
         # 获取任务详情
         task_detail = G.orm.get_task_detail({"id": task_id})
 
+        full_tick = self.trade_controller.qmt_trader.data.get_full_tick(
+            [item["security_code"] for item in remote_stock_list]
+        )
+
+        remote_total_value = sum(full_tick[item["security_code"]]["lastPrice"] * item["volume"] for item in remote_stock_list)
         if task_detail['order_count_type'] == 1:
             for stocksItem in remote_stock_list:
                 remote_num = (stocksItem["volume"] * task_detail["position_ratio"]) // 100 * 100
                 remote_num = int(remote_num)
-
-            local_stock_item = next((x for x in local_stock_list if x["security_code"] == stocksItem["security_code"]), 0)
-            if remote_num > local_stock_item["volume"]:
-                is_buy = 1
-                final_amount = abs(remote_num - local_stock_item["volume"])
-            else:
-                is_buy = 0
-                final_amount = abs(local_stock_item["volume"] - remote_num)
-                if stock_volume > local_stock_item["volume"]:
+                local_stock_item = next((x['volume'] for x in local_stock_list if x["security_code"] == stocksItem["security_code"]), 0)
+                final_amount = 0
+                price = full_tick[stocksItem["security_code"]]["lastPrice"]
+                if remote_num > local_stock_item:
                     is_buy = 1
-                    final_amount = abs(stock_volume - local_stock_item["volume"])
+                    final_amount = abs(remote_num - local_stock_item)
                 else:
                     is_buy = 0
-                    final_amount = abs(local_stock_item["volume"] - stock_volume)
-                
+                    final_amount = abs(local_stock_item - remote_num)
+                    
+                # 跳过无需下单的场景
+                if final_amount == 0:
+                    continue
+
                 saveData = {
-                    "security_code": item["security_code"],
+                    "security_code": stocksItem["security_code"],
                     "style": 1,
                     "platform": "joinquant",
                     "run_params": 'sim_trade',
@@ -420,27 +444,25 @@ class API(System):
                     "amount": final_amount,
                     "price": price,
                     "status": 0,
-                    "positions": [item["security_code"] for item in remote_stock_list],
-                    "total_value": remote_total_value,
+                    "positions": json.dumps([x["security_code"] for x in remote_stock_list]),
                 }
                 orderId = G.orm.save_order(saveData)
                 orderId = str(orderId)
+                print(saveData)
                 self.trade_controller.place_order(
-                    stock_code=item["security_code"],
+                    stock_code=stocksItem["security_code"],
                     volume=final_amount,
                     price=price,
                     is_buy=True if is_buy == 1 else False,
                     order_time=None,
                     task_id=str(task_detail["id"]),
                     order_remark=orderId,
+                    is_mock_state=0,
                 )
         else:
             # 获取全推行情
-            full_tick = self.trade_controller.qmt_trader.data.get_full_tick(
-                [item["security_code"] for item in remote_stock_list]
-            )
+
             # 计算所有股票的总市值
-            remote_total_value = sum(full_tick[item["security_code"]]["lastPrice"] * item["volume"] for item in remote_stock_list)
 
             dynamic_calculation_type = task_detail["dynamic_calculation_type"]
 
@@ -465,15 +487,15 @@ class API(System):
                 stock_volume = actual_stock_value / price
                 stock_volume = (stock_volume // 100) * 100
 
-                local_stock_item = next((x for x in local_stock_list if x["security_code"] == item["security_code"]), 0)
+                local_stock_item = next((x['volume'] for x in local_stock_list if x["security_code"] == item["security_code"]), 0)
                 final_amount = 0
                 is_buy = 1
-                if stock_volume > local_stock_item["volume"]:
+                if stock_volume > local_stock_item:
                     is_buy = 1
-                    final_amount = abs(stock_volume - local_stock_item["volume"])
+                    final_amount = abs(stock_volume - local_stock_item)
                 else:
                     is_buy = 0
-                    final_amount = abs(local_stock_item["volume"] - stock_volume)
+                    final_amount = abs(local_stock_item - stock_volume)
                 
                 saveData = {
                     "security_code": item["security_code"],
@@ -489,7 +511,7 @@ class API(System):
                     "amount": final_amount,
                     "price": price,
                     "status": 0,
-                    "positions": [item["security_code"] for item in remote_stock_list],
+                    "positions": json.dumps([it["security_code"] for it in remote_stock_list]),
                     "total_value": remote_total_value,
                 }
                 print(saveData)
