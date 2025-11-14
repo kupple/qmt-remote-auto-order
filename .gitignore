@@ -121,21 +121,12 @@ dist
 # Python cache files
 **/__pycache__/
 *.pyc
-pyapp/pyenv
-
-# 其他常见的 Python 忽略项
 *.pyo
 *.pyd
 *.egg-info/
-.env
 venv/
-api/__pycache__/qmt.cpython-39.pyc
-api/tools/__pycache__/sys_config.cpython-39.pyc
-pyapp/config/__pycache__/config.cpython-39.pyc
-*.pyc
-
-
-.env
+pyapp/pyenv
+src_py/pyenv
 pyapp/spec/windows.spec
 pyapp/spec/windows-cef.spec
 pyapp/spec/windows-folder.spec
