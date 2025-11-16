@@ -78,11 +78,6 @@ export const chooseDirectory = (client_type)=>{
   return window.pywebview.api.open_directory_dialog(client_type)
 }
 
-export const setAutomatically = ()=>{
-  return window.pywebview.api.set_automatically()
-}
-// export const 
-
 export const createBacktest = (params) => {
   return window.pywebview.api.create_backtest(params)
 }

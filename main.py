@@ -123,85 +123,68 @@ def show_window(icon, item):
         window.show()
         window.restore()
 
-def force_quit_application():
-    """使用平台特定的API强制终止应用程序"""
-    current_pid = os.getpid()
-    
+def quit_application():
+    """正常退出应用程序，清理所有资源"""
     try:
-        print(f"正在使用平台特定API强制终止进程 {current_pid}...")
+        print("正在退出应用程序...")
         
-        # 尝试正常清理资源
+        # 1. 先停止托盘图标（避免继续接收事件）
+        if icon:
+            try:
+                icon.stop()
+            except Exception as e:
+                print(f'停止托盘图标时出错: {e}')
+        
+        # 2. 关闭数据库连接
         try:
-            # 断开WebSocket连接
+            db.close()
+        except Exception as e:
+            print(f'关闭数据库连接时出错: {e}')
+        
+        # 3. 断开WebSocket连接
+        try:
             api.disconnect()
-            
-            # 销毁窗口
-            if window:
-                window.destroy()
-            
-            # 释放互斥锁资源
-            if mutex:
+        except Exception as e:
+            print(f'断开WebSocket连接时出错: {e}')
+        
+        # 4. 释放互斥锁资源
+        if mutex:
+            try:
                 if platform.system() == "Windows":
                     ctypes.windll.kernel32.ReleaseMutex(mutex)
                 else:
                     mutex.close()
-            
-            # 停止托盘图标
-            if icon:
-                icon.stop()
-                
-        except Exception as e:
-            print(f'正常清理资源时出错: {e}')
+                    # 删除锁文件
+                    if lock_file and os.path.exists(lock_file):
+                        try:
+                            os.remove(lock_file)
+                        except:
+                            pass
+            except Exception as e:
+                print(f'释放互斥锁时出错: {e}')
         
-        if platform.system() == "Windows":
-            # Windows平台
-            kernel32 = ctypes.windll.kernel32
-            
-            # 打开进程
-            PROCESS_TERMINATE = 0x0001
-            handle = kernel32.OpenProcess(PROCESS_TERMINATE, False, current_pid)
-            
-            if handle:
-                # 终止进程
-                kernel32.TerminateProcess(handle, 0)
-                kernel32.CloseHandle(handle)
-            else:
-                # 如果OpenProcess失败，使用taskkill
-                subprocess.run(["taskkill", "/F", "/PID", str(current_pid)], check=True)
-                
-        elif platform.system() == "Linux" or platform.system() == "Darwin":
-            # Linux/macOS平台
+        # 5. 销毁窗口（这会触发webview的关闭，让webview.start()返回）
+        if window:
             try:
-                # 尝试加载正确的C库
-                if platform.system() == "Linux":
-                    libc = ctypes.CDLL("libc.so.6")
-                else:  # macOS
-                    libc = ctypes.CDLL("/usr/lib/libc.dylib")
-                
-                # 发送SIGKILL信号
-                libc.kill(current_pid, 9)
-            except:
-                # 如果直接调用C库失败，使用os.kill
-                os.kill(current_pid, signal.SIGKILL)
-                
-        else:
-            # 其他平台使用通用方法
-            os.kill(current_pid, signal.SIGKILL)
-            
-        # 作为最后的手段
-        os._exit(0)
+                # 使用webview的destroy方法，这会正确关闭webview并让主循环退出
+                window.destroy()
+            except Exception as e:
+                print(f'销毁窗口时出错: {e}')
         
     except Exception as e:
-        print(f"使用平台API强制退出失败: {e}")
-        # 最最最后的手段
-        os._exit(1)
+        print(f"退出应用程序时出错: {e}")
 
 def quit_window(icon, item):
-    """处理托盘菜单的退出事件 - 使用平台特定API强制退出"""
-    # 在单独的线程中执行强制退出，避免阻塞
-    for i in range(2):
-        threading.Thread(target=force_quit_application, daemon=True).start()
-        time.sleep(0.5)
+    """处理托盘菜单的退出事件"""
+    # 在新线程中执行退出，避免阻塞托盘事件循环
+    # 使用daemon=False确保清理完成，但设置超时保护
+    def cleanup_and_exit():
+        quit_application()
+        # 给一点时间让webview关闭，如果还没退出则强制退出
+        time.sleep(1)
+        sys.exit(0)
+    
+    threading.Thread(target=cleanup_and_exit, daemon=False).start()
 
 def on_shown():
     # print('程序启动')
@@ -284,10 +267,15 @@ def WebViewApp(ifCef=False):
     # CEF模式
     guiCEF = 'cef' if ifCef else None
 
-    # 启动窗口
+    # 启动窗口（阻塞调用，窗口关闭后返回）
     webview.start(debug=Config.devEnv, http_server=True, gui=guiCEF)
     
     # 窗口关闭后执行清理
+    # 确保所有资源都已释放
+    try:
+        db.close()
+    except:
+        pass
 
 if __name__ == "__main__":
     # 确保在Windows上正确处理多进程

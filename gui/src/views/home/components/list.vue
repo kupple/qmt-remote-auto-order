@@ -94,10 +94,6 @@
             </el-tooltip>
           </el-form-item>
           <el-button type="danger" size="small" style="width: 100%" @click="clearAllAction">一键清仓</el-button>
-          <el-divider>系统</el-divider>
-          <el-form-item label="开机自启动">
-            <el-switch size="small" v-model="form.auto_startup" @change="(e) => autoAutomaticReverseAtion(4, e)" />
-          </el-form-item>
         </el-form>
         <div v-else class="ths-functional-area">
           <el-switch v-model="form.show_terminal" @change="(e) => controlThsWindow(e)" active-text="显示终端" inactive-text="隐藏终端" />
@@ -111,7 +107,7 @@
 
 <script setup>
 import { getUserInfo } from '@/api/auth'
-import { controlThsWindow, getAccountInfo, getSettingConfig, getTaskList, getThsWindowState, getUniqueID, openThsShortcut, runTask, saveConfig, setAutomatically } from '@/api/comm_tube'
+import { controlThsWindow, getAccountInfo, getSettingConfig, getTaskList, getThsWindowState, getUniqueID, openThsShortcut, runTask, saveConfig } from '@/api/comm_tube'
 import { useCommonStore } from '@/store/common.js'
 import { Odometer, Promotion, QuestionFilled, Refresh, Setting } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -143,10 +139,6 @@ const autoAutomaticReverseAtion = async (type, e) => {
   if (type === 3) {
     subDic['auto_buy_purchase_ipo'] = e ? 1 : 0
   }
-  if (type === 4) {
-    subDic['auto_startup'] = e ? 1 : 0
-    await setAutomatically(e)
-  }
 
   await saveConfig(subDic)
 }
@@ -175,7 +167,6 @@ const getConfig = async () => {
   form.auto_national_debt = res.auto_national_debt == 1 ? true : false
   form.auto_buy_stock_ipo = res.auto_buy_stock_ipo == 1 ? true : false
   form.auto_buy_purchase_ipo = res.auto_buy_purchase_ipo == 1 ? true : false
-  form.auto_startup = res.auto_startup == 1 ? true : false
   form.run_model_type = res.run_model_type
 }
 
