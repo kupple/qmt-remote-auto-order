@@ -3,7 +3,7 @@
 ; 有关创建 Inno Setup 脚本文件的详细资料请查阅帮助文档！
 
 #define MyAppName "QMT自动跟单"
-#define MyAppVersion "0.9.1"
+#define MyAppVersion "0.9.2"
 #define MyAppPublisher "mubin"
 #define MyAppURL "https://blog.pangao.vip"
 #define MyAppExeName "QMT自动跟单.exe"
@@ -29,7 +29,7 @@ DisableProgramGroupPage=yes
 ; 移除以下行，以在管理安装模式下运行（为所有用户安装）。
 PrivilegesRequired=lowest
 OutputDir=C:\Users\mubin\Desktop\qmt-auto-order\build
-OutputBaseFilename=QMT自动跟单-V0.9.1_Windows
+OutputBaseFilename=QMT自动跟单-V0.9.2_Windows
 SetupIconFile=C:\Users\mubin\Desktop\qmt-auto-order\pyapp\icon\logo.ico
 Compression=lzma
 SolidCompression=yes
