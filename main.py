@@ -25,6 +25,7 @@ window = None
 icon = None
 mutex = None
 lock_file = None
+should_quit = False  # 退出标志
 
 cfg = Config()    # 配置
 cfg.init()    # Initialize config first to set up app data directory
@@ -125,8 +126,12 @@ def show_window(icon, item):
 
 def quit_application():
     """正常退出应用程序，清理所有资源"""
+    global should_quit
     try:
         print("正在退出应用程序...")
+        
+        # 设置退出标志，允许窗口关闭
+        should_quit = True
         
         # 1. 先停止托盘图标（避免继续接收事件）
         if icon:
@@ -176,15 +181,9 @@ def quit_application():
 
 def quit_window(icon, item):
     """处理托盘菜单的退出事件"""
-    # 在新线程中执行退出，避免阻塞托盘事件循环
-    # 使用daemon=False确保清理完成，但设置超时保护
-    def cleanup_and_exit():
-        quit_application()
-        # 给一点时间让webview关闭，如果还没退出则强制退出
-        time.sleep(1)
-        sys.exit(0)
-    
-    threading.Thread(target=cleanup_and_exit, daemon=False).start()
+    # 直接调用退出函数，在托盘事件处理线程中执行
+    # webview的destroy方法可以在任何线程中安全调用
+    quit_application()
 
 def on_shown():
     # print('程序启动')
@@ -195,7 +194,11 @@ def on_loaded():
     pass
 
 def on_closing():
-    # 隐藏窗口而非直接关闭
+    global should_quit
+    # 如果是从托盘退出，允许关闭窗口
+    if should_quit:
+        return True  # 允许关闭
+    # 否则隐藏窗口而非直接关闭
     window.hide()
     # 阻止默认关闭行为
     return False
