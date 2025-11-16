@@ -123,85 +123,11 @@ def show_window(icon, item):
         window.show()
         window.restore()
 
-def force_quit_application():
-    """使用平台特定的API强制终止应用程序"""
-    current_pid = os.getpid()
-    
-    try:
-        print(f"正在使用平台特定API强制终止进程 {current_pid}...")
-        
-        # 尝试正常清理资源
-        try:
-            # 断开WebSocket连接
-            api.disconnect()
-            
-            # 销毁窗口
-            if window:
-                window.destroy()
-            
-            # 释放互斥锁资源
-            if mutex:
-                if platform.system() == "Windows":
-                    ctypes.windll.kernel32.ReleaseMutex(mutex)
-                else:
-                    mutex.close()
-            
-            # 停止托盘图标
-            if icon:
-                icon.stop()
-                
-        except Exception as e:
-            print(f'正常清理资源时出错: {e}')
-        
-        if platform.system() == "Windows":
-            # Windows平台
-            kernel32 = ctypes.windll.kernel32
-            
-            # 打开进程
-            PROCESS_TERMINATE = 0x0001
-            handle = kernel32.OpenProcess(PROCESS_TERMINATE, False, current_pid)
-            
-            if handle:
-                # 终止进程
-                kernel32.TerminateProcess(handle, 0)
-                kernel32.CloseHandle(handle)
-            else:
-                # 如果OpenProcess失败，使用taskkill
-                subprocess.run(["taskkill", "/F", "/PID", str(current_pid)], check=True)
-                
-        elif platform.system() == "Linux" or platform.system() == "Darwin":
-            # Linux/macOS平台
-            try:
-                # 尝试加载正确的C库
-                if platform.system() == "Linux":
-                    libc = ctypes.CDLL("libc.so.6")
-                else:  # macOS
-                    libc = ctypes.CDLL("/usr/lib/libc.dylib")
-                
-                # 发送SIGKILL信号
-                libc.kill(current_pid, 9)
-            except:
-                # 如果直接调用C库失败，使用os.kill
-                os.kill(current_pid, signal.SIGKILL)
-                
-        else:
-            # 其他平台使用通用方法
-            os.kill(current_pid, signal.SIGKILL)
-            
-        # 作为最后的手段
-        os._exit(0)
-        
-    except Exception as e:
-        print(f"使用平台API强制退出失败: {e}")
-        # 最最最后的手段
-        os._exit(1)
-
 def quit_window(icon, item):
-    """处理托盘菜单的退出事件 - 使用平台特定API强制退出"""
-    # 在单独的线程中执行强制退出，避免阻塞
-    for i in range(2):
-        threading.Thread(target=force_quit_application, daemon=True).start()
-        time.sleep(0.5)
+    if window:
+        window.destroy()
+    if icon:
+        icon.stop()
 
 def on_shown():
     # print('程序启动')
@@ -212,15 +138,16 @@ def on_loaded():
     pass
 
 def on_closing():
-    # 隐藏窗口而非直接关闭
-    window.hide()
-    # 阻止默认关闭行为
+    window.hide()  # 隐藏窗口而不是关闭
     return False
 
 def on_closed():
     try:
-        print("窗口已关闭...")
-        # 确保所有资源释放
+        print("正在关闭应用...")
+        # 断开 WebSocket 连接
+        api.disconnect()
+        if icon:
+            icon.stop()
     except Exception as e:
         print(f'关闭程序时出错: {e}')
 
@@ -284,15 +211,8 @@ def WebViewApp(ifCef=False):
     # CEF模式
     guiCEF = 'cef' if ifCef else None
 
-    # 启动窗口（阻塞调用，窗口关闭后返回）
+    # 启动窗口
     webview.start(debug=Config.devEnv, http_server=True, gui=guiCEF)
-    
-    # 窗口关闭后执行清理
-    # 确保所有资源都已释放
-    try:
-        db.close()
-    except:
-        pass
 
 if __name__ == "__main__":
     # 确保在Windows上正确处理多进程
