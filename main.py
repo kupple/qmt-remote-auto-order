@@ -25,6 +25,7 @@ window = None
 icon = None
 mutex = None
 lock_file = None
+is_quitting = False  # 退出标志
 
 cfg = Config()    # 配置
 cfg.init()    # Initialize config first to set up app data directory
@@ -123,11 +124,75 @@ def show_window(icon, item):
         window.show()
         window.restore()
 
+def force_exit():
+    """强制退出程序（Windows平台）"""
+    try:
+        # 关闭数据库连接
+        try:
+            db.close()
+        except:
+            pass
+        
+        # 断开WebSocket连接
+        try:
+            api.disconnect()
+        except:
+            pass
+        
+        # 释放互斥锁
+        if mutex:
+            try:
+                ctypes.windll.kernel32.ReleaseMutex(mutex)
+            except:
+                pass
+        
+        # 停止托盘图标
+        if icon:
+            try:
+                icon.stop()
+            except:
+                pass
+        
+        # Windows平台强制终止进程
+        current_pid = os.getpid()
+        kernel32 = ctypes.windll.kernel32
+        PROCESS_TERMINATE = 0x0001
+        handle = kernel32.OpenProcess(PROCESS_TERMINATE, False, current_pid)
+        if handle:
+            kernel32.TerminateProcess(handle, 0)
+            kernel32.CloseHandle(handle)
+        else:
+            # 备用方案：使用taskkill
+            try:
+                subprocess.run(["taskkill", "/F", "/PID", str(current_pid)], timeout=2, check=False)
+            except:
+                pass
+        
+        # 最后的保障
+        os._exit(0)
+    except:
+        os._exit(1)
+
 def quit_window(icon, item):
-    if window:
-        window.destroy()
-    if icon:
-        icon.stop()
+    global is_quitting
+    is_quitting = True  # 设置退出标志
+    
+    # 先尝试正常退出
+    try:
+        if window:
+            window.destroy()  # 这会触发 on_closing 事件
+        if icon:
+            icon.stop()
+    except Exception as e:
+        print(f'正常退出失败: {e}')
+    
+    # 设置超时，如果3秒后还没退出，强制退出
+    def force_exit_after_timeout():
+        time.sleep(3)
+        print('超时未退出，强制终止进程...')
+        force_exit()
+    
+    threading.Thread(target=force_exit_after_timeout, daemon=True).start()
 
 def on_shown():
     # print('程序启动')
@@ -138,7 +203,12 @@ def on_loaded():
     pass
 
 def on_closing():
-    window.hide()  # 隐藏窗口而不是关闭
+    global is_quitting
+    # 如果是从托盘退出，允许关闭窗口
+    if is_quitting:
+        return True  # 允许关闭
+    # 否则隐藏窗口而不是关闭
+    window.hide()
     return False
 
 def on_closed():

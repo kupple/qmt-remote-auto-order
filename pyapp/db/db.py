@@ -19,11 +19,16 @@ class DB:
 
     def init(self):
         '''初始化数据库'''
+        # 确保Config已经初始化
+        if not Config.appDataDir:
+            cfg = Config()
+            cfg.init()
+        
         # 迁移数据库到本地电脑
         dbAppDataDir = os.path.join(Config.appDataDir, 'static', 'db')    # 本地电脑
         if not os.path.isdir(dbAppDataDir):
             # 新建本地电脑文件夹
-            os.makedirs(dbAppDataDir)
+            os.makedirs(dbAppDataDir, exist_ok=True)
         DB.dbPath = os.path.join(dbAppDataDir, 'base.db')    # 本地数据库
         dbVerionPath = os.path.join(dbAppDataDir, 'version')    # 本地数据库版本
         appdbVerionPath = os.path.join(Config.staticDir, 'db', 'version')    # 程序包中数据库版本
