@@ -3,7 +3,7 @@
 ; 有关创建 Inno Setup 脚本文件的详细资料请查阅帮助文档！
 
 #define MyAppName "QMT自动跟单"
-#define MyAppVersion "0.8.91"
+#define MyAppVersion "0.9.1"
 #define MyAppPublisher "mubin"
 #define MyAppURL "https://blog.pangao.vip"
 #define MyAppExeName "QMT自动跟单.exe"
@@ -28,9 +28,9 @@ ChangesAssociations=yes
 DisableProgramGroupPage=yes
 ; 移除以下行，以在管理安装模式下运行（为所有用户安装）。
 PrivilegesRequired=lowest
-OutputDir=D:\git\qmt-自动下单\build
-OutputBaseFilename=QMT自动跟单-V0.8.91_Windows
-SetupIconFile=D:\git\qmt-自动下单\pyapp\icon\logo.ico
+OutputDir=C:\Users\mubin\Desktop\qmt-auto-order\build
+OutputBaseFilename=QMT自动跟单-V0.9.1_Windows
+SetupIconFile=C:\Users\mubin\Desktop\qmt-auto-order\pyapp\icon\logo.ico
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -42,7 +42,7 @@ Name: "chinesesimp"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "D:\git\qmt-自动下单\build\{#MyAppName}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
+Source: "C:\Users\mubin\Desktop\qmt-auto-order\build\{#MyAppName}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 ; 注意: 不要在任何共享系统文件上使用“Flags: ignoreversion”
 
 [Registry]
