@@ -147,7 +147,7 @@ class qmt_trader:
             )
         else:
             G.logger.error(
-                "{} 标的{} 价格{} 委托数量{}小于0有问题".format(buy_st,stock_code, price, order_volume),
+                "{} 标的{} 价格{} 委托数量{}小于0有问题".format(stock_code, price, order_volume),
                 extra={"showMessage": True}
             )
 

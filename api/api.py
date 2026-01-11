@@ -376,6 +376,7 @@ class API(System):
         remote_stock_list = G.orm.get_remote_position(task_id)
         # 获取任务详情
         task_detail = G.orm.get_task_detail({"id": task_id})
+        print(task_detail)
 
         full_tick = self.trade_controller.qmt_trader.data.get_full_tick(
             [item["security_code"] for item in remote_stock_list]
@@ -428,6 +429,7 @@ class API(System):
                     task_id=str(task_detail["id"]),
                     order_remark=orderId,
                     is_mock_state=0,
+                    open_mandatory_limit_order=task_detail['open_mandatory_limit_order']
                 )
         else:
             # 获取全推行情
@@ -495,6 +497,7 @@ class API(System):
                     order_time=None,
                     task_id=str(task_detail["id"]),
                     order_remark=orderId,
+                    open_mandatory_limit_order=task_detail['open_mandatory_limit_order']
                 )
 
             
