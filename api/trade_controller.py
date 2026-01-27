@@ -319,8 +319,8 @@ class TradeController:
             order_style_str,
             is_buy, 
             price,
-            is_mock_state,
-            open_mandatory_limit_order
+            open_mandatory_limit_order,
+            is_mock_state
         )
 
         order_type = OrderType.STOCK_BUY if is_buy == 1 else OrderType.STOCK_SELL
