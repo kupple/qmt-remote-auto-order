@@ -201,8 +201,18 @@ class qmt_data:
         - 备注
         - 无
         '''
-        df=xtdata.get_full_tick(code_list=code_list)
-        return df
+        try:
+            # 先尝试连接 xtdata 服务
+            if not hasattr(xtdata, '_xtdata__client') or not xtdata._xtdata__client or not xtdata._xtdata__client.is_connected():
+                xtdata.connect()
+            df=xtdata.get_full_tick(code_list=code_list)
+            return df
+        except Exception as e:
+            if "无法连接xtquant服务" in str(e):
+                # 如果是连接问题，提供更友好的错误信息
+                raise Exception("无法连接QMT数据服务，请确保QMT-投研版或QMT-极简版已启动并运行")
+            else:
+                raise e
     def get_divid_factors(self,stock_code='600031.SH', start_time='20210331', end_time='20230331'):
         '''
         - 释义
