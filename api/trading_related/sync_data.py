@@ -16,7 +16,7 @@ def sync_data_stocks_data():
         time.sleep(8)
         TABLE_NAME_LIST = [{
             'table_name':'data_trade_date_hist',
-            'diff': 30,
+            'diff': 0,
         },{
             'table_name':'data_all_stocks',
             'diff': 0,
@@ -145,6 +145,8 @@ def save_all_data():
 # 保存日期到数据库
 def save_trade_date_hist():
    data = get_all_trade_day()
+   print(data)
+   print("datazxczxc")
    if isinstance(data, pd.DataFrame) and not data.empty:
         # 确保列名与数据库模型匹配
         column_mapping = {

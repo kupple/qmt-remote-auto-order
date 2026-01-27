@@ -70,6 +70,8 @@ def sync_data_to_global():
         G.stock_map["all_stock_code"] = {convert_stock_suffix(stock['code']):stock for stock in all_stock_arr}
         
         trade_date_arr = G.orm.get_trade_date_list()
+        # print(trade_date_arr)
+        # print("trade_date_arr")
 
         G.stock_map['trade_date'] = trade_date_arr
         

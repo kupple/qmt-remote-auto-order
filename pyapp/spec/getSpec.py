@@ -24,7 +24,7 @@ logoExt = 'icns' if ifMac else 'png' if ifLinux else 'ico'
 # 添加文件到打包中
 addDll = ''
 # 添加文件夹到打包中
-addModules = "('../../gui/dist', 'web'), ('../../static', 'static'), ('../../pyapp/icon', 'pyapp/icon'),('../common_old.onnx','ddddocr')"
+addModules = "('../../gui/dist', 'web'), ('../../static', 'static'), ('../../pyapp/icon', 'pyapp/icon'), ('../../pyapp/pkg', 'pyapp/pkg'),('../common_old.onnx','ddddocr')"
 
 
 # spec配置文件 前半部分通用格式
@@ -60,7 +60,21 @@ a = Analysis(['../../main.py'],
             pathex=[],
             binaries=[{addDll}],
             datas=[{addModules}],
-            hiddenimports=[],
+            hiddenimports=[
+                'pyapp.pkg.xtquant.xtdata',
+                'pyapp.pkg.xtquant.xtconn',
+                'pyapp.pkg.xtquant.xtdatacenter',
+                'pyapp.pkg.xtquant.datacenter',
+                'platform',
+                'uuid',
+                'os',
+                'time',
+                'traceback',
+                'calendar',
+                'datetime',
+                'copy',
+                're'
+            ],
             hookspath=[],
             hooksconfig={{}},
             runtime_hooks=[],
@@ -220,7 +234,16 @@ else:
         ('../../pyapp/pyenv/pyenvCEF/Lib/site-packages/cefpython3/icudtl.dat', './cefpython3'),
         ('../../pyapp/pyenv/pyenvCEF/Lib/site-packages/cefpython3/natives_blob.bin','./cefpython3'),
         ('../../pyapp/pyenv/pyenvCEF/Lib/site-packages/cefpython3/locales/en-US.pak','./locales'),
-        ('../../pyapp/pyenv/pyenvCEF/Lib/site-packages/cefpython3/locales/zh-CN.pak','./locales')
+        ('../../pyapp/pyenv/pyenvCEF/Lib/site-packages/cefpython3/locales/zh-CN.pak','./locales'),
+        # xtquant 动态库文件 (Python 3.9)
+        ('../../pyapp/pkg/xtquant/libeay32.dll', './'),
+        ('../../pyapp/pkg/xtquant/log4cxx.dll', './'),
+        ('../../pyapp/pkg/xtquant/msvcp140.dll', './'),
+        ('../../pyapp/pkg/xtquant/vcruntime140.dll', './'),
+        ('../../pyapp/pkg/xtquant/ssleay32.dll', './'),
+        ('../../pyapp/pkg/xtquant/datacenter.cp39-win_amd64.pyd', './'),
+        ('../../pyapp/pkg/xtquant/xtpythonclient.cp39-win_amd64.pyd', './'),
+        ('../../pyapp/pkg/xtquant/xtdata.ini', './')
     """
     # windows-pre.spec 带终端
     with open(os.path.join(specDir, 'windows-cef.spec'), 'w+', encoding='utf-8') as f:

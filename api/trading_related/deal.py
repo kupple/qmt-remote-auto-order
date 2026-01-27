@@ -58,7 +58,7 @@ def is_auction_period(stock_code: str, check_time: datetime = None) -> bool:
 
 
 def calculate_max_possible_price(stock_code: str, previous_close: float, current_price: float,
-                                direction: str, is_st: bool = False, auction_period: bool = False,limit_up = False) -> float:
+                                direction: str, is_st: bool = False, auction_period: bool = False,need_limit_up_count = False) -> float:
     """
     计算在当前规则下允许的最大可能成交价格
     
@@ -105,7 +105,7 @@ def calculate_max_possible_price(stock_code: str, previous_close: float, current
         cage_upper = round(current_price * 1.01, 2)
         cage_lower = round(current_price * 0.99, 2)
     
-    if limit_up == True:
+    if need_limit_up_count == True:
         # 应用涨跌停限制和价格笼子
         if direction.lower() == 'buy':
             # 买入方向：最终价格为 价格笼子上限 和 涨停价 的较小值
@@ -247,24 +247,31 @@ def stockcode_mapping_dic(security):
 # 按比率买卖股票
 def count_stock_price(security,price,is_buy,is_mock_state = 0):
     # 获取上一个收盘价格
-    close=G.stock_map["all_stock_code"][security]["close"]
-    is_data_synced = G.stock_map["is_data_synced"]
-    is_st = security in G.stock_map["st_stock_code"]
+    try:
+        is_data_synced = G.stock_map["is_data_synced"]
+        is_st = security in G.stock_map["st_stock_code"]
+        close = G.stock_map["all_stock_code"][security]["close"]
 
-    # 如果数据未同步，使用最新价
-    optimal_price = calculate_max_possible_price(
-        security, 
-        close, 
-        price,
-        "buy" if is_buy else "sell",
-        is_st,
-        False,
-        is_data_synced and is_mock_state == 0, #同步完就True 否则不判断涨停
-    )
-    return optimal_price
+        # 如果数据未同步，使用最新价
+        optimal_price = calculate_max_possible_price(
+            security, 
+            close, 
+            price,
+            "buy" if is_buy else "sell",
+            is_st,
+            False,
+            is_data_synced and is_mock_state == 0, #同步完就True 否则不判断涨停
+        )
+        return optimal_price
+    except Exception as _exc:
+        if is_buy:
+            cage_upper = round(price * 1.01, 2)
+            return cage_upper
+        else:
+            cage_lower = round(price * 0.99, 2)
+            return cage_lower
+       
     
-    
-
 def get_qmt_price_type(security, order_style_str, is_buy=True, price=0, open_mandatory_limit_order=0,is_mock_state = 0):
     # 提取交易所代码
     exchange = security.split('.')[-1]
@@ -312,6 +319,7 @@ def get_qmt_price_type(security, order_style_str, is_buy=True, price=0, open_man
                 order_type = match.group(1)
                 param = match.group(2).strip()
                 limit_price = float(param) if param else None
+
 
     if open_mandatory_limit_order == 1:
         optimal_price = count_stock_price(security,price,is_buy,is_mock_state)

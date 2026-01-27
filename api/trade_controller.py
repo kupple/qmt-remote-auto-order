@@ -169,6 +169,13 @@ class TradeController:
     def buy_reverse_repo(self):
         if G.client_type == 1:
             return
+
+        trade_date_list = G.orm.get_trade_date_list()
+        today_str = datetime.now().strftime('%Y-%m-%d')
+        if today_str not in trade_date_list:
+            G.logger.info("今日不是交易日，不执行自动购入国债逆回购", extra={"showMessage": True})
+            return
+        
         G.logger.info("正在执行自动购入国债逆回购", extra={"showMessage": True})
 
         judge, text = self.qmt_trader.reverse_repurchase_of_treasury_bonds()
@@ -181,6 +188,12 @@ class TradeController:
     def auto_buy_new_stock(self):
         if G.client_type == 1:
             return
+        trade_date_list = G.orm.get_trade_date_list()
+        today_str = datetime.now().strftime('%Y-%m-%d')
+        if today_str not in trade_date_list:
+            G.logger.info("今日不是交易日，不执行自动打新", extra={"showMessage": True})
+            return            
+
         G.logger.info("正在执行自动打新", extra={"showMessage": True})
         df = stock_xgsglb_em_on_today()
         selected_columns = ["申购代码", "申购上限", "发行价格"]
@@ -200,6 +213,12 @@ class TradeController:
     def auto_buy_convertible_bond(self):
         if G.client_type == 1:
             return
+            
+        trade_date_list = G.orm.get_trade_date_list()
+        today_str = datetime.now().strftime('%Y-%m-%d')
+        if today_str not in trade_date_list:
+            G.logger.info("今日不是交易日，不执行自动打债", extra={"showMessage": True})
+            return                        
         G.logger.info("正在执行自动打债", extra={"showMessage": True})
         df = bond_zh_cov()
         selected_columns = ["申购代码", "申购上限"]
@@ -319,8 +338,8 @@ class TradeController:
             order_style_str,
             is_buy, 
             price,
-            is_mock_state,
-            open_mandatory_limit_order
+            open_mandatory_limit_order,
+            is_mock_state
         )
 
         order_type = OrderType.STOCK_BUY if is_buy == 1 else OrderType.STOCK_SELL

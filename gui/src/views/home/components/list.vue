@@ -207,10 +207,10 @@ const clearAllAction = async () => {
 
 const getAccountInfoAction = async () => {
   const res = await getAccountInfo()
-  fundsDic.cash = res.cash
-  fundsDic.frozen_cash = res.frozen_cash
-  fundsDic.market_value = res.market_value
-  fundsDic.total_asset = res.total_asset
+  fundsDic.cash = res.cash.toFixed(2)
+  fundsDic.frozen_cash = res.frozen_cash.toFixed(2)
+  fundsDic.market_value = res.market_value.toFixed(2)
+  fundsDic.total_asset = res.total_asset.toFixed(2)
 }
 // 开始任务
 const handleEdit = async (row) => {
