@@ -120,10 +120,11 @@ class TradeController:
             with self.multiple_traders_lock:
                 for acc_id, trader_state in self.multiple_traders.items():
                     account_info = trader_state.info
-                    print(account_info)
+                    # print(account_info)
                     client_type = account_info.get("client_type")
-                    mini_qmt_path = account_info.get['mini_qmt_path']
+                    # mini_qmt_path = account_info.get['mini_qmt_path']
                     qmt_is_connect = check_mini_qmt_path_match(account_info,xt_list)
+                    print(qmt_is_connect)
                     # QMT 账号处理
                     if client_type == 2:
                         qmt_count += 1
@@ -170,7 +171,11 @@ class TradeController:
                 self.connect_qmt()
             
         except Exception as e:
-            error_msg = f"进程检查出错: {str(e)}"
+            import traceback
+
+            tb = traceback.extract_tb(e.__traceback__)
+            line_no = tb[-1].lineno if tb else "unknown"
+            error_msg = f"进程检查出错(行号: {line_no}): {str(e)}"
             if G.logger:
                 G.logger.error(error_msg)
 
