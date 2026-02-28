@@ -54,7 +54,16 @@ const isEdit = ref(false)
 const editId = ref(undefined)
 
 const connectionAction = () => {
-  testConnect(params.mini_qmt_path, params.client_type).then((res) => {
+  // 按反斜杠拆分路径（注意转义）
+  const pathParts = params.mini_qmt_path.split("\\");
+  // 移除最后一个元素（bin.x64）
+  pathParts.pop();
+  // 添加新的路径名
+  pathParts.push("userdata_mini");
+  // 重新拼接成完整路径
+  const str2 = pathParts.join("\\");
+
+  testConnect(str2, params.client_type).then((res) => {
     if (res.is_connect) {
       accountArr.value = res.account_arr || []
       passStatus.value = 1

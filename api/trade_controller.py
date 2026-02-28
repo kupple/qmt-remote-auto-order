@@ -884,6 +884,7 @@ class TradeController:
             pass
 
     def get_account_info(self, account=None):
+        print(account)
         # 多账号模式：按指定账号获取
         if account.get("client_type") == 2:
             path = account.get("mini_qmt_path")

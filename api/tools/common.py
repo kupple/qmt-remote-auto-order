@@ -25,6 +25,8 @@ else:
     import win32con
     import win32clipboard
     import win32process
+    import psutil
+
 
 def timestamp_to_date(timestamp):
     """
@@ -323,4 +325,50 @@ def get_ths_window_state() -> bool:
     if hwnd:
         return win32gui.IsWindowVisible(hwnd)
     return False   # 窗口不存在时返回隐藏状态
+
+
+
+
+
+def get_all_xtminiqmt_processes():
+    """
+    一次性获取所有正在运行的 XtMiniQmt.exe 进程信息
+    返回值：列表，每个元素是字典，包含进程的核心信息
+            字典结构：{'pid': 进程ID, 'path': 程序完整路径, 'name': 进程名}
+    """
+    if sys.platform.startswith('darwin'):
+        return [{'pid': 888, 'path': 'C:\\Users\\mubin\\AppData\\Local\\长城策略交易系统\\bin.x64_rtys789\\XtMiniQmt.exe', 'name': 'XtMiniQmt.exe'}]
+    else:
+        # 目标进程名（小写，用于快速匹配）
+        target_name = "xtminiqmt.exe"
+        all_processes = []
+
+        # 仅遍历一次所有进程，收集目标进程信息
+        for proc in psutil.process_iter(['pid', 'name', 'exe']):
+            try:
+                proc_info = proc.info
+                # 跳过无名称/无路径的进程，快速过滤非目标进程
+                if not proc_info['name'] or not proc_info['exe']:
+                    continue
+                
+                # 匹配目标进程（忽略大小写）
+                if proc_info['name'].lower() == target_name:
+                    # 标准化路径（统一格式，方便后续匹配）
+                    exe_path = os.path.normpath(proc_info['exe'])
+                    # 添加到结果列表
+                    all_processes.append({
+                        'pid': proc_info['pid'],
+                        'path': exe_path,
+                        'name': proc_info['name']
+                    })
+
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                # 忽略无权限/已退出/僵尸进程，不影响结果
+                continue
+            except Exception as e:
+                # 捕获意外异常，避免函数崩溃
+                print(f"扫描进程 PID {proc_info.get('pid', '未知')} 时出错: {e}")
+                continue
+
+        return all_processes
 

@@ -27,6 +27,8 @@ import sys
 from api.trading_related.deal import convert_stock_suffix
 from dotenv import load_dotenv
 
+from api.tools import common
+
 load_dotenv()
 from .global_params import G
 from .trading_related.sync_data import sync_data_stocks_data
@@ -207,9 +209,10 @@ class API(System):
             path = directory[0] if directory else None
             if path != None:
                 if client_type == 2:
-                    userdata_path = os.path.join(path, "userdata_mini")
-                    if os.path.exists(userdata_path):
-                        return True, userdata_path
+                    dlls_path = os.path.join(path, "DLLs")
+                    data_path = os.path.join(path, "data")
+                    if os.path.exists(dlls_path) and os.path.exists(data_path):
+                        return True, path
                     else:
                         return False, None
                 else:
@@ -322,6 +325,10 @@ class API(System):
 
     def is_http_server_running_action(self):
         return self.http_service.is_running()
+
+
+    def get_all_xtminiqmt_processes(self):
+        return common.get_all_xtminiqmt_processes()
 
     def program_start(self):
         if G.orm.get_storage_var("open_api_server") == "1":
