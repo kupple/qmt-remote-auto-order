@@ -18,6 +18,10 @@ export const useCommonStore = defineStore('common', {
   }),
   actions: {
     changeisQmtState(params) {
+            // 正确安全地复制对象属性，避免空对象或未定义抛错
+      if (!this.taskStateDic[params.id]) {
+        this.taskStateDic[params.id] = {};
+      }
       this.taskStateDic[params.id]["isQmtState"] = params.status
     },
     changeisAccSubState(params){

@@ -124,6 +124,9 @@ class TradeController:
                         qmt_is_connect = check_mini_qmt_path_match(
                             account_info, xt_list
                         )
+                        # print(qmt_is_connect)
+                        # print(account_info)
+                        # print(xt_list)
                         System.system_py2js(
                             self, "remoteCallBack", {"type": "qmtProcessCheck", "event": {
                                 "id":acc_id,
@@ -177,14 +180,17 @@ class TradeController:
 
             self.multiple_traders[acc_id].trader.path = mini_qmt_path
             self.multiple_traders[acc_id].trader.account = client_id
+            print("zxczxc")
             # 连接QMT 传递回调
-            self.multiple_traders[acc_id].acc_is_connect = self.multiple_traders[
-                acc_id
-            ].trader.connect(self.callback)
+            is_connect = self.multiple_traders[acc_id].trader.connect(self.callback)
+            self.multiple_traders[acc_id].acc_is_connect = is_connect
+            print(is_connect)
             if self.multiple_traders[acc_id].acc_is_connect:
                 message = "QMT连接成功"
             else:
                 message = "QMT连接失败"
+
+            print("zxczxc3")
             System.system_py2js(
                 self,
                 "remoteCallBack",
