@@ -137,8 +137,8 @@ class API(System):
         if self.thread1 and self.thread1.is_alive():
             self.thread1.join(timeout=1)  # Wait up to 1 second for thread to finish
 
-    def connect_qmt(self):
-        result = self.trade_controller.connect_qmt()
+    def connect_qmt(self,acc_id):
+        result = self.trade_controller.connect_qmt(acc_id)
         return result
 
     def get_task_list(self, data):
@@ -227,7 +227,7 @@ class API(System):
 
         elif os_type == "macos":
             if client_type == 2:
-                return True, "D:\\长城策略交易系统new\\userdata_mini"
+                return True, "D:\\长城策略交易系统new\\bin.x64"
             else:
                 return True, "D:\\同花顺\\xiadan.exe"
 

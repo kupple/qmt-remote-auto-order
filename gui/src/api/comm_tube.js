@@ -60,8 +60,8 @@ export const connectWs = (params,ways=2,is_login = false) => {
   return window.pywebview.api.connect_ws(params,ways,is_login)
 }
 
-export const connectQMT = async() => {
-  const isAccSubState = await window.pywebview.api.connect_qmt()
+export const connectQMT = async(item) => {
+  const isAccSubState = await window.pywebview.api.connect_qmt(item)
   // await useCommonStore().changeisAccSubState(isAccSubState)
   // return isAccSubState
 }

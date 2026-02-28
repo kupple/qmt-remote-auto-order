@@ -23,7 +23,7 @@ import json
 from api.global_params import G
 import threading
 import asyncio
-from .tools.common import get_all_xtminiqmt_processes,check_mini_qmt_path_match
+from .tools.common import get_all_xtminiqmt_processes, check_mini_qmt_path_match
 from threading import Timer
 from .trading_related.trader_call_back import MyXtQuantTraderCallback
 from .trading_related.ths_blocking_queue import NonBlockingQueue
@@ -107,69 +107,39 @@ class TradeController:
         # "strategy_name": strategy_name,
         # "order_remark": order_remark
         pass
-    
+
     # 检测账号是否开启订阅功能
     def process_check_loop(self):
         try:
             xt_list = get_all_xtminiqmt_processes()  # 直接调用，不需要await
-            
-            # 多账号模式：遍历所有账号，根据每个账号的 client_type 处理
-            qmt_count = 0
-            ths_count = 0
-            
             with self.multiple_traders_lock:
                 for acc_id, trader_state in self.multiple_traders.items():
                     account_info = trader_state.info
-                    # print(account_info)
+                    
                     client_type = account_info.get("client_type")
-                    # mini_qmt_path = account_info.get['mini_qmt_path']
-                    qmt_is_connect = check_mini_qmt_path_match(account_info,xt_list)
-                    print(qmt_is_connect)
-                    # QMT 账号处理
+                    mini_qmt_path = account_info.get("mini_qmt_path")
+                    client_id = account_info.get("client_id")
+
                     if client_type == 2:
-                        qmt_count += 1
-                        trader_state.qmt_is_connect = qmt_is_connect
+                        qmt_is_connect = check_mini_qmt_path_match(
+                            account_info, xt_list
+                        )
+                        print(qmt_is_connect)
                         if qmt_is_connect:
-                            # 标记需要重连的账号
                             if (
                                 trader_state.is_qmt_need_reconnection == True
-                                and trader_state.is_qmt_need_reconnection_lock == False
+                                and trader_state.is_qmt_need_reconnection_lock == True
                             ):
-                                # 标记将在 connect_qmt 中处理
-                                pass
+                                trader_state.is_qmt_need_reconnection = False
+                                if mini_qmt_path != "" and client_id != "":
+                                    G.logger.info(
+                                        f"{client_id}:重新连接QMT",
+                                        extra={"showMessage": True},
+                                    )
+                                trader_state.is_qmt_need_reconnection_lock = True
+                                self.connect_qmt(acc_id=acc_id)
                         else:
-                            # 如果之前连过才给他重连
-                            if trader_state.acc_is_connect:
-                                trader_state.is_qmt_need_reconnection = True
-                        if qmt_count > 0:
-                            System.system_py2js(
-                                self, "remoteCallBack", {"type": "qmtProcessCheck", "event": {
-                                    "id":acc_id,
-                                    "status":qmt_is_connect
-                                }}
-                            )
-                    # 同花顺账号处理
-                    else:
-                        ths_count += 1
-                        if (
-                            qmt_is_connect == True
-                            and trader_state.is_ths_need_reconnection == False
-                            and trader_state.is_ths_need_reconnection_lock == False
-                        ):
-                            trader_state.is_ths_need_reconnection = True
-                        
-                        # 启动绑定客户端
-                        if trader_state.is_ths_need_reconnection == True:
-                            trader_state.is_ths_need_reconnection = False
-                            if sys.platform.startswith("win"):
-                                self.ths_auto.bind_client()
-                        
-                        trader_state.ths_is_connect = qmt_is_connect
-            
-            # 在锁外调用 connect_qmt（遍历所有账号并连接需要连接的）
-            if qmt_count > 0:
-                self.connect_qmt()
-            
+                            trader_state.is_qmt_need_reconnection = True
         except Exception as e:
             import traceback
 
@@ -179,109 +149,62 @@ class TradeController:
             if G.logger:
                 G.logger.error(error_msg)
 
-
-    def connect_qmt(self):
-        """
-        多账号模式：遍历所有账号，连接需要连接的 QMT 账号
-        """
+    def connect_qmt(self, acc_id):
         try:
-            # 收集需要连接的账号信息（在锁内）
-            connect_list = []
-            with self.multiple_traders_lock:
-                for acc_id, trader_state in self.multiple_traders.items():
-                    account_info = trader_state.info
-                    client_type = account_info.get("client_type")
-                    
-                    # 只处理 QMT 账号
-                    if client_type != 2:
-                        continue
-                    # 检查是否需要连接（需要重连且锁已释放）
-                    if not (
-                        trader_state.is_qmt_need_reconnection == True
-                        and trader_state.is_qmt_need_reconnection_lock == False
-                    ):
-                        continue
-                    # 获取配置信息
-                    mini_qmt_path = account_info.get("mini_qmt_path", "")
-                    client_id = account_info.get("client_id", "")
-                    
-                    if not mini_qmt_path or not client_id:
-                        continue
-                    
-                    # 标记正在连接，避免重复连接
-                    trader_state.is_qmt_need_reconnection_lock = True
-                    trader_state.is_qmt_need_reconnection = False
-                    
-                    # 收集连接信息
-                    connect_list.append({
-                        "trader_state": trader_state,
-                        "mini_qmt_path": mini_qmt_path,
-                        "client_id": client_id,
-                        "acc_id":acc_id,
-                    })
-            # 在锁外执行连接操作
-            for connect_info in connect_list:
-                trader_state = connect_info["trader_state"]
-                mini_qmt_path = connect_info["mini_qmt_path"]
-                client_id = connect_info["client_id"]
-                acc_id = connect_info["acc_id"]
-                
-                try:
-                    # 如果是mac 电脑开发环境直接返回成功
-                    if sys.platform.startswith("darwin"):
-                        trader_state.acc_is_connect = True
-                        System.system_py2js(
-                            self,
-                            "remoteCallBack",
-                            {"type": "accSubSuccess", "message": f"订阅QMT账号 {client_id} 成功", "event": 
-                            {
-                                "id":acc_id,
-                                "status":True
-                            }},
-                        )
-                        with self.multiple_traders_lock:
-                            trader_state.is_qmt_need_reconnection_lock = False
-                        continue
-                    
-                    # 设置id
-                    trader_state.trader.path = mini_qmt_path
-                    trader_state.trader.account = client_id
-                    
-                    # 连接QMT 传递回调
-                    trader_state.acc_is_connect = trader_state.trader.connect(self.callback)
-                    if trader_state.acc_is_connect:
-                        message = f"订阅QMT账号 {client_id} 成功"
-                    else:
-                        message = f"订阅QMT账号 {client_id} 失败"
-                    
-                    System.system_py2js(
-                        self,
-                        "remoteCallBack",
-                        {
-                            "type": "accSubSuccess",
-                            "message": message,
-                            "event":  {
-                                "id":acc_id,
-                                "status":trader_state
-                            },
-                        },
-                    )
-                except Exception as e:
-                    G.logger.error(f"连接QMT账号 {client_id} 失败: {str(e)}")
-                    trader_state.acc_is_connect = False
-                finally:
-                    with self.multiple_traders_lock:
-                        trader_state.is_qmt_need_reconnection_lock = False
-                        
+            # 设置id
+            account_info = self.multiple_traders[acc_id].info
+            mini_qmt_path = account_info.get("mini_qmt_path")
+            client_id = account_info.get("client_id")
+
+            # 如果是mac 电脑开发环境直接返回成功
+            if sys.platform.startswith("darwin"):
+                self.multiple_traders[acc_id].acc_is_connect = True
+                System.system_py2js(
+                    self,
+                    "remoteCallBack",
+                    {
+                        "type": "accSubSuccess",
+                        "message": f"QMT{client_id}账号订阅成功",
+                        "event": {"id": acc_id, "status": True},
+                    },
+                )
+                return True
+
+            self.multiple_traders[acc_id].trader.path = mini_qmt_path
+            self.multiple_traders[acc_id].trader.account = client_id
+            # 连接QMT 传递回调
+            self.multiple_traders[acc_id].acc_is_connect = self.multiple_traders[
+                acc_id
+            ].trader.connect(self.callback)
+            if self.multiple_traders[acc_id].acc_is_connect:
+                message = "QMT连接成功"
+            else:
+                message = "QMT连接失败"
+            System.system_py2js(
+                self,
+                "remoteCallBack",
+                {
+                    "type": "accSubSuccess",
+                    "message": message,
+                    "event": {
+                        "id": acc_id,
+                        "status": self.multiple_traders[acc_id].acc_is_connect,
+                    },
+                },
+            )
+            self.multiple_traders[acc_id].is_qmt_need_reconnection_lock = False
         except Exception as e:
             G.logger.error("连接QMT失败! code 1980" + str(e))
+            self.is_qmt_need_reconnection_lock = False
 
     # 购买国债逆回购（多账号）
     def buy_reverse_repo(self, account_id=None):
         trade_date_list = G.orm.get_trade_date_list()
-        today_str = datetime.now().strftime('%Y-%m-%d')
+        today_str = datetime.now().strftime("%Y-%m-%d")
         if today_str not in trade_date_list:
-            G.logger.info("今日不是交易日，不执行自动购入国债逆回购", extra={"showMessage": True})
+            G.logger.info(
+                "今日不是交易日，不执行自动购入国债逆回购", extra={"showMessage": True}
+            )
             return
 
         with self.multiple_traders_lock:
@@ -289,7 +212,10 @@ class TradeController:
         if not trader_state or trader_state.info.get("client_type") != 2:
             return
 
-        G.logger.info(f"正在执行自动购入国债逆回购, 账号: {trader_state.info.get('client_id')}", extra={"showMessage": True})
+        G.logger.info(
+            f"正在执行自动购入国债逆回购, 账号: {trader_state.info.get('client_id')}",
+            extra={"showMessage": True},
+        )
         judge, text = trader_state.trader.reverse_repurchase_of_treasury_bonds()
 
         if judge:
@@ -299,7 +225,7 @@ class TradeController:
 
     def auto_buy_new_stock(self, account_id=None):
         trade_date_list = G.orm.get_trade_date_list()
-        today_str = datetime.now().strftime('%Y-%m-%d')
+        today_str = datetime.now().strftime("%Y-%m-%d")
         if today_str not in trade_date_list:
             G.logger.info("今日不是交易日，不执行自动打新", extra={"showMessage": True})
             return
@@ -309,7 +235,10 @@ class TradeController:
         if not trader_state or trader_state.info.get("client_type") != 2:
             return
 
-        G.logger.info(f"正在执行自动打新, 账号: {trader_state.info.get('client_id')}", extra={"showMessage": True})
+        G.logger.info(
+            f"正在执行自动打新, 账号: {trader_state.info.get('client_id')}",
+            extra={"showMessage": True},
+        )
         df = stock_xgsglb_em_on_today()
         selected_columns = ["申购代码", "申购上限", "发行价格"]
         for _, row in df[selected_columns].iterrows():
@@ -325,7 +254,7 @@ class TradeController:
 
     def auto_buy_convertible_bond(self, account_id=None):
         trade_date_list = G.orm.get_trade_date_list()
-        today_str = datetime.now().strftime('%Y-%m-%d')
+        today_str = datetime.now().strftime("%Y-%m-%d")
         if today_str not in trade_date_list:
             G.logger.info("今日不是交易日，不执行自动打债", extra={"showMessage": True})
             return
@@ -335,7 +264,10 @@ class TradeController:
         if not trader_state or trader_state.info.get("client_type") != 2:
             return
 
-        G.logger.info(f"正在执行自动打债, 账号: {trader_state.info.get('client_id')}", extra={"showMessage": True})
+        G.logger.info(
+            f"正在执行自动打债, 账号: {trader_state.info.get('client_id')}",
+            extra={"showMessage": True},
+        )
         df = bond_zh_cov()
         selected_columns = ["申购代码", "申购上限"]
 
@@ -370,67 +302,95 @@ class TradeController:
         )
 
     #  计算配置仓位
-    def order_on_pro_rata_basis(self,orderDic:dict,task:dict,backtest_id:int = None)->int:
-        if task['order_count_type'] == 1:
-            num = (orderDic['amount'] * task['position_ratio']) // 100 * 100
+    def order_on_pro_rata_basis(
+        self, orderDic: dict, task: dict, backtest_id: int = None
+    ) -> int:
+        if task["order_count_type"] == 1:
+            num = (orderDic["amount"] * task["position_ratio"]) // 100 * 100
             num = int(num)
             return num
         else:
             # 获取当前持仓
-            total_value = round(orderDic['total_value'],2)
-            is_buy = orderDic['is_buy']
-            
+            total_value = round(orderDic["total_value"], 2)
+            is_buy = orderDic["is_buy"]
+
             # 实际持仓
             actual_position_volume = 0
-            positions = json.loads(orderDic['positions'])
-            actual_position_volume = next((p['total_amount'] for p in positions if convert_stock_suffix(p['security']) == orderDic['security_code']), 0)
-            
+            positions = json.loads(orderDic["positions"])
+            actual_position_volume = next(
+                (
+                    p["total_amount"]
+                    for p in positions
+                    if convert_stock_suffix(p["security"]) == orderDic["security_code"]
+                ),
+                0,
+            )
+
             if is_buy == 1:
-                actual_position_volume += orderDic['amount']
+                actual_position_volume += orderDic["amount"]
             else:
-                actual_position_volume -= orderDic['amount']
-            dynamic_calculation_type = task['dynamic_calculation_type']
+                actual_position_volume -= orderDic["amount"]
+            dynamic_calculation_type = task["dynamic_calculation_type"]
             accruing_amounts = 0
-        
-        
-            positions_arr = G.orm.query_position_by_task_or_backtest_id(backtest_id=backtest_id,task_id=task['id'])
+
+            positions_arr = G.orm.query_position_by_task_or_backtest_id(
+                backtest_id=backtest_id, task_id=task["id"]
+            )
             position_total_value = 0
             for position in positions_arr:
                 for order_position in positions:
-                    if position['security_code'] == convert_stock_suffix(order_position['security']):
-                        position_total_value += position['volume'] * order_position['price']
+                    if position["security_code"] == convert_stock_suffix(
+                        order_position["security"]
+                    ):
+                        position_total_value += (
+                            position["volume"] * order_position["price"]
+                        )
                         continue
-            
+
             # 固定仓位模式
             if dynamic_calculation_type == 1:
                 if backtest_id:
-                    accruing_amounts = G.orm.query_backtest_by_id(backtest_id)['initial_capital']
+                    accruing_amounts = G.orm.query_backtest_by_id(backtest_id)[
+                        "initial_capital"
+                    ]
                 else:
-                    accruing_amounts = task['allocation_amount']
+                    accruing_amounts = task["allocation_amount"]
             # 根据盈亏分配
             elif dynamic_calculation_type == 2:
                 can_use_amount = 0
                 if backtest_id:
-                    can_use_amount = G.orm.query_backtest_by_id(backtest_id)['can_use_amount']
+                    can_use_amount = G.orm.query_backtest_by_id(backtest_id)[
+                        "can_use_amount"
+                    ]
                 else:
-                    can_use_amount = task['can_use_amount']
-                    accruing_amounts = round(can_use_amount + position_total_value,2)
-                
-            
+                    can_use_amount = task["can_use_amount"]
+                    accruing_amounts = round(can_use_amount + position_total_value, 2)
+
             # 计算配置仓位
-            allocation_amount = round(actual_position_volume * accruing_amounts / total_value,2)
-            print(allocation_amount,accruing_amounts,actual_position_volume,total_value)
+            allocation_amount = round(
+                actual_position_volume * accruing_amounts / total_value, 2
+            )
+            print(
+                allocation_amount, accruing_amounts, actual_position_volume, total_value
+            )
             final_amount = 0
             allocation_amount = (allocation_amount // 100) * 100
             allocation_amount = int(allocation_amount)
-            
-            position = next((item for item in positions_arr if item.get('security_code') == orderDic['security_code']), None)
+
+            position = next(
+                (
+                    item
+                    for item in positions_arr
+                    if item.get("security_code") == orderDic["security_code"]
+                ),
+                None,
+            )
             if position:
-                final_amount = abs(allocation_amount - position['volume'])
+                final_amount = abs(allocation_amount - position["volume"])
             else:
                 if is_buy == 1:
                     final_amount = allocation_amount
-            
+
             return final_amount
 
     # 统一处理-下单接口
@@ -450,18 +410,29 @@ class TradeController:
     ):
 
         price_type, optimal_price = get_qmt_price_type(
-            stock_code, 
+            stock_code,
             order_style_str,
-            is_buy, 
+            is_buy,
             price,
             open_mandatory_limit_order,
-            is_mock_state
+            is_mock_state,
         )
 
         order_type = OrderType.STOCK_BUY if is_buy == 1 else OrderType.STOCK_SELL
-        System.system_py2js(self,'remoteCallBack',  {
-            "message": "下单数量: " + str(volume) + " 价格: " + str(optimal_price) + " 股票代码: " + stock_code + " 方向: " + ("买入" if is_buy == 1 else "卖出"),
-        })
+        System.system_py2js(
+            self,
+            "remoteCallBack",
+            {
+                "message": "下单数量: "
+                + str(volume)
+                + " 价格: "
+                + str(optimal_price)
+                + " 股票代码: "
+                + stock_code
+                + " 方向: "
+                + ("买入" if is_buy == 1 else "卖出"),
+            },
+        )
 
         account_client_type = None
         trader = None
@@ -474,7 +445,10 @@ class TradeController:
 
         if is_mock_state == 0:
             if account_client_type is None:
-                G.logger.error(f"未找到账号类型 account_id={account_id}", extra={"showMessage": True})
+                G.logger.error(
+                    f"未找到账号类型 account_id={account_id}",
+                    extra={"showMessage": True},
+                )
                 return
 
             # 如果是同花顺类型
@@ -493,7 +467,10 @@ class TradeController:
                 )
             else:
                 if trader is None:
-                    G.logger.error(f"未找到账号对应的交易实例 account_id={account_id}", extra={"showMessage": True})
+                    G.logger.error(
+                        f"未找到账号对应的交易实例 account_id={account_id}",
+                        extra={"showMessage": True},
+                    )
                     return
 
                 trader.place_order(
@@ -518,7 +495,10 @@ class TradeController:
             )
         elif is_mock_state == 2:
             if account_client_type is None:
-                G.logger.error(f"未找到账号类型 account_id={account_id}", extra={"showMessage": True})
+                G.logger.error(
+                    f"未找到账号类型 account_id={account_id}",
+                    extra={"showMessage": True},
+                )
                 return
 
             if account_client_type == 2:
@@ -637,7 +617,7 @@ class TradeController:
             # 转换code
             security = convert_stock_suffix(security)
             positions_arr = json.dumps(positions)
-            
+
             saveData = {
                 "security_code": security,
                 "style": style,
@@ -655,7 +635,6 @@ class TradeController:
                 "positions": positions_arr,
                 "total_value": total_value,
             }
-
 
             if G.run_model_type == 2:
                 user_id = G.user_id
@@ -782,7 +761,9 @@ class TradeController:
                             task_id=str(task["id"]),
                             order_remark=orderId,
                             is_mock_state=1,
-                            open_mandatory_limit_order=task['open_mandatory_limit_order']
+                            open_mandatory_limit_order=task[
+                                "open_mandatory_limit_order"
+                            ],
                         )
                     else:
                         G.logger.error("异常Code 121", extra={"showMessage": True})
@@ -843,8 +824,8 @@ class TradeController:
                         task_id=str(task["id"]),
                         order_remark=orderId,
                         is_mock_state=is_mock_state,
-                        open_mandatory_limit_order=task['open_mandatory_limit_order'],
-                        account_id=task.get("account_id")
+                        open_mandatory_limit_order=task["open_mandatory_limit_order"],
+                        account_id=task.get("account_id"),
                     )
                 else:
                     G.logger.info(
@@ -894,13 +875,23 @@ class TradeController:
             path = account.get("mini_qmt_path")
             client_id = account.get("client_id")
             if not path or not client_id:
-                return {"cash": 0, "frozen_cash": 0, "market_value": 0, "total_asset": 0}
-            
+                return {
+                    "cash": 0,
+                    "frozen_cash": 0,
+                    "market_value": 0,
+                    "total_asset": 0,
+                }
+
             with self.multiple_traders_lock:
                 trader_state = self.multiple_traders.get(client_id)
                 if not trader_state:
-                    return {"cash": 0, "frozen_cash": 0, "market_value": 0, "total_asset": 0}
-            
+                    return {
+                        "cash": 0,
+                        "frozen_cash": 0,
+                        "market_value": 0,
+                        "total_asset": 0,
+                    }
+
             # 如果未连接，尝试连接
             if not trader_state.acc_is_connect:
                 try:
@@ -912,18 +903,25 @@ class TradeController:
                         trader_state.trader.path = path
                         trader_state.trader.account = client_id
                         # 连接QMT 传递回调
-                        trader_state.acc_is_connect = trader_state.trader.connect(self.callback)
+                        trader_state.acc_is_connect = trader_state.trader.connect(
+                            self.callback
+                        )
                 except Exception as e:
                     G.logger.error(f"连接QMT账号 {client_id} 失败: {str(e)}")
                     trader_state.acc_is_connect = False
-            
+
             if trader_state.acc_is_connect:
                 return trader_state.trader.balance()
             return {"cash": 0, "frozen_cash": 0, "market_value": 0, "total_asset": 0}
         else:
             result = self.ths_auto.get_balance()
             if result.get("code") != 0:
-                return {"cash": 0, "frozen_cash": 0, "market_value": 0, "total_asset": 0}
+                return {
+                    "cash": 0,
+                    "frozen_cash": 0,
+                    "market_value": 0,
+                    "total_asset": 0,
+                }
             return {
                 "cash": result["data"]["资金余额"],
                 "frozen_cash": result["data"]["冻结金额"],

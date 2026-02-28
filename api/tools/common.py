@@ -337,7 +337,7 @@ def get_all_xtminiqmt_processes():
             字典结构：{'pid': 进程ID, 'path': 程序完整路径, 'name': 进程名}
     """
     if sys.platform.startswith('darwin'):
-        return [{'pid': 888, 'path': 'C:\\Users\\mubin\\AppData\\Local\\长城策略交易系统\\bin.x64_rtys789\\XtMiniQmt.exe', 'name': 'XtMiniQmt.exe'}]
+        return [{'pid': 888, 'path': 'D:\\长城策略交易系统new\\bin.x64\\XtMiniQmt.exe', 'name': 'XtMiniQmt.exe'}]
     else:
         # 目标进程名（小写，用于快速匹配）
         target_name = "xtminiqmt.exe"
@@ -376,8 +376,6 @@ def get_all_xtminiqmt_processes():
 
 
 def check_mini_qmt_path_match(account_info: dict, process_list: list):
-   
-    
     # 2. 获取mini_qmt_path并处理空值
     mini_qmt_path = account_info.get('mini_qmt_path')
     if not mini_qmt_path:
@@ -397,17 +395,15 @@ def check_mini_qmt_path_match(account_info: dict, process_list: list):
         # 跳过非字典类型的项
         if not isinstance(item, dict):
             continue
-        
+        path = item['path']
+        suffix = r"\XtMiniQmt.exe"
         # 获取并标准化当前项的path
-        item_path = item.get('path', '')
-        if not item_path:
-            continue
+        item_path = path[:-len(suffix)]
         
         try:
             standard_item_path = os.path.normpath(item_path)
         except Exception:
             continue
-        
         # 核心匹配逻辑
         if standard_item_path == standard_target_path:
             return True

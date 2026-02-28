@@ -14,7 +14,7 @@
 
 <script setup>
 import { getToken, getUserInfo } from '@/api/auth'
-import { connectQMT, connectWs, getSettingConfig, programStart } from '@/api/comm_tube'
+import { connectQMT, connectWs, getSettingConfig, getAccountList, programStart } from '@/api/comm_tube'
 import { Loading } from '@element-plus/icons-vue'
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
@@ -23,18 +23,20 @@ const router = useRouter()
 onMounted(() => {
   setTimeout(async () => {
     const config = await getSettingConfig()
-    if (config.mini_qmt_path && config.client_id) {
-     await connectQMT()
+    const account_list = await getAccountList()
+    for (const item of account_list) {
+      await connectQMT(item.id)
     }
+    
     if (config.run_model_type === 1) {
       if (config.salt && config.server_url && config.client_id && config.mini_qmt_path) {
-        await connectWs(config.server_url,1)
+        await connectWs(config.server_url, 1)
       }
     } else if (config.run_model_type === 2) {
       const userInfo = await getUserInfo()
       const token = await getToken()
       if (userInfo && token && config.server_url) {
-        await connectWs(config.server_url,2)
+        await connectWs(config.server_url, 2)
       }
     }
     router.push('/home/list')
