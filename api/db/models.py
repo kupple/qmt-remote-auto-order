@@ -70,9 +70,6 @@ class Setting(BaseModel):
     salt = Column(String(), doc='盐值', nullable=True)
     server_url = Column(String(), doc='服务器URL', nullable=True)
     run_model_type = Column(Integer, doc='运行模式类型', nullable=True, server_default='0')
-    auto_national_debt = Column(Integer, doc='自动逆回购', nullable=True, server_default='0')
-    auto_buy_stock_ipo = Column(Integer, doc='自动打新股', nullable=True, server_default='0')
-    auto_buy_purchase_ipo = Column(Integer, doc='自动打新债·', nullable=True, server_default='0')
     auto_reorder = Column(Integer, doc='自动重下单', nullable=True, server_default='0')
     auto_startup = Column(Integer, doc='开机自启动', nullable=True, server_default='0')
     account = Column(String(), doc='账号·', nullable=True)
@@ -97,9 +94,6 @@ class Setting(BaseModel):
                 salt='',
                 server_url='',
                 run_model_type=0,
-                auto_national_debt=0,
-                auto_buy_stock_ipo=0,
-                auto_buy_purchase_ipo=0,
                 auto_reorder=0,
                 auto_startup=0,
                 account='',
@@ -119,6 +113,7 @@ class TaskList(BaseModel):
     host_user_email=Column(String(), doc='来自', nullable=True)
     share_secret = Column(String(), doc='分享秘钥', nullable=True)
     strategy_keys_id = Column(Integer(), doc='策略密钥ID', nullable=True)
+    account_id = Column(Integer(), doc='关联账号ID', nullable=True)
     strategy_code = Column(String(), doc='策略代码', nullable=True)
     order_count_type = Column(Integer, doc='订单计数类型', nullable=True)
     dynamic_calculation_type = Column(Integer, doc='动态计算类型', nullable=True,server_default='1')
@@ -259,7 +254,9 @@ class Account(BaseModel):
     ths_path = Column(String(), doc='同花顺路径', nullable=True)
     ths_client_id = Column(String(), doc='同花顺客户ID', nullable=True)
     ths_pwd = Column(String(), doc='同花顺密码', nullable=True)
-    is_main = Column(Integer(), doc='是否主账号', nullable=True)
+    auto_national_debt = Column(Integer, doc='自动逆回购', nullable=True, server_default='0')
+    auto_buy_stock_ipo = Column(Integer, doc='自动打新股', nullable=True, server_default='0')
+    auto_buy_purchase_ipo = Column(Integer, doc='自动打新债·', nullable=True, server_default='0')
 
     def __str__(self):
         return f"Account: {self.id}"    

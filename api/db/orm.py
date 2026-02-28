@@ -1,12 +1,13 @@
 from datetime import datetime
 import json
 from api.db.models import (
-    PPXStorageVar, Setting, TaskList, Orders, Entrusts, 
-    Trades, Backtest,Positions,Logger,RemotePositions,
+    Base,
+    PPXStorageVar, Setting, TaskList, Orders, Entrusts,
+    Trades, Backtest,Positions,Logger,RemotePositions,Account,
     DATA_TABLE_RECORD,DATA_ALL_STOCKS,DATA_ST_STOCKS,DATA_TRADE_DATE_HIST
 )
 from pyapp.db.db import DB
-from sqlalchemy import select, update, insert, and_, or_, desc, func
+from sqlalchemy import select, update, insert, and_, or_, desc, func, text
 from api.tools.sys_config import generate_random_letters
 def _convert_stock_suffix(stock_code: str) -> str:
     """转换股票代码后缀"""
@@ -39,6 +40,28 @@ class ORM:
         db.init()    # 初始化数据库连接
         dbSession = DB.session()
         try:
+            # 兜底创建新增表（避免旧库缺少 account 表）
+            engine = dbSession.get_bind()
+            Base.metadata.create_all(bind=engine, tables=[Account.__table__])
+
+            # 旧库迁移：tasklist 增加 account_id 字段
+            columns_stmt = text("PRAGMA table_info(tasklist)")
+            columns = dbSession.execute(columns_stmt).fetchall()
+            column_names = [row[1] for row in columns]
+            if "account_id" not in column_names:
+                dbSession.execute(text("ALTER TABLE tasklist ADD COLUMN account_id INTEGER"))
+
+            # 旧库迁移：account 增加自动交易开关字段
+            account_columns_stmt = text("PRAGMA table_info(account)")
+            account_columns = dbSession.execute(account_columns_stmt).fetchall()
+            account_column_names = [row[1] for row in account_columns]
+            if "auto_national_debt" not in account_column_names:
+                dbSession.execute(text("ALTER TABLE account ADD COLUMN auto_national_debt INTEGER DEFAULT 0"))
+            if "auto_buy_stock_ipo" not in account_column_names:
+                dbSession.execute(text("ALTER TABLE account ADD COLUMN auto_buy_stock_ipo INTEGER DEFAULT 0"))
+            if "auto_buy_purchase_ipo" not in account_column_names:
+                dbSession.execute(text("ALTER TABLE account ADD COLUMN auto_buy_purchase_ipo INTEGER DEFAULT 0"))
+
             # 初始化设置表
             Setting.initialize_default(dbSession)
         finally:
@@ -108,20 +131,164 @@ class ORM:
                 dbSession.add(setting)
         dbSession.close()
 
-    def get_task_list(self,data):
-        """获取任务列表"""
+    def add_account(self, data):
+        """添加账号"""
         dbSession = DB.session()
         with dbSession.begin():
-            # 构建基础查询
-            stmt = select(TaskList).where(TaskList.delete_time.is_(None))
-            
-            # 根据传入的data参数动态添加查询条件
+            # 客户编号唯一性校验
+            unique_field = "ths_client_id" if data.get("client_type") == 1 else "client_id"
+            unique_value = data.get(unique_field)
+            if isinstance(unique_value, str):
+                unique_value = unique_value.strip()
+            if unique_value:
+                stmt = select(Account.id).where(
+                    or_(
+                        Account.client_id == unique_value,
+                        Account.ths_client_id == unique_value,
+                    )
+                )
+                exists = dbSession.execute(stmt).first()
+                if exists:
+                    raise ValueError("客户编号已存在，请勿重复添加")
+
+            account = Account()
+            for key, value in data.items():
+                if hasattr(account, key):
+                    setattr(account, key, value)
+            dbSession.add(account)
+        dbSession.close()
+        return True
+
+    def get_account_list(self):
+        """获取账号列表"""
+        dbSession = DB.session()
+        with dbSession.begin():
+            stmt = select(Account).order_by(desc(Account.created_at))
+            result = dbSession.execute(stmt).scalars().all()
+            return [item.toDict() for item in result]
+        dbSession.close()
+        return []
+
+    def get_account_by_id(self, account_id):
+        """根据ID获取账号"""
+        dbSession = DB.session()
+        with dbSession.begin():
+            stmt = select(Account).where(Account.id == account_id)
+            account = dbSession.execute(stmt).scalar_one_or_none()
+            return account.toDict() if account else None
+        dbSession.close()
+        return None
+
+    def delete_account(self, account_id):
+        """删除账号（有关联任务时禁止删除）"""
+        dbSession = DB.session()
+        with dbSession.begin():
+            task_stmt = select(TaskList.id).where(
+                TaskList.account_id == account_id,
+                TaskList.delete_time.is_(None)
+            )
+            task_exists = dbSession.execute(task_stmt).first()
+            if task_exists:
+                raise ValueError("该账号已关联任务，不能删除")
+
+            account_stmt = select(Account).where(Account.id == account_id)
+            account = dbSession.execute(account_stmt).scalar_one_or_none()
+            if not account:
+                raise ValueError("账号不存在")
+
+            dbSession.delete(account)
+        dbSession.close()
+        return True
+
+    def update_account(self, account_id, data):
+        """编辑账号"""
+        dbSession = DB.session()
+        with dbSession.begin():
+            account = dbSession.execute(select(Account).where(Account.id == account_id)).scalar_one_or_none()
+            if not account:
+                raise ValueError("账号不存在")
+
+            # 客户编号唯一性校验（排除自身）
+            unique_field = "ths_client_id" if data.get("client_type", account.client_type) == 1 else "client_id"
+            unique_value = data.get(unique_field)
+            if isinstance(unique_value, str):
+                unique_value = unique_value.strip()
+            if unique_value:
+                exists_stmt = select(Account.id).where(
+                    and_(
+                        or_(Account.client_id == unique_value, Account.ths_client_id == unique_value),
+                        Account.id != account_id,
+                    )
+                )
+                exists = dbSession.execute(exists_stmt).first()
+                if exists:
+                    raise ValueError("客户编号已存在，请勿重复添加")
+
+            for key, value in data.items():
+                if hasattr(account, key):
+                    setattr(account, key, value)
+        dbSession.close()
+        return True
+
+    def get_task_list(self,data):
+        """获取任务列表（关联账号信息）"""
+        dbSession = DB.session()
+        with dbSession.begin():
+            stmt = select(TaskList, Account).outerjoin(Account, TaskList.account_id == Account.id).where(TaskList.delete_time.is_(None))
+
             for key, value in data.items():
                 if hasattr(TaskList, key):
                     stmt = stmt.where(getattr(TaskList, key) == value)
-            
-            result = dbSession.execute(stmt).scalars().all()
-            return [task.toDict() for task in result]
+
+            rows = dbSession.execute(stmt).all()
+            result = []
+            for task, account in rows:
+                item = task.toDict()
+                if account:
+                    account_name = account.ths_client_id if account.client_type == 1 else account.client_id
+                    item["account_name"] = account_name
+                    item["account_type"] = account.client_type
+                else:
+                    item["account_name"] = ""
+                    item["account_type"] = None
+                result.append(item)
+            return result
+        dbSession.close()
+        return []
+
+    def get_account_task_list(self, data):
+        """获取账号及其关联任务列表"""
+        dbSession = DB.session()
+        with dbSession.begin():
+            account_stmt = select(Account).order_by(desc(Account.created_at))
+            accounts = dbSession.execute(account_stmt).scalars().all()
+
+            task_stmt = select(TaskList).where(TaskList.delete_time.is_(None))
+            for key, value in data.items():
+                if hasattr(TaskList, key):
+                    task_stmt = task_stmt.where(getattr(TaskList, key) == value)
+            tasks = dbSession.execute(task_stmt).scalars().all()
+
+            task_map = {}
+            for task in tasks:
+                task_map.setdefault(task.account_id, []).append(task.toDict())
+
+            result = []
+            for account in accounts:
+                account_dict = account.toDict()
+                account_dict["account_name"] = account.ths_client_id if account.client_type == 1 else account.client_id
+                account_dict["task_list"] = task_map.get(account.id, [])
+                result.append(account_dict)
+
+            if task_map.get(None):
+                result.append({
+                    "id": None,
+                    "client_type": None,
+                    "account_name": "未关联账号",
+                    "task_list": task_map.get(None, [])
+                })
+
+            return result
         dbSession.close()
         return []
 

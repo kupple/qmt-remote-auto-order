@@ -10,7 +10,7 @@
         <span class="user-info-card-created-at">{{ dayjs(userInfo?.created_at).format('YYYY-MM-DD HH:mm:ss') }}</span>
       </div>
     </el-card>
-    <el-card class="edit-div">
+    <!-- <el-card class="edit-div">
       <template #header>
         <div class="card-header">
           <span>基本设置</span>
@@ -22,7 +22,7 @@
       <p v-if="params.client_type == 2">客户编号:{{ params.client_id }}</p>
       <p v-if="params.client_type == 1">同花顺路径:{{ params.ths_path }}</p>
       <p v-if="params.client_type == 1">证券账号:{{ params.ths_client_id }}</p>
-    </el-card>
+    </el-card> -->
     <editConfigModal ref="editConfigModalRef" @callBack="getSetting" />
   </div>
 </template>
@@ -125,8 +125,9 @@ const handleLogout = () => {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 100%;
+    // height: 100%;
     margin-top: 30px;
+    overflow: hidden;
     .user-info-card-avatar {
       overflow: hidden;
       height: 100px;

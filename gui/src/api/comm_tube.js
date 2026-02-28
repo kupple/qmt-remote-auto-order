@@ -14,8 +14,29 @@ export const saveConfig = (params) => {
   useCommonStore().setSettingConfig(params)
   return window.pywebview.api.save_config(params)
 }
+
+export const addAccount = (params) => {
+  return window.pywebview.api.add_account(params)
+}
+
+export const getAccountList = () => {
+  return window.pywebview.api.get_account_list()
+}
+
+export const deleteAccount = (accountId) => {
+  return window.pywebview.api.delete_account(accountId)
+}
+
+export const updateAccount = (accountId, params) => {
+  return window.pywebview.api.update_account(accountId, params)
+}
+
 export const getTaskList = (params) => {
   return window.pywebview.api.get_task_list(params)
+}
+
+export const getAccountTaskList = (params) => {
+  return window.pywebview.api.get_account_task_list(params)
 }
 export const getTaskDetail = (params) => {
   return window.pywebview.api.get_task_detail(params)
@@ -39,8 +60,8 @@ export const connectWs = (params,ways=2,is_login = false) => {
   return window.pywebview.api.connect_ws(params,ways,is_login)
 }
 
-export const connectQMT = async(params) => {
-  const isAccSubState = await window.pywebview.api.connect_qmt(params)
+export const connectQMT = async() => {
+  const isAccSubState = await window.pywebview.api.connect_qmt()
   // await useCommonStore().changeisAccSubState(isAccSubState)
   // return isAccSubState
 }
@@ -127,20 +148,20 @@ export const getUniqueID = () => {
   return window.pywebview.api.get_unique_id()
 }
   
-export const getAccountInfo = () => {
-  return window.pywebview.api.get_account_info()
+export const getAccountInfo = (accountId) => {
+  return window.pywebview.api.get_account_info(accountId)
 }
 
-export const openThsShortcut = () => {
-  return window.pywebview.api.open_ths_shortcut_action()
+export const openThsShortcut = (accountId) => {
+  return window.pywebview.api.open_ths_shortcut_action(accountId)
 }
 
-export const controlThsWindow = (show) => {
-  return window.pywebview.api.control_ths_window_action(show)
+export const controlThsWindow = (show, accountId) => {
+  return window.pywebview.api.control_ths_window_action(show, accountId)
 }
 
-export const getThsWindowState = () => {
-  return window.pywebview.api.get_ths_window_state_action()
+export const getThsWindowState = (accountId) => {
+  return window.pywebview.api.get_ths_window_state_action(accountId)
 }
 
 export const openHttpServer = (open,host,port) => {

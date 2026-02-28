@@ -57,7 +57,6 @@ export const useRemoteStore = defineStore('remote', {
           useCommonStore().changeisQmtState(params.event)
         }
         if (params.type == 'accSubSuccess') {
-          console.log(params.event)
           useCommonStore().changeisAccSubState(params.event)
         }
         if (params.type == 'thsProcessCheck') {

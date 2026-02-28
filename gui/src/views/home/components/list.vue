@@ -2,121 +2,103 @@
   <div class="home-container">
     <div class="bottom-container">
       <div class="bottom-container-left">
-        <div v-if="taskList.length == 0" style="text-align: center; margin-top: 20px">
+        <div v-if="accountTaskList.length == 0" style="text-align: center; margin-top: 20px">
           <el-empty description="暂无策略任务">
-            <el-button type="primary" @click="openModal">创建一个跟随策略任务</el-button>
+            <el-button type="primary" @click="openAccountModal">添加账号</el-button>
           </el-empty>
         </div>
-        <el-button v-if="taskList.length > 0" type="primary" class="create-task-btn" @click="openModal">新建开仓</el-button>
-        <div class="task-list" v-if="taskList.length > 0">
-          <div v-for="(item, idx) in taskList" :key="idx" :class="{ 'task-cell': true, 'task-cell-activate': item.is_open == 1 }">
-            <div class="cell-left">
-              <div class="task-name">
-                {{ item.name }}
-                <span v-if="item.is_open == 1" style="margin-left: 10px">(运行中)</span>
-                <!-- <span v-else style="margin-left: 10px">(未运行)</span> -->
+        <section v-if="accountTaskList.length > 0" class="task-action-section">
+          <el-button type="primary" class="create-task-btn" @click="openAccountModal">添加账号</el-button>
+        </section>
+        <div class="task-list" v-if="accountTaskList.length > 0">
+          <div v-for="(account, accountIdx) in accountTaskList" :key="`account-${account.id ?? accountIdx}`" class="account-group">
+            <div class="account-group-header">
+              <div class="account-title-row">
+                <el-tag disable-transitions :type="account.client_type === 1 ? 'success' : account.client_type === 2 ? 'primary' : 'warning'" effect="plain" size="small">
+                  {{ account.client_type === 1 ? '同花顺' : account.client_type === 2 ? 'QMT' : '未关联账号' }}
+                </el-tag>
+                <span class="account-name">{{ account.account_name }}</span>
               </div>
-              <div class="strategy_code">
-                <span
-                  >{{ item.strategy_code }}<span style="margin-left: 6px" v-if="item.task_type == 2">from:{{ item.host_user_email }}</span></span
-                >
-              </div>
-              <div class="cell-order_count_type">
-                <el-tag style="margin-right: 5px" round effect="plain" disable-transitions v-if="item.platform == 10">API调用</el-tag>
-                <el-tag style="margin-right: 5px" round effect="plain" disable-transitions v-else type="danger">聚宽</el-tag>
-                <el-tag round effect="plain" disable-transitions v-if="item.task_type == 1 && item.platform != 10">自建策略</el-tag>
-                <el-tag round effect="plain" disable-transitions v-if="item.task_type == 2 && item.platform != 10" type="danger">他人策略</el-tag>
-                <el-tag round effect="plain" style="margin-left: 5px" disable-transitions v-if="item.order_count_type == 1" type="success">跟随策略</el-tag>
-                <el-tag round effect="plain" style="margin-left: 5px" disable-transitions v-else type="primary"> 动态调整->{{ item.dynamic_calculation_type == 1 ? '固定仓位' : '同步仓位' }} </el-tag>
-                <!-- <span class="order_count_amount" v-if="item.order_count_type == 2"> 起始金额:{{ item.allocation_amount }} </span> -->
+              <div class="account-header-actions">
+                <div class="account-status-row" v-if="account.id">
+                  <el-tag disable-transitions size="small" effect="light" :type="taskStateDic[account.id]['isAccSubState'] ? 'success' : 'danger'">订阅状态: {{ taskStateDic[account.id]["isAccSubState"]  ? '已订阅' : '未订阅' }}</el-tag>
+                </div>
+                <el-button type="success" style="margin-right: 10px" @click="openModal(account.id)">新建策略</el-button>
+                <AccountDetailDrawer v-if="account.id" :account="account" @edit="openAccountModal" @deleted="getTaskListAction" />
               </div>
             </div>
-            <div class="cell-right">
-              <div v-if="item.is_open === 0" class="cell-right-row" @click="handleEdit({ id: item.id, is_open: 1, name: item.name })">
-                <!-- <el-icon color="#fff" size="20"><VideoPlay /></el-icon> -->
-                <img src="@/assets/images/start.png" style="width: 30px; height: 30px" />
-                <span class="cell-right-row-label" style="font-size: 12px; margin-right: 5px">开启策略</span>
+            <div v-if="!account.task_list || account.task_list.length === 0" class="account-empty">暂无策略</div>
+            <div v-for="(item, idx) in account.task_list" :key="`task-${item.id}-${idx}`" :class="{ 'task-cell': true, 'task-cell-activate': item.is_open == 1 }">
+              <div class="cell-left">
+                <div class="task-name">
+                  <div class="task-name-left">
+                    {{ item.name }}
+                    <span v-if="item.is_open == 1" style="margin-left: 10px">(运行中)</span>
+                  </div>
+                </div>
+                <div class="strategy_code">
+                  <span
+                    >{{ item.strategy_code }}<span style="margin-left: 6px" v-if="item.task_type == 2">from:{{ item.host_user_email }}</span></span
+                  >
+                </div>
+                <div class="cell-order_count_type">
+                  <el-tag style="margin-right: 5px" round effect="plain" disable-transitions v-if="item.platform == 10">API调用</el-tag>
+                  <el-tag style="margin-right: 5px" round effect="plain" disable-transitions v-else type="danger">聚宽</el-tag>
+                  <el-tag round effect="plain" disable-transitions v-if="item.task_type == 1 && item.platform != 10">自建策略</el-tag>
+                  <el-tag round effect="plain" disable-transitions v-if="item.task_type == 2 && item.platform != 10" type="danger">他人策略</el-tag>
+                  <el-tag round effect="plain" style="margin-left: 5px" disable-transitions v-if="item.order_count_type == 1" type="success">跟随策略</el-tag>
+                  <el-tag round effect="plain" style="margin-left: 5px" disable-transitions v-else type="primary">动态调整->{{ item.dynamic_calculation_type == 1 ? '固定仓位' : '同步仓位' }}</el-tag>
+                </div>
               </div>
-              <div v-else class="cell-right-row" @click="handleEdit({ id: item.id, is_open: 0, name: item.name })">
-                <img src="@/assets/images/stop.png" style="width: 30px; height: 30px" />
-                <span class="cell-right-row-label" style="font-size: 12px; margin-right: 5px">关闭策略</span>
-              </div>
-              <div class="cell-right-row" @click="goToDetail(item)">
-                <el-icon color="#fff" size="18"><Setting /></el-icon>
-                <span class="cell-right-row-label">详情/设置</span>
-              </div>
-              <div class="cell-right-row" @click="backtestAction(item)">
-                <el-icon color="#fff" size="18"><Odometer /></el-icon>
-                <span class="cell-right-row-label">查看回测</span>
-              </div>
-              <div class="cell-right-row" @click="convertToCodeAction(item)" v-if="!item.strategy_keys_id">
-                <el-icon color="#fff" size="18"><Refresh /></el-icon>
-                <span class="cell-right-row-label">代码转换</span>
-              </div>
-              <div class="cell-right-row" @click="shareAction(item)" v-if="!item.strategy_keys_id && form.run_model_type == 2">
-                <el-icon color="#fff" size="18"><Promotion /></el-icon>
-                <span class="cell-right-row-label">分享策略</span>
+              <div class="cell-right">
+                <div v-if="item.is_open === 0" class="cell-right-row" @click="handleEdit({ id: item.id, is_open: 1, name: item.name })">
+                  <img src="@/assets/images/start.png" style="width: 30px; height: 30px" />
+                  <span class="cell-right-row-label" style="font-size: 12px; margin-right: 5px">开启策略</span>
+                </div>
+                <div v-else class="cell-right-row" @click="handleEdit({ id: item.id, is_open: 0, name: item.name })">
+                  <img src="@/assets/images/stop.png" style="width: 30px; height: 30px" />
+                  <span class="cell-right-row-label" style="font-size: 12px; margin-right: 5px">关闭策略</span>
+                </div>
+                <div class="cell-right-row" @click="backtestAction(item)">
+                  <el-icon color="#fff" size="18"><Odometer /></el-icon>
+                  <span class="cell-right-row-label">查看回测</span>
+                </div>
+                <div class="cell-right-row" @click="convertToCodeAction(item)" v-if="!item.strategy_keys_id">
+                  <el-icon color="#fff" size="18"><Refresh /></el-icon>
+                  <span class="cell-right-row-label">代码转换</span>
+                </div>
+                <div class="cell-right-row" @click="shareAction(item)" v-if="!item.strategy_keys_id && form.run_model_type == 2">
+                  <el-icon color="#fff" size="18"><Promotion /></el-icon>
+                  <span class="cell-right-row-label">分享策略</span>
+                </div>
+                <div class="cell-right-row" @click="goToDetail(item)">
+                  <el-icon color="#fff" size="18"><Setting /></el-icon>
+                  <span class="cell-right-row-label">详情/设置</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <div class="bottom-container-right">
-        <el-descriptions direction="vertical" :column="2" border size="small">
-          <el-descriptions-item label="可用金额">{{ fundsDic.cash }}</el-descriptions-item>
-          <el-descriptions-item label="冻结金额">{{ fundsDic.frozen_cash }}</el-descriptions-item>
-          <el-descriptions-item label="持仓市值">{{ fundsDic.market_value }}</el-descriptions-item>
-          <el-descriptions-item label="总资产">{{ fundsDic.total_asset }}</el-descriptions-item>
-        </el-descriptions>
-        <el-row style="margin-top: 10px" :gutter="5">
-          <el-col :span="24">
-            <el-button size="small" style="width: 100%" @click="getAccountInfoAction">获取账号信息</el-button>
-          </el-col>
-        </el-row>
-        <el-divider>功能</el-divider>
-        <el-form :model="form" label-width="100px" v-if="settingConfig.client_type == 2">
-          <el-form-item label="自动逆回购">
-            <el-switch size="small" v-model="form.auto_national_debt" @change="(e) => autoAutomaticReverseAtion(1, e)" />
-            <el-tooltip effect="dark" content="开启后3点10分自动将盈余资金买入1天期国债逆回购，不占用资金" placement="top">
-              <el-icon style="margin-left: 10px; color: #999; font-size: 18px"><QuestionFilled /></el-icon>
-            </el-tooltip>
-          </el-form-item>
-          <el-form-item label="自动打新股">
-            <el-switch size="small" v-model="form.auto_buy_stock_ipo" @change="(e) => autoAutomaticReverseAtion(2, e)" />
-            <el-tooltip effect="dark" content="开启后10点10分自动申购新股" placement="top">
-              <el-icon style="margin-left: 10px; color: #999; font-size: 18px"><QuestionFilled /></el-icon>
-            </el-tooltip>
-          </el-form-item>
-          <el-form-item label="自动打债">
-            <el-switch size="small" v-model="form.auto_buy_purchase_ipo" @change="(e) => autoAutomaticReverseAtion(3, e)" />
-            <el-tooltip effect="dark" content="开启后10点10分自动申购新债" placement="top">
-              <el-icon style="margin-left: 10px; color: #999; font-size: 18px"><QuestionFilled /></el-icon>
-            </el-tooltip>
-          </el-form-item>
-          <el-button type="danger" size="small" style="width: 100%" @click="clearAllAction">一键清仓</el-button>
-        </el-form>
-        <div v-else class="ths-functional-area">
-          <el-switch v-model="form.show_terminal" @change="(e) => controlThsWindow(e)" active-text="显示终端" inactive-text="隐藏终端" />
-          <el-button size="small" type="primary" style="width: 100px; margin-top: 10px" @click="openThsShortcutAction">打开同花顺下单</el-button>
-        </div>
-      </div>
     </div>
     <ListModal ref="listModalRef" @getTaskList="getTaskListAction" />
+    <AccountNewModal ref="accountNewModalRef" @callBack="getTaskListAction" />
   </div>
 </template>
 
 <script setup>
 import { getUserInfo } from '@/api/auth'
-import { controlThsWindow, getAccountInfo, getSettingConfig, getTaskList, getThsWindowState, getUniqueID, openThsShortcut, runTask, saveConfig } from '@/api/comm_tube'
+import { getAccountTaskList, getSettingConfig, getUniqueID, runTask } from '@/api/comm_tube'
 import { useCommonStore } from '@/store/common.js'
-import { Odometer, Promotion, QuestionFilled, Refresh, Setting } from '@element-plus/icons-vue'
+import { Odometer, Promotion, Refresh, Setting } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import ListModal from './listModal.vue'
+import AccountNewModal from './accountNewModal.vue'
+import AccountDetailDrawer from './accountDetailDrawer.vue'
 
-const router = useRouter() // 使用useRouter函数创建router实例
-const route = useRoute()
+const router = useRouter()
 
 const getThsWindowStateAction = async () => {
   const res = await getThsWindowState()
@@ -126,22 +108,6 @@ const getThsWindowStateAction = async () => {
 const settingConfig = computed(() => {
   return useCommonStore().settingConfig
 })
-
-// 自动逆回购
-const autoAutomaticReverseAtion = async (type, e) => {
-  let subDic = {}
-  if (type === 1) {
-    subDic['auto_national_debt'] = e ? 1 : 0
-  }
-  if (type === 2) {
-    subDic['auto_buy_stock_ipo'] = e ? 1 : 0
-  }
-  if (type === 3) {
-    subDic['auto_buy_purchase_ipo'] = e ? 1 : 0
-  }
-
-  await saveConfig(subDic)
-}
 
 const openThsShortcutAction = () => {
   openThsShortcut()
@@ -155,23 +121,21 @@ const fundsDic = reactive({
 })
 
 const form = reactive({
-  auto_national_debt: true,
-  auto_buy_stock_ipo: true,
-  auto_buy_purchase_ipo: true,
   run_model_type: 1,
   show_terminal: true
 })
 
 const getConfig = async () => {
   const res = await getSettingConfig()
-  form.auto_national_debt = res.auto_national_debt == 1 ? true : false
-  form.auto_buy_stock_ipo = res.auto_buy_stock_ipo == 1 ? true : false
-  form.auto_buy_purchase_ipo = res.auto_buy_purchase_ipo == 1 ? true : false
   form.run_model_type = res.run_model_type
 }
 
-const taskList = computed(() => {
+const accountTaskList = computed(() => {
   return useCommonStore().taskList
+})
+
+const taskStateDic = computed(() => {
+  return useCommonStore().taskStateDic
 })
 
 const backtestAction = async (row) => {
@@ -184,38 +148,18 @@ const convertToCodeAction = async (row) => {
 
 const shareAction = (row) => {
   router.push(`/share?strategy_code=${row.strategy_code}`)
-  return
-}
-const squareAllAction = async () => {
-  ElMessageBox.confirm('确定要回补吗？', '确定要回补吗？', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(async () => {
-    ElMessage.success('该功能尚未开发')
-  })
-}
-const clearAllAction = async () => {
-  ElMessageBox.confirm('确定要清仓吗？', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(async () => {
-    ElMessage.success('该功能尚未开发')
-  })
 }
 
 const getAccountInfoAction = async () => {
   const res = await getAccountInfo()
-  fundsDic.cash = res.cash.toFixed(2)
-  fundsDic.frozen_cash = res.frozen_cash.toFixed(2)
-  fundsDic.market_value = res.market_value.toFixed(2)
-  fundsDic.total_asset = res.total_asset.toFixed(2)
+  fundsDic.cash = Number(res.cash || 0).toFixed(2)
+  fundsDic.frozen_cash = Number(res.frozen_cash || 0).toFixed(2)
+  fundsDic.market_value = Number(res.market_value || 0).toFixed(2)
+  fundsDic.total_asset = Number(res.total_asset || 0).toFixed(2)
 }
-// 开始任务
+
 const handleEdit = async (row) => {
   if (row.is_open === 0) {
-    // 停止操作需要确认
     try {
       await ElMessageBox.confirm('确定要停止该任务吗？', '提示', {
         confirmButtonText: '确定',
@@ -223,7 +167,6 @@ const handleEdit = async (row) => {
         type: 'warning'
       })
     } catch (e) {
-      // 用户点击取消
       return
     }
   }
@@ -238,13 +181,18 @@ const handleEdit = async (row) => {
 }
 
 const listModalRef = ref(null)
+const accountNewModalRef = ref(null)
 
-const openModal = () => {
-  listModalRef.value.showModal()
+const openModal = (accountId) => {
+  listModalRef.value.showModal(undefined, accountId)
+}
+
+const openAccountModal = (row) => {
+  accountNewModalRef.value?.showModal(row)
 }
 
 const getTaskListAction = async () => {
-  let user_id = undefined
+  let user_id
   const config = await getSettingConfig()
   if (config.run_model_type === 2) {
     const userInfo = await getUserInfo()
@@ -252,10 +200,8 @@ const getTaskListAction = async () => {
   } else {
     user_id = await getUniqueID()
   }
-  const res = await getTaskList({
-    user_id
-  })
-  useCommonStore().setTaskList(res)
+  const res = await getAccountTaskList({ user_id })
+  useCommonStore().setTaskList(res || [])
 }
 
 const goToDetail = (row) => {
@@ -265,7 +211,7 @@ const goToDetail = (row) => {
 onMounted(async () => {
   await getConfig()
   await getTaskListAction()
-  getThsWindowStateAction()
+  // getThsWindowStateAction()
 })
 </script>
 
@@ -276,6 +222,11 @@ onMounted(async () => {
   width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
+}
+
+.account-header-actions {
+  display: flex;
+  align-items: center;
 }
 
 .bottom-container {
@@ -293,17 +244,26 @@ onMounted(async () => {
   }
   .bottom-container-left {
     flex: 5;
-    // background: #fff;
-    // padding: 10px;
     min-width: 0;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     gap: 10px;
-    .create-task-btn {
-      width: 100px;
-      // align-self: flex-end;
+    .task-action-section {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 10px;
+      background: #fff;
+      border: 1px solid #e8edf3;
+      border-radius: 10px;
+      margin-bottom: 2px;
     }
+
+    .create-task-btn {
+      min-width: 96px;
+    }
+
     .task-list {
       display: flex;
       flex-direction: column;
@@ -314,8 +274,58 @@ onMounted(async () => {
       }
       -ms-overflow-style: none;
       scrollbar-width: none;
+
+      .account-group {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        background: #f7f9fc;
+        border: 1px solid #e8edf3;
+        border-radius: 12px;
+        padding: 10px;
+      }
+
+      .account-group-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 10px;
+        background: #001629;
+      }
+
+      .account-title-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .account-name {
+        font-size: 13px;
+        color: #ffffff;
+        font-weight: 600;
+        max-width: 220px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .account-status-row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-right: 20px;
+      }
+
+      .account-empty {
+        font-size: 12px;
+        color: #94a3b8;
+        padding: 6px 2px 2px;
+      }
+
       .task-cell {
-        // height: 60px;
         background: linear-gradient(to right, #001629, rgb(140, 140, 140));
         border-radius: 10px;
         padding: 16px;
@@ -325,7 +335,7 @@ onMounted(async () => {
         position: relative;
         overflow: hidden;
         min-height: 90px;
-
+        margin-left: 22px;
         .cell-left {
           display: flex;
           flex-direction: column;
@@ -335,9 +345,15 @@ onMounted(async () => {
           .task-name {
             font-size: 18px;
             font-weight: bold;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            .task-name-left {
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+            }
           }
           .strategy_code {
             margin-top: 8px;
@@ -351,27 +367,21 @@ onMounted(async () => {
             display: flex;
             margin-bottom: 6px;
           }
-          .order_count_amount {
-            font-size: 12px;
-          }
         }
+
         .cell-right {
           display: flex;
-          // background: red;
           margin-top: 30px;
           flex: 1;
           justify-content: flex-end;
-          // min-width: 100px;
           .cell-right-row {
             display: flex;
             flex-direction: column;
-            // justify-content: center;
             align-items: center;
             justify-content: flex-end;
             color: #fff;
             margin-left: 6px;
             cursor: pointer;
-            // gap:10px;
             span {
               margin-top: 5px;
             }
@@ -383,11 +393,8 @@ onMounted(async () => {
         }
       }
       .task-cell-activate {
-        /* 背景渐变色 - 原理2 */
         background: linear-gradient(-45deg, #af00f9, #01325e, #00559f, #00284b);
-        /* 背景尺寸 - 原理3 */
         background-size: 600% 600%;
-        /* 循环动画 - 原理4 */
         animation: gradientBG 5s ease infinite;
       }
       @keyframes gradientBG {
@@ -409,7 +416,7 @@ onMounted(async () => {
     flex: 1;
     padding: 10px;
     background: #fff;
-    min-width: 200px;
+    min-width: 220px;
     .ths-functional-area {
       display: flex;
       flex-direction: column;

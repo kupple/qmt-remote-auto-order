@@ -51,31 +51,40 @@ class TaskScheduler:
     
     def _check_config(self, task_type: str) -> bool:
         """
-        检查任务配置是否满足执行条件
-        
-        Args:
-            task_type: 任务类型，可选值：'national_debt', 'new_stock', 'new_bond', 'save_all_data'
-            
-        Returns:
-            bool: 是否满足执行条件
+        检查任务配置是否满足执行条件（多账号）
         """
-        config = G.orm.get_setting_config()
-        base_conditions = (
-            config["client_id"] != "" and 
-            config["mini_qmt_path"] != "" and 
-            self.trade_controller.qmt_trader is not None
-        )
-        
-        if task_type == "national_debt":
-            return base_conditions and config["auto_national_debt"] == 1
-        elif task_type == "new_stock":
-            return base_conditions and config["auto_buy_stock_ipo"] == 1
-        elif task_type == "new_bond":
-            return base_conditions and config["auto_buy_purchase_ipo"] == 1
-        elif task_type == "save_all_data":
-            # 保存股票数据不需要额外的配置检查
+        if task_type == "save_all_data":
             return True
+
+        account_list = G.orm.get_account_list()
+        for account in account_list:
+            if account.get("status") != 1 or account.get("client_type") != 2:
+                continue
+            if task_type == "national_debt" and account.get("auto_national_debt", 0) == 1:
+                return True
+            if task_type == "new_stock" and account.get("auto_buy_stock_ipo", 0) == 1:
+                return True
+            if task_type == "new_bond" and account.get("auto_buy_purchase_ipo", 0) == 1:
+                return True
         return False
+
+    def _run_task_for_accounts(self, task_type: str, task_func: Callable) -> None:
+        """按账号执行自动任务（仅QMT账号）"""
+        account_list = G.orm.get_account_list()
+        for account in account_list:
+            if account.get("status") != 1 or account.get("client_type") != 2:
+                continue
+
+            should_run = False
+            if task_type == "national_debt":
+                should_run = account.get("auto_national_debt", 0) == 1
+            elif task_type == "new_stock":
+                should_run = account.get("auto_buy_stock_ipo", 0) == 1
+            elif task_type == "new_bond":
+                should_run = account.get("auto_buy_purchase_ipo", 0) == 1
+
+            if should_run:
+                task_func(account.get("id"))
     
     def _schedule_task(self, task_type: str, hour: int, minute: int, task_func: Callable) -> bool:
         """
@@ -94,7 +103,10 @@ class TaskScheduler:
             try:
                 if self._check_config(task_type):
                     self.logger.info(f"执行{task_type}任务")
-                    task_func()
+                    if task_type in ["national_debt", "new_stock", "new_bond"]:
+                        self._run_task_for_accounts(task_type, task_func)
+                    else:
+                        task_func()
                 else:
                     self.logger.info(f"{task_type}任务配置不满足执行条件")
             except Exception as e:

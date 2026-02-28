@@ -106,6 +106,20 @@ class API(System):
             create_ths_shortcut(data["ths_path"] + "/xiadan.exe")
         G.orm.save_config(data)
 
+    def add_account(self, data):
+        if "client_type" in data and data["client_type"] == 1 and data.get("ths_path"):
+            create_ths_shortcut(data["ths_path"] + "/xiadan.exe")
+        return G.orm.add_account(data)
+
+    def get_account_list(self):
+        return G.orm.get_account_list()
+
+    def delete_account(self, account_id):
+        return G.orm.delete_account(account_id)
+
+    def update_account(self, account_id, data):
+        return G.orm.update_account(account_id, data)
+
     def connect_ws(self, server_url, ways=2, is_login=False):
         if AUTO_CONNECTION_WS == 1:
             if USE_FIXED_WS_URL == 1:
@@ -121,12 +135,15 @@ class API(System):
         if self.thread1 and self.thread1.is_alive():
             self.thread1.join(timeout=1)  # Wait up to 1 second for thread to finish
 
-    def connect_qmt(self, params):
-        result = self.trade_controller.connect_qmt(params)
+    def connect_qmt(self):
+        result = self.trade_controller.connect_qmt()
         return result
 
     def get_task_list(self, data):
         return G.orm.get_task_list(data)
+
+    def get_account_task_list(self, data):
+        return G.orm.get_account_task_list(data)
 
     def create_task(self, data):
         return G.orm.create_task(data)
@@ -272,17 +289,18 @@ class API(System):
     def clear_log(self):
         return G.orm.clear_log()
 
-    def get_account_info(self):
-        return self.trade_controller.get_account_info()
+    def get_account_info(self, account_id=None):
+        account = G.orm.get_account_by_id(account_id) if account_id else None
+        return self.trade_controller.get_account_info(account)
 
-    def is_process_exist_action(self):
+    def is_process_exist_action(self,account_id):
         return self.trade_controller.process_check_loop()
 
     def open_ths_shortcut_action(self):
         config = G.orm.get_setting_config()
         return open_ths_shortcut(config["ths_path"] + "/autoxiadan.lnk")
 
-    def get_ths_window_state_action(self):
+    def get_ths_window_state_action(self,account_id):
         if sys.platform.startswith("darwin"):
             return True
         return get_ths_window_state()

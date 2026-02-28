@@ -1,6 +1,6 @@
 <template>
   <div class="footer-container" >
-    <div class="xuntou-khd" v-if="settingConfig.client_type == 2">
+    <!-- <div class="xuntou-khd" v-if="settingConfig.client_type == 2">
       <span class="label-tips">mini迅投客户端:</span>
       <div v-if="isQmtState == true" class="footer-cell">
         <div class="tips">已打开</div>
@@ -10,30 +10,8 @@
         <div class="tips">暂未打开</div>
         <el-icon color="red"><CircleCloseFilled /></el-icon>
       </div>
-    </div>
+    </div> -->
 
-    <div class="ws-state" v-if="settingConfig.client_type == 2">
-      <span class="label-tips">资金账号订阅:</span>
-      <div v-if="isAccSubState" class="footer-cell">
-        <div class="tips">成功</div>
-        <el-icon color="green"><CircleCheckFilled /></el-icon>
-      </div>
-      <div v-else class="footer-cell">
-        <div class="tips">失败</div>
-        <el-icon color="red"><CircleCloseFilled /></el-icon>
-      </div>
-    </div>
-    <div class="ths-state" v-if="settingConfig.client_type == 1">
-      <span class="label-tips">同花顺是否开启:</span>
-      <div v-if="isThsState" class="footer-cell">
-        <div class="tips">打开</div>
-        <el-icon color="green"><CircleCheckFilled /></el-icon>
-      </div>
-      <div v-else class="footer-cell">
-        <div class="tips">关闭</div>
-        <el-icon color="red"><CircleCloseFilled /></el-icon>
-      </div>
-    </div>
     <div class="ws-state">
       <span class="label-tips">远程连接:</span>
       <div v-if="isWSConnectedState == 1" class="footer-cell">
@@ -74,16 +52,13 @@ defineOptions({
   name: 'LayoutFooter'
 })
 
-const isQmtState = computed(() => useCommonStore().isQmtState)
+// const isQmtState = computed(() => useCommonStore().isQmtState)
 const isWSConnectedState = computed(() => useRemoteStore().connectState)
 // 是否订阅账号成功
 const isAccSubState = computed(() => useCommonStore().isAccSubState)
 const isThsState = computed(() => useCommonStore().isThsState)
 
 onMounted(async () => {
-  setInterval(async () => {
-    isProcessExist()
-  }, 2000)
   setInterval(async () => {
     time.value = new Date().toLocaleString()
   }, 1000)
@@ -121,7 +96,6 @@ onMounted(async () => {
   .ws-state {
     display: flex;
     align-items: center;
-    margin-left: 30px;
   }
   .ths-state {
     display: flex;

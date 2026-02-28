@@ -24,7 +24,7 @@ onMounted(() => {
   setTimeout(async () => {
     const config = await getSettingConfig()
     if (config.mini_qmt_path && config.client_id) {
-     await connectQMT({ mini_qmt_path: config.mini_qmt_path, client_id: config.client_id })
+     await connectQMT()
     }
     if (config.run_model_type === 1) {
       if (config.salt && config.server_url && config.client_id && config.mini_qmt_path) {

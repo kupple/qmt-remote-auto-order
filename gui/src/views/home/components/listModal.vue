@@ -4,10 +4,15 @@
       <el-form-item label="任务名称" required>
         <el-input style="width: 50%" v-model="form.name" placeholder="请输入任务名称" />
       </el-form-item>
+      <el-form-item label="关联账号" required>
+        <el-select style="width: 50%" v-model="form.account_id" placeholder="请选择账号" :disabled="!!fixedAccountId">
+          <el-option v-for="item in accountOptions" :key="item.id" :label="item.label" :value="item.id" />
+        </el-select>
+      </el-form-item>
       <el-form-item label="下单平台">
         <el-radio-group v-model="form.platform">
-          <el-radio  :value="1">聚宽</el-radio>
-          <el-radio  :value="10">API调用方式</el-radio>
+          <el-radio :value="1">聚宽</el-radio>
+          <el-radio :value="10">API调用方式</el-radio>
         </el-radio-group>
       </el-form-item>
       <el-form-item label="创建类型" required v-if="isEdit == false && form.platform != 10">
@@ -35,16 +40,7 @@
         </el-radio-group>
       </el-form-item>
       <el-form-item label="比例调整(倍数)" v-if="form.order_count_type === 1">
-        <el-input-number step="0.1" min="0" max="100000" v-model="form.position_ratio" placeholder="请输入仓位调整金额" type="number"/>
-      </el-form-item>
-      <el-form-item label="固定撮合价格" >
-        <el-switch
-          v-model="form.open_mandatory_limit_order"
-          active-text="启用"
-          inactive-text="禁用"
-          :active-value="1"
-          :inactive-value="0"
-        />  
+        <el-input-number step="0.1" min="0" max="100000" v-model="form.position_ratio" placeholder="请输入仓位调整金额" type="number" />
       </el-form-item>
       <el-form-item label="动态资金模式" v-if="form.order_count_type === 2 && form.platform != 10">
         <el-radio-group v-model="form.dynamic_calculation_type">
@@ -59,14 +55,11 @@
         </el-radio-group>
       </el-form-item>
       <div v-if="form.order_count_type === 2" class="amount-container" style="display: flex; justify-content: space-between">
-        <!-- <el-form-item label="策略金额">
-          <el-input v-model="form.strategyAmount" placeholder="请输入策略金额" type="number" :min="0" @input="handleStrategyAmountInput" />
-        </el-form-item> -->
         <el-form-item label="分配金额" required>
           <el-input v-model="form.allocation_amount" placeholder="请输入账号分配金额" type="number" :min="0" @input="handleAllocationAmountInput" />
         </el-form-item>
       </div>
-      <el-form-item label="手续费设置" required  v-if="form.order_count_type === 2">
+      <el-form-item label="手续费设置" required v-if="form.order_count_type === 2">
         <div class="service_charge">
           <div class="service_charge-item">
             <span>费率(万分之几)</span>
@@ -78,9 +71,6 @@
           </div>
         </div>
       </el-form-item>
-      <!-- <el-form-item v-else label="实际分配金额">
-        <el-input style="width: 50%" v-model="form.allocationAmount" placeholder="请输入账号分配金额" type="number" :min="0" @input="handleAllocationAmountInput" />
-      </el-form-item> -->
       <el-form-item>
         <el-button type="primary" @click="handleSubmit">保存</el-button>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -90,16 +80,19 @@
 </template>
 
 <script setup>
-import { getUserInfo } from '@/api/auth'
-import { createTask, getSettingConfig, getUniqueID } from '@/api/comm_tube'
-import { bindStrategyKey } from '@/api/user'
-import { useCommonStore } from '@/store/common.js'
-import { QuestionFilled } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { computed, reactive, ref } from 'vue'
+import { getUserInfo }from '@/api/auth'
+import { createTask, getAccountList, getSettingConfig, getUniqueID }from '@/api/comm_tube'
+import { bindStrategyKey }from '@/api/user'
+import { useCommonStore }from '@/store/common.js'
+import { QuestionFilled }from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox }from 'element-plus'
+import { computed, reactive, ref }from 'vue'
+
 const taskList = computed(() => useCommonStore().taskList)
 const emit = defineEmits(['getTaskList', 'callBack'])
 const dialogVisible = ref(false)
+const accountOptions = ref([])
+const fixedAccountId = ref(undefined)
 const props = defineProps({
   isBacktest: {
     type: String,
@@ -109,6 +102,7 @@ const props = defineProps({
 const isEdit = ref(false)
 const form = reactive({
   name: '',
+  account_id: undefined,
   platform: 1,
   strategy_code: '',
   order_count_type: 1,
@@ -120,9 +114,20 @@ const form = reactive({
   task_type: 1,
   share_secret: '',
   position_ratio: 1,
-  open_mandatory_limit_order: 0
+  open_mandatory_limit_order: 1,
+  mock_allocation_amount: 100000,
+  mock_service_charge: 0.00025,
+  mock_lower_limit_of_fees: 5
 })
 const editDic = ref({})
+
+const loadAccountOptions = async () => {
+  const res = await getAccountList()
+  accountOptions.value = (res || []).map((item) => ({
+    id: item.id,
+    label: `${item.client_type === 1 ? '同花顺' : 'QMT'}- ${item.client_type === 1 ? item.ths_client_id : item.client_id}`
+  }))
+}
 
 const handleStrategyAmountInput = (value) => {
   const num = Number(value)
@@ -138,12 +143,15 @@ const handleAllocationAmountInput = (value) => {
   }
 }
 
-const showModal = (dic) => {
+const showModal = async(dic, initialAccountId) => {
   dialogVisible.value = true
+  fixedAccountId.value = initialAccountId || undefined
+  await loadAccountOptions()
   if (dic) {
     isEdit.value = true
     editDic.value = dic
     form.name = dic.name
+    form.account_id = dic.account_id
     form.strategy_code = dic.strategy_code
     form.order_count_type = dic.order_count_type
     form.dynamic_calculation_type = dic.dynamic_calculation_type
@@ -157,10 +165,18 @@ const showModal = (dic) => {
     form.strategy_keys_id = dic.strategy_keys_id
     form.platform = dic.platform
     form.position_ratio = dic.position_ratio
-    form.open_mandatory_limit_order = dic.open_mandatory_limit_order
-  } else {
+    form.open_mandatory_limit_order = 1
+  }else {
     editDic.value = null
     isEdit.value = false
+    form.name = ''
+    form.account_id = initialAccountId || undefined
+    form.strategy_code = ''
+    form.task_type = 1
+    form.share_secret = ''
+    form.platform = 1
+    form.order_count_type = 1
+    form.dynamic_calculation_type = 1
     form.mock_allocation_amount = 100000
     form.mock_service_charge = 0.00025
     form.mock_lower_limit_of_fees = 5
@@ -168,10 +184,16 @@ const showModal = (dic) => {
     form.lower_limit_of_fees = 5
     form.allocation_amount = 100000
     form.position_ratio = 1
-    form.open_mandatory_limit_order = 0
+    form.open_mandatory_limit_order = 1
   }
 }
+
 const handleSubmit = async () => {
+  if (!form.account_id) {
+    ElMessage.error('请选择关联账号')
+    return
+  }
+
   if (isEdit.value == true) {
     if (editDic.value.strategy_code != form.strategy_code) {
       const confirm = await ElMessageBox.confirm('注意：修改了任务编号,会造成对远程策略的影响,请谨慎操作!', '确认', {
@@ -199,15 +221,16 @@ const handleSubmit = async () => {
   }
   let user_id = undefined
   const config = await getSettingConfig()
-  if(config.run_model_type === 2){
-    const  userInfo = await getUserInfo()
+  if (config.run_model_type === 2) {
+    const userInfo = await getUserInfo()
     user_id = userInfo.id
-  }else{
+  }else {
     user_id = await getUniqueID()
   }
   let dic = {
     id: editDic.value?.id || undefined,
     name: form.name,
+    account_id: form.account_id,
     strategy_code: strategy_code,
     order_count_type: form.order_count_type,
     dynamic_calculation_type: form.dynamic_calculation_type,
@@ -222,12 +245,12 @@ const handleSubmit = async () => {
     user_id: user_id,
     platform: form.platform,
     position_ratio: form.position_ratio,
-    open_mandatory_limit_order: form.open_mandatory_limit_order
+    open_mandatory_limit_order: 1,
+    mock_allocation_amount: form.mock_allocation_amount,
+    mock_service_charge: form.mock_service_charge,
+    mock_lower_limit_of_fees: form.mock_lower_limit_of_fees
   }
   if (dic.id === undefined) {
-    dic.mock_allocation_amount = 100000
-    dic.mock_service_charge = 0.00025
-    dic.mock_lower_limit_of_fees = 5
     dic.accruing_amounts = dic.allocation_amount
     dic.can_use_amount = dic.allocation_amount
   }
