@@ -1,5 +1,5 @@
 <template>
-  <div class="footer-container" >
+  <div class="footer-container">
     <!-- <div class="xuntou-khd" v-if="settingConfig.client_type == 2">
       <span class="label-tips">mini迅投客户端:</span>
       <div v-if="isQmtState == true" class="footer-cell">
@@ -59,6 +59,10 @@ const isAccSubState = computed(() => useCommonStore().isAccSubState)
 const isThsState = computed(() => useCommonStore().isThsState)
 
 onMounted(async () => {
+  setInterval(async () => {
+    isProcessExist()
+  }, 2000)
+
   setInterval(async () => {
     time.value = new Date().toLocaleString()
   }, 1000)

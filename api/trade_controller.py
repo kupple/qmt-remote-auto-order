@@ -23,7 +23,7 @@ import json
 from api.global_params import G
 import threading
 import asyncio
-from .tools.common import is_process_exist
+from .tools.common import get_all_xtminiqmt_processes,check_mini_qmt_path_match
 from threading import Timer
 from .trading_related.trader_call_back import MyXtQuantTraderCallback
 from .trading_related.ths_blocking_queue import NonBlockingQueue
@@ -111,7 +111,7 @@ class TradeController:
     # 检测账号是否开启订阅功能
     def process_check_loop(self):
         try:
-            event = is_process_exist()  # 直接调用，不需要await
+            xt_list = get_all_xtminiqmt_processes()  # 直接调用，不需要await
             
             # 多账号模式：遍历所有账号，根据每个账号的 client_type 处理
             qmt_count = 0
@@ -120,13 +120,15 @@ class TradeController:
             with self.multiple_traders_lock:
                 for acc_id, trader_state in self.multiple_traders.items():
                     account_info = trader_state.info
+                    print(account_info)
                     client_type = account_info.get("client_type")
-                    
+                    mini_qmt_path = account_info.get['mini_qmt_path']
+                    qmt_is_connect = check_mini_qmt_path_match(account_info,xt_list)
                     # QMT 账号处理
                     if client_type == 2:
                         qmt_count += 1
-                        trader_state.qmt_is_connect = event
-                        if event:
+                        trader_state.qmt_is_connect = qmt_is_connect
+                        if qmt_is_connect:
                             # 标记需要重连的账号
                             if (
                                 trader_state.is_qmt_need_reconnection == True
@@ -138,12 +140,18 @@ class TradeController:
                             # 如果之前连过才给他重连
                             if trader_state.acc_is_connect:
                                 trader_state.is_qmt_need_reconnection = True
-                    
+                        if qmt_count > 0:
+                            System.system_py2js(
+                                self, "remoteCallBack", {"type": "qmtProcessCheck", "event": {
+                                    "id":acc_id,
+                                    "status":qmt_is_connect
+                                }}
+                            )
                     # 同花顺账号处理
                     else:
                         ths_count += 1
                         if (
-                            event == True
+                            qmt_is_connect == True
                             and trader_state.is_ths_need_reconnection == False
                             and trader_state.is_ths_need_reconnection_lock == False
                         ):
@@ -155,21 +163,12 @@ class TradeController:
                             if sys.platform.startswith("win"):
                                 self.ths_auto.bind_client()
                         
-                        trader_state.ths_is_connect = event
+                        trader_state.ths_is_connect = qmt_is_connect
             
             # 在锁外调用 connect_qmt（遍历所有账号并连接需要连接的）
             if qmt_count > 0:
                 self.connect_qmt()
             
-            # 发送回调通知
-            # if qmt_count > 0:
-            #     System.system_py2js(
-            #         self, "remoteCallBack", {"type": "qmtProcessCheck", "event": event}
-            #     )
-            # if ths_count > 0:
-            #     System.system_py2js(
-            #         self, "remoteCallBack", {"type": "thsProcessCheck", "event": event}
-            #     )
         except Exception as e:
             error_msg = f"进程检查出错: {str(e)}"
             if G.logger:

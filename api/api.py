@@ -296,7 +296,7 @@ class API(System):
         account = G.orm.get_account_by_id(account_id) if account_id else None
         return self.trade_controller.get_account_info(account)
 
-    def is_process_exist_action(self,account_id):
+    def is_process_exist_action(self):
         return self.trade_controller.process_check_loop()
 
     def open_ths_shortcut_action(self):

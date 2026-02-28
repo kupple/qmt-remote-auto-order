@@ -372,3 +372,45 @@ def get_all_xtminiqmt_processes():
 
         return all_processes
 
+
+
+
+def check_mini_qmt_path_match(account_info: dict, process_list: list):
+   
+    
+    # 2. 获取mini_qmt_path并处理空值
+    mini_qmt_path = account_info.get('mini_qmt_path')
+    if not mini_qmt_path:
+        print("错误：account_info中未找到有效的mini_qmt_path字段")
+        return False, None
+    
+    # 3. 标准化路径（解决路径分隔符/大小写等潜在问题）
+    try:
+        # 标准化路径，统一处理Windows/Linux路径格式，消除末尾斜杠等差异
+        standard_target_path = os.path.normpath(mini_qmt_path)
+    except Exception as e:
+        print(f"错误：路径标准化失败 - {e}")
+        return False, None
+    
+    # 4. 遍历列表匹配path字段
+    for item in process_list:
+        # 跳过非字典类型的项
+        if not isinstance(item, dict):
+            continue
+        
+        # 获取并标准化当前项的path
+        item_path = item.get('path', '')
+        if not item_path:
+            continue
+        
+        try:
+            standard_item_path = os.path.normpath(item_path)
+        except Exception:
+            continue
+        
+        # 核心匹配逻辑
+        if standard_item_path == standard_target_path:
+            return True, item  # 匹配成功，返回结果
+    
+    # 5. 未找到匹配项
+    return False, None
