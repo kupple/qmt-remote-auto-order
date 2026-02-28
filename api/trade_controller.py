@@ -124,7 +124,12 @@ class TradeController:
                         qmt_is_connect = check_mini_qmt_path_match(
                             account_info, xt_list
                         )
-                        print(qmt_is_connect)
+                        System.system_py2js(
+                            self, "remoteCallBack", {"type": "qmtProcessCheck", "event": {
+                                "id":acc_id,
+                                "status":qmt_is_connect
+                            }}
+                        )
                         if qmt_is_connect:
                             if (
                                 trader_state.is_qmt_need_reconnection == True
