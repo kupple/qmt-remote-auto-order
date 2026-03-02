@@ -26,9 +26,9 @@ sleep_time = 0.2
 short_sleep_time = 0.05
 refresh_sleep_time = 0.5
 retry_time = 1
-import ddddocr
+# import ddddocr
 window_title = u'网上股票交易系统5.0'
-ddocr = ddddocr.DdddOcr()
+# ddocr = ddddocr.DdddOcr()
 
 from PIL import ImageGrab
 

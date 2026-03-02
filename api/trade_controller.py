@@ -3,6 +3,7 @@
 
 from .trading_related.qmt_trader import qmt_trader
 import sys
+
 import platform
 from api.system import System
 from .trading_related.deal import (
@@ -20,6 +21,7 @@ from .trading_related.qmt_trading_simulator import (
 )
 from decimal import Decimal
 import json
+import os
 from api.global_params import G
 import threading
 import asyncio
@@ -112,11 +114,6 @@ class TradeController:
     def process_check_loop(self):
         try:
             xt_list = get_all_xtminiqmt_processes()  # 直接调用，不需要await
-            # json_str = json.dumps(xt_list, ensure_ascii=False)
-            # print(json_str)
-            # System.system_py2js(
-            #     self, "remoteCallBack", {"type": "sadasd", "event": xt_list}
-            # )
             with self.multiple_traders_lock:
                 for acc_id, trader_state in self.multiple_traders.items():
                     account_info = trader_state.info
@@ -126,7 +123,7 @@ class TradeController:
                     client_id = account_info.get("client_id")
 
                     if client_type == 2:
-                        qmt_is_connect,pid = check_mini_qmt_path_match(
+                        qmt_is_connect = check_mini_qmt_path_match(
                             account_info, xt_list
                         )
                         # print(qmt_is_connect)
@@ -135,8 +132,7 @@ class TradeController:
                         System.system_py2js(
                             self, "remoteCallBack", {"type": "qmtProcessCheck", "event": {
                                 "id":acc_id,
-                                "status":qmt_is_connect,
-                                "pid":pid
+                                "status":qmt_is_connect
                             }}
                         )
                         if qmt_is_connect:
@@ -183,10 +179,14 @@ class TradeController:
                     },
                 )
                 return True
+            # 1. 拆分路径：获取父目录
+            parent_dir = os.path.dirname(mini_qmt_path)
+            # 2. 拼接新的最后一级目录
+            new_path = os.path.join(parent_dir, "userdata_mini")
 
-            self.multiple_traders[acc_id].trader.path = mini_qmt_path
+            self.multiple_traders[acc_id].trader.path = new_path
             self.multiple_traders[acc_id].trader.account = client_id
-            print("zxczxc")
+            print(mini_qmt_path)
             # 连接QMT 传递回调
             is_connect = self.multiple_traders[acc_id].trader.connect(self.callback)
             self.multiple_traders[acc_id].acc_is_connect = is_connect
@@ -858,6 +858,7 @@ class TradeController:
             G.logger.error(error_msg, extra={"showMessage": True})
 
     def test_connect(self, path, client_type, **kwargs):
+        print(path)
         if client_type == 2:
             if sys.platform.startswith("darwin"):
                 return {"msg": "", "is_connect": True, "account_arr": ["888888888"]}
@@ -900,7 +901,7 @@ class TradeController:
                 }
 
             with self.multiple_traders_lock:
-                trader_state = self.multiple_traders.get(client_id)
+                trader_state = self.multiple_traders.get(account['id'])
                 if not trader_state:
                     return {
                         "cash": 0,
