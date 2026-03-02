@@ -33,6 +33,11 @@
           </el-tooltip>
         </el-form-item>
         <el-button type="danger" size="small" style="width: 100%" @click="clearAllAction">一键清仓</el-button>
+        <el-divider>辅助</el-divider>
+        <div>
+          <el-button size="small" >显示窗口</el-button>
+          <el-button size="small" >隐藏窗口</el-button>
+        </div>
       </el-form>
 
       <div v-else class="ths-functional-area">

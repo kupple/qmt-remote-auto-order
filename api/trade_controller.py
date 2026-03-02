@@ -112,6 +112,11 @@ class TradeController:
     def process_check_loop(self):
         try:
             xt_list = get_all_xtminiqmt_processes()  # 直接调用，不需要await
+            # json_str = json.dumps(xt_list, ensure_ascii=False)
+            # print(json_str)
+            # System.system_py2js(
+            #     self, "remoteCallBack", {"type": "sadasd", "event": xt_list}
+            # )
             with self.multiple_traders_lock:
                 for acc_id, trader_state in self.multiple_traders.items():
                     account_info = trader_state.info
@@ -121,7 +126,7 @@ class TradeController:
                     client_id = account_info.get("client_id")
 
                     if client_type == 2:
-                        qmt_is_connect = check_mini_qmt_path_match(
+                        qmt_is_connect,pid = check_mini_qmt_path_match(
                             account_info, xt_list
                         )
                         # print(qmt_is_connect)
@@ -130,7 +135,8 @@ class TradeController:
                         System.system_py2js(
                             self, "remoteCallBack", {"type": "qmtProcessCheck", "event": {
                                 "id":acc_id,
-                                "status":qmt_is_connect
+                                "status":qmt_is_connect,
+                                "pid":pid
                             }}
                         )
                         if qmt_is_connect:

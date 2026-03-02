@@ -44,17 +44,6 @@ export const routes = [
     ]
   },
   {
-    path: '/account',
-    name: 'Account',
-    chName: '账户管理',
-    icon: 'Discount',
-    component: () => import('../views/account/index.vue'),
-    meta: {
-      title: 'API服务',
-      showBack: false
-    }
-  },
-  {
     path: '/api',
     name: 'api',
     chName: 'API服务',

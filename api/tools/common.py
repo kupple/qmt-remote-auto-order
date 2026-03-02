@@ -380,7 +380,7 @@ def check_mini_qmt_path_match(account_info: dict, process_list: list):
     mini_qmt_path = account_info.get('mini_qmt_path')
     if not mini_qmt_path:
         print("错误：account_info中未找到有效的mini_qmt_path字段")
-        return False
+        return False,None
     
     # 3. 标准化路径（解决路径分隔符/大小写等潜在问题）
     try:
@@ -388,7 +388,7 @@ def check_mini_qmt_path_match(account_info: dict, process_list: list):
         standard_target_path = os.path.normpath(mini_qmt_path)
     except Exception as e:
         print(f"错误：路径标准化失败 - {e}")
-        return False
+        return False,None
     
     # 4. 遍历列表匹配path字段
     for item in process_list:
@@ -406,7 +406,127 @@ def check_mini_qmt_path_match(account_info: dict, process_list: list):
             continue
         # 核心匹配逻辑
         if standard_item_path == standard_target_path:
-            return True
+            return True, item['pid']
     
     # 5. 未找到匹配项
-    return False
+    return False,None
+
+
+
+
+
+def get_process_path_by_pid(pid):
+    """
+    根据PID获取进程的运行路径
+    :param pid: 进程PID（整数）
+    :return: 进程运行路径（字符串），失败返回None
+    """
+    try:
+        # 打开进程，获取进程句柄（需要PROCESS_QUERY_INFORMATION和PROCESS_VM_READ权限）
+        process_handle = win32api.OpenProcess(
+            win32con.PROCESS_QUERY_INFORMATION | win32con.PROCESS_VM_READ,
+            False,
+            pid
+        )
+        if not process_handle:
+            return None
+        
+        # 获取进程可执行文件路径
+        try:
+            path = win32process.GetModuleFileNameEx(process_handle, 0)
+            return path
+        finally:
+            # 关闭进程句柄，避免资源泄漏
+            win32api.CloseHandle(process_handle)
+    
+    except win32api.error as e:
+        # 处理权限不足、进程不存在等异常
+        if e.winerror == winerror.ERROR_ACCESS_DENIED:
+            print(f"权限不足，无法访问PID {pid} 的进程信息")
+        elif e.winerror == winerror.ERROR_INVALID_PARAMETER:
+            print(f"PID {pid} 对应的进程不存在")
+        else:
+            print(f"获取进程路径失败：{e}")
+        return None
+
+
+def get_window_handles_by_pid(pid):
+    """
+    根据PID获取对应的所有窗口句柄
+    :param pid: 进程PID
+    :return: 窗口句柄列表
+    """
+    hwnds = []
+    def callback(hwnd, extra):
+        # 获取窗口所属进程的PID
+        window_pid = win32process.GetWindowThreadProcessId(hwnd)[1]
+        if window_pid == pid and win32gui.IsWindowVisible(hwnd):
+            hwnds.append(hwnd)
+        return True
+    
+    # 枚举所有顶层窗口
+    win32gui.EnumWindows(callback, None)
+    return hwnds
+
+def hide_window_by_pid(pid):
+    """
+    隐藏指定PID进程的所有可见窗口
+    :param pid: 进程PID
+    :return: 是否成功隐藏
+    """
+    hwnds = get_window_handles_by_pid(pid)
+    if not hwnds:
+        print(f"PID {pid} 没有可见的窗口")
+        return False
+    
+    # 隐藏每个窗口（SW_HIDE = 0）
+    for hwnd in hwnds:
+        win32gui.ShowWindow(hwnd, win32con.SW_HIDE)
+        # 可选：同时将窗口从任务栏移除
+        win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, 
+                               win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE) | win32con.WS_EX_TOOLWINDOW)
+    print(f"已隐藏PID {pid} 的 {len(hwnds)} 个窗口")
+    return True
+
+def get_user_window_handles_by_pid(pid):
+    """
+    根据PID获取仅用户交互的窗口句柄（过滤服务/后台窗口）
+    :param pid: 进程PID
+    :return: 用户交互窗口句柄列表
+    """
+    hwnds = []
+    def callback(hwnd, extra):
+        window_pid = win32process.GetWindowThreadProcessId(hwnd)[1]
+        # 筛选条件：PID匹配 + 顶层窗口 + 用户交互窗口
+        if window_pid == pid and win32gui.GetParent(hwnd) == 0 and is_user_interactive_window(hwnd):
+            hwnds.append(hwnd)
+        return True
+    
+    win32gui.EnumWindows(callback, None)
+    return hwnds
+
+
+def show_window_by_pid(pid):
+    """
+    仅显示程序的用户交互主窗口（不显示服务/后台窗口）
+    :param pid: 进程PID
+    :return: 是否成功显示
+    """
+    # 只获取用户交互窗口，过滤服务窗口
+    hwnds = get_user_window_handles_by_pid(pid)
+    if not hwnds:
+        print(f"PID {pid} 没有可显示的用户交互窗口")
+        return False
+    
+    for hwnd in hwnds:
+        # 仅对用户交互窗口执行显示操作
+        win32gui.ShowWindow(hwnd, win32con.SW_SHOW)
+        # 恢复任务栏显示
+        ex_style = win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE)
+        ex_style &= ~win32con.WS_EX_TOOLWINDOW
+        ex_style |= win32con.WS_EX_APPWINDOW
+        win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, ex_style)
+        win32gui.SetForegroundWindow(hwnd)
+    
+    print(f"已显示PID {pid} 的 {len(hwnds)} 个用户交互窗口")
+    return True

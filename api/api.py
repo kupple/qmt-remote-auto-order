@@ -39,6 +39,8 @@ from .tools.common import (
     open_ths_shortcut,
     get_ths_window_state,
     control_ths_window,
+    show_window_by_pid,
+    hide_window_by_pid,
 )
 from api.httpserver.request_api import APIService
 
