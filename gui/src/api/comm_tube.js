@@ -164,6 +164,14 @@ export const getThsWindowState = (accountId) => {
   return window.pywebview.api.get_ths_window_state_action(accountId)
 }
 
+export const showWindowByPid = (pid) => {
+  return window.pywebview.api.show_window_by_pid_action(pid)
+}
+
+export const hideWindowByPid = (pid) => {
+  return window.pywebview.api.hide_window_by_pid_action(pid)
+}
+
 export const openHttpServer = (open,host,port) => {
   return window.pywebview.api.open_http_server_action(open,host,port)
 }

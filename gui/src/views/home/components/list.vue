@@ -30,7 +30,13 @@
                   <el-tag disable-transitions size="small" effect="light" :type="taskStateDic[account.id]['isAccSubState'] ? 'success' : 'danger'">订阅状态: {{ taskStateDic[account.id]['isAccSubState'] ? '已订阅' : '未订阅' }}</el-tag>
                 </div>
                 <el-button type="success" style="margin-right: 10px" @click="openModal(account.id)">新建策略</el-button>
-                <AccountDetailDrawer v-if="account.id" :account="account" @edit="openAccountModal" @deleted="getTaskListAction" />
+                <AccountDetailDrawer
+                  v-if="account.id"
+                  :account="account"
+                  :qmt-pid="taskStateDic[account.id]?.qmtPid"
+                  @edit="openAccountModal"
+                  @deleted="getTaskListAction"
+                />
               </div>
             </div>
             <div v-if="!account.task_list || account.task_list.length === 0" class="account-empty">暂无策略</div>

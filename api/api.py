@@ -305,7 +305,7 @@ class API(System):
         config = G.orm.get_setting_config()
         return open_ths_shortcut(config["ths_path"] + "/autoxiadan.lnk")
 
-    def get_ths_window_state_action(self,account_id):
+    def get_ths_window_state_action(self, _account_id):
         if sys.platform.startswith("darwin"):
             return True
         return get_ths_window_state()
@@ -314,6 +314,20 @@ class API(System):
         if sys.platform.startswith("darwin"):
             return True
         control_ths_window(show)
+
+    def show_window_by_pid_action(self, pid):
+        if sys.platform.startswith("darwin"):
+            return True
+        if not pid:
+            return False
+        return show_window_by_pid(int(pid))
+
+    def hide_window_by_pid_action(self, pid):
+        if sys.platform.startswith("darwin"):
+            return True
+        if not pid:
+            return False
+        return hide_window_by_pid(int(pid))
 
     def open_http_server_action(self, open, host, port):
         if open:

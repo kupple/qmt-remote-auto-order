@@ -34,9 +34,10 @@
         </el-form-item>
         <el-button type="danger" size="small" style="width: 100%" @click="clearAllAction">一键清仓</el-button>
         <el-divider>辅助</el-divider>
-        <div>
-          <el-button size="small" >显示窗口</el-button>
-          <el-button size="small" >隐藏窗口</el-button>
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+          <el-button size="small" @click="showWindowAction">显示窗口</el-button>
+          <el-button size="small" @click="hideWindowAction">隐藏窗口</el-button>
+          <el-tag size="small" effect="light" type="info">pid:{{ qmtPid || '-' }}</el-tag>
         </div>
       </el-form>
 
@@ -57,7 +58,7 @@
 
 <script setup>
 import { QuestionFilled } from '@element-plus/icons-vue'
-import { controlThsWindow, deleteAccount, getAccountInfo, getThsWindowState, openThsShortcut, updateAccount } from '@/api/comm_tube'
+import { controlThsWindow, deleteAccount, getAccountInfo, getThsWindowState, hideWindowByPid, openThsShortcut, showWindowByPid, updateAccount } from '@/api/comm_tube'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { reactive, ref } from 'vue'
 
@@ -65,6 +66,10 @@ const props = defineProps({
   account: {
     type: Object,
     default: () => ({})
+  },
+  qmtPid: {
+    type: [Number, String],
+    default: null
   }
 })
 
@@ -128,6 +133,32 @@ const autoAutomaticReverseAtion = async (type, e) => {
   if (type === 3) subDic.auto_buy_purchase_ipo = e ? 1 : 0
   await updateAccount(props.account.id, subDic)
   Object.assign(props.account, subDic)
+}
+
+const showWindowAction = async () => {
+  if (!props.qmtPid) {
+    ElMessage.warning('当前账号未获取到QMT进程PID')
+    return
+  }
+  const ok = await showWindowByPid(props.qmtPid)
+  if (!ok) {
+    ElMessage.error('显示窗口失败')
+    return
+  }
+  ElMessage.success('显示窗口成功')
+}
+
+const hideWindowAction = async () => {
+  if (!props.qmtPid) {
+    ElMessage.warning('当前账号未获取到QMT进程PID')
+    return
+  }
+  const ok = await hideWindowByPid(props.qmtPid)
+  if (!ok) {
+    ElMessage.error('隐藏窗口失败')
+    return
+  }
+  ElMessage.success('隐藏窗口成功')
 }
 
 const clearAllAction = () => {
