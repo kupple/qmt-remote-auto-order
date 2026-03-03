@@ -23,7 +23,9 @@ export const useCommonStore = defineStore('common', {
         this.taskStateDic[params.id] = {};
       }
       this.taskStateDic[params.id]["isQmtState"] = params.status
+      this.taskStateDic[params.id]["qmtIsVisible"] = params.qmtIsVisible
       this.taskStateDic[params.id]["qmtPid"] = params.pid
+      
     },
     changeisAccSubState(params){
       

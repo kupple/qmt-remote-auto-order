@@ -21,22 +21,17 @@
               </div>
               <div class="account-header-actions">
                 <div class="account-status-row" v-if="account.id">
-                  <el-tag disable-transitions size="small" effect="light">pid:{{ taskStateDic[account.id]['qmtPid'] }}</el-tag>
-                </div>
-                <div class="account-status-row" v-if="account.id">
                   <el-tag disable-transitions size="small" effect="light" :type="taskStateDic[account.id]['isQmtState'] ? 'success' : 'danger'">QMT状态: {{ taskStateDic[account.id]['isQmtState'] ? '已启动' : '未启动' }}</el-tag>
                 </div>
                 <div class="account-status-row" v-if="account.id">
                   <el-tag disable-transitions size="small" effect="light" :type="taskStateDic[account.id]['isAccSubState'] ? 'success' : 'danger'">订阅状态: {{ taskStateDic[account.id]['isAccSubState'] ? '已订阅' : '未订阅' }}</el-tag>
                 </div>
+                <div class="account-status-row" v-if="account.id">
+                  <el-tag disable-transitions size="small" effect="light" :type="taskStateDic[account.id]['qmtIsVisible'] ? 'success' : 'danger'">客户状态: {{ taskStateDic[account.id]['qmtIsVisible'] ? '显示' : '隐藏' }}</el-tag>
+                </div>
+
                 <el-button type="success" style="margin-right: 10px" @click="openModal(account.id)">新建策略</el-button>
-                <AccountDetailDrawer
-                  v-if="account.id"
-                  :account="account"
-                  :qmt-pid="taskStateDic[account.id]?.qmtPid"
-                  @edit="openAccountModal"
-                  @deleted="getTaskListAction"
-                />
+                <AccountDetailDrawer v-if="account.id" :account="account" :qmt-pid="taskStateDic[account.id]?.qmtPid" @edit="openAccountModal" @deleted="getTaskListAction" />
               </div>
             </div>
             <div v-if="!account.task_list || account.task_list.length === 0" class="account-empty">暂无策略</div>

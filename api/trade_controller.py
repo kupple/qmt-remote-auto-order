@@ -25,7 +25,7 @@ import os
 from api.global_params import G
 import threading
 import asyncio
-from .tools.common import get_all_xtminiqmt_processes, check_mini_qmt_path_match
+from .tools.common import get_all_xtminiqmt_processes, check_mini_qmt_path_match,get_window_visibility_status_by_pid
 from threading import Timer
 from .trading_related.trader_call_back import MyXtQuantTraderCallback
 from .trading_related.ths_blocking_queue import NonBlockingQueue
@@ -123,16 +123,19 @@ class TradeController:
                     client_id = account_info.get("client_id")
 
                     if client_type == 2:
-                        qmt_is_connect = check_mini_qmt_path_match(
+                        qmt_is_connect,pid = check_mini_qmt_path_match(
                             account_info, xt_list
                         )
                         # print(qmt_is_connect)
                         # print(account_info)
                         # print(xt_list)
+                        qmtIsVisible = get_window_visibility_status_by_pid(pid)
                         System.system_py2js(
                             self, "remoteCallBack", {"type": "qmtProcessCheck", "event": {
                                 "id":acc_id,
-                                "status":qmt_is_connect
+                                "pid":pid,
+                                "status":qmt_is_connect,
+                                "qmtIsVisible":qmtIsVisible
                             }}
                         )
                         if qmt_is_connect:

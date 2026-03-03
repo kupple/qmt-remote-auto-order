@@ -468,6 +468,37 @@ def get_window_handles_by_pid(pid):
     win32gui.EnumWindows(callback, None)
     return hwnds
 
+def is_user_interactive_window(hwnd):
+    """
+    判断窗口是否为用户交互的主窗口（过滤服务/后台窗口）
+    :param hwnd: 窗口句柄
+    :return: True=用户交互窗口，False=服务/后台窗口
+    """
+    # 规则1：排除无尺寸的窗口（服务窗口通常无宽高）
+    rect = win32gui.GetWindowRect(hwnd)
+    width = rect[2] - rect[0]
+    height = rect[3] - rect[1]
+    if width <= 0 or height <= 0:
+        return False
+    
+    # 规则2：排除仅工具窗口样式的窗口（服务/托盘窗口）
+    ex_style = win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE)
+    if ex_style & win32con.WS_EX_TOOLWINDOW and not (ex_style & win32con.WS_EX_APPWINDOW):
+        return False
+    
+    # 规则3：排除无标题且不可见的窗口（服务窗口通常无标题）
+    window_title = win32gui.GetWindowText(hwnd)
+    if not window_title and not win32gui.IsWindowVisible(hwnd):
+        return False
+    
+    # 规则4：排除系统级/消息窗口（类名通常为特定值）
+    class_name = win32gui.GetClassName(hwnd)
+    system_classes = ["Windows.UI.Core.CoreWindow", "Message", "WorkerW", "Shell_TrayWnd"]
+    if class_name in system_classes:
+        return False
+    
+    return True
+
 def hide_window_by_pid(pid):
     """
     隐藏指定PID进程的所有可见窗口
@@ -530,3 +561,31 @@ def show_window_by_pid(pid):
     
     print(f"已显示PID {pid} 的 {len(hwnds)} 个用户交互窗口")
     return True
+
+
+def get_window_visibility_status_by_pid(pid):
+    """
+    查询指定PID进程窗口是否可见（仅返回单个布尔值）
+    :param pid: 进程PID（整数）
+    :return: bool，无窗口时返回False
+    """
+    # 枚举该PID下所有顶层窗口（包括隐藏窗口）
+    if sys.platform.startswith('darwin'):
+        return True
+    all_hwnds = []
+
+    def enum_callback(hwnd, extra):
+        window_pid = win32process.GetWindowThreadProcessId(hwnd)[1]
+        # 仅筛选指定PID的顶层窗口（排除子窗口）
+        if window_pid == pid and win32gui.GetParent(hwnd) == 0:
+            all_hwnds.append(hwnd)
+        return True
+
+    win32gui.EnumWindows(enum_callback, None)
+
+    if not all_hwnds:
+        print(f"PID {pid} 未找到任何窗口")
+        return False
+
+    # 该场景只会有一个窗口，直接返回第一个窗口的可见性
+    return win32gui.IsWindowVisible(all_hwnds[0])
