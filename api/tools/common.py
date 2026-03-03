@@ -570,8 +570,6 @@ def get_window_visibility_status_by_pid(pid):
     :return: bool，无窗口时返回False
     """
     # 枚举该PID下所有顶层窗口（包括隐藏窗口）
-    if sys.platform.startswith('darwin'):
-        return True
     all_hwnds = []
 
     def enum_callback(hwnd, extra):
