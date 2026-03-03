@@ -5,7 +5,7 @@
         <div class="cur-position">
           <div style="display: flex; flex-direction: row; align-items: center; justify-content: space-between">
             <span class="section-title">当前持仓</span>
-            <el-button v-if="taskDic.order_count_type == 2" size="small" type="primary" @click="addPositionAction">手动添加</el-button>
+            <el-button  size="small" type="primary" @click="addPositionAction">手动添加</el-button>
           </div>
           <el-table :data="currentPositionList" stripe style="width: 100%; margin-top: 10px" size="small" height="100%">
             <el-table-column align="center" label="股票代码" width="140">
@@ -30,7 +30,7 @@
                 {{ (row.average_price * row.volume).toFixed(2) }}
               </template>
             </el-table-column>
-            <el-table-column fixed="right" label="操作" align="center" :width="isEdit ? 200 : 100" v-if="taskDic.order_count_type == 2">
+            <el-table-column fixed="right" label="操作" align="center" :width="isEdit ? 200 : 100">
               <template #default="{ row }">
                 <el-button v-if="!row.is_edit" @click="editPosition(row)" type="primary" size="small">编辑</el-button>
                 <div v-else style="display: flex; align-items: center">
@@ -104,11 +104,12 @@
 </template>
 
 <script setup>
-import { deletePositionById, deleteTask, getPositionByTaskId, getTaskDetail, queryTradeToday, updatePosition, resetRemotePosition, getRemotePosition, clearAllStockByTaskId,syncPositionActionByTaskId } from '@/api/comm_tube'
+import { deletePositionById, deleteTask, getPositionByTaskId, getTaskDetail, queryTradeToday, updatePosition, resetRemotePosition, clearAllStockByTaskId, syncPositionActionByTaskId } from '@/api/comm_tube'
 import { unbindStrategyKey } from '@/api/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { get as apiGet } from '@/utils/api'
 import AddPosition from './addPosition.vue'
 import AdjustmentModal from './adjustmentModal.vue'
 import ListModal from './listModal.vue'
@@ -126,8 +127,12 @@ const adjustmentModalRef = ref(null)
 const remotePositionList = ref([])
 
 const getRemotePositionList = async () => {
-  const positions = await getRemotePosition(taskDic.value.id)
-  remotePositionList.value = positions
+  if (!taskDic.value.strategy_code) return
+  const res = await apiGet('/api/v1/positions', {
+    strategy_code: taskDic.value.strategy_code
+  })
+  // 后端返回的数据结构假设为数组，字段包含 security_code / security_name / volume
+  remotePositionList.value = Array.isArray(res?.data) ? res.data : res
 }
 
 const resetRemotePositionAction = async () => {

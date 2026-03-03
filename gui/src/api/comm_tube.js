@@ -198,3 +198,16 @@ export const clearAllStockByTaskId = (task_id) => {
 export const syncPositionActionByTaskId = (task_id) => {
   return window.pywebview.api.sync_position_action_by_task_id(task_id)
 }
+
+// 账户级自动功能 -> 立即执行一次
+export const runNationalDebtNow = (accountId) => {
+  return window.pywebview.api.run_national_debt_now(accountId)
+}
+
+export const runNewStockNow = (accountId) => {
+  return window.pywebview.api.run_new_stock_now(accountId)
+}
+
+export const runNewBondNow = (accountId) => {
+  return window.pywebview.api.run_new_bond_now(accountId)
+}

@@ -178,6 +178,41 @@ class API(System):
     def get_task_detail(self, data):
         return G.orm.get_task_detail(data)
 
+    # ---- 手动执行自动化账户功能（按账号立即执行一次） ----
+
+    def run_national_debt_now(self, account_id):
+        """
+        立即为指定账号执行一次国债逆回购
+        """
+        try:
+            self.trade_controller.buy_reverse_repo(account_id)
+            return True
+        except Exception as e:
+            G.logger.error(f"run_national_debt_now 执行失败: {str(e)}", extra={"showMessage": True})
+            return False
+
+    def run_new_stock_now(self, account_id):
+        """
+        立即为指定账号执行一次新股打新
+        """
+        try:
+            self.trade_controller.auto_buy_new_stock(account_id)
+            return True
+        except Exception as e:
+            G.logger.error(f"run_new_stock_now 执行失败: {str(e)}", extra={"showMessage": True})
+            return False
+
+    def run_new_bond_now(self, account_id):
+        """
+        立即为指定账号执行一次新债打新
+        """
+        try:
+            self.trade_controller.auto_buy_convertible_bond(account_id)
+            return True
+        except Exception as e:
+            G.logger.error(f"run_new_bond_now 执行失败: {str(e)}", extra={"showMessage": True})
+            return False
+
     def transition_code(self, data, taskDic):
         return transition_code(data, taskDic)
 

@@ -19,18 +19,21 @@
           <el-tooltip effect="dark" content="开启后3点10分自动将盈余资金买入1天期国债逆回购，不占用资金" placement="top">
             <el-icon style="margin-left: 10px; color: #999; font-size: 18px"><QuestionFilled /></el-icon>
           </el-tooltip>
+          <el-button size="small" type="primary" @click="runNationalDebtNowAction">立即</el-button>
         </el-form-item>
         <el-form-item label="自动打新股">
           <el-switch size="small" v-model="form.auto_buy_stock_ipo" @change="(e) => autoAutomaticReverseAtion(2, e)" />
           <el-tooltip effect="dark" content="开启后10点10分自动申购新股" placement="top">
             <el-icon style="margin-left: 10px; color: #999; font-size: 18px"><QuestionFilled /></el-icon>
           </el-tooltip>
+          <el-button size="small" type="primary" @click="runNewStockNowAction">立即</el-button>
         </el-form-item>
         <el-form-item label="自动打债">
           <el-switch size="small" v-model="form.auto_buy_purchase_ipo" @change="(e) => autoAutomaticReverseAtion(3, e)" />
           <el-tooltip effect="dark" content="开启后10点10分自动申购新债" placement="top">
             <el-icon style="margin-left: 10px; color: #999; font-size: 18px"><QuestionFilled /></el-icon>
           </el-tooltip>
+          <el-button size="small" type="primary" @click="runNewBondNowAction">立即</el-button>
         </el-form-item>
         <el-button type="danger" size="small" style="width: 100%" @click="clearAllAction">一键清仓</el-button>
         <el-divider>辅助</el-divider>
@@ -58,7 +61,19 @@
 
 <script setup>
 import { QuestionFilled } from '@element-plus/icons-vue'
-import { controlThsWindow, deleteAccount, getAccountInfo, getThsWindowState, hideWindowByPid, openThsShortcut, showWindowByPid, updateAccount } from '@/api/comm_tube'
+import {
+  controlThsWindow,
+  deleteAccount,
+  getAccountInfo,
+  getThsWindowState,
+  hideWindowByPid,
+  openThsShortcut,
+  showWindowByPid,
+  updateAccount,
+  runNationalDebtNow,
+  runNewStockNow,
+  runNewBondNow
+} from '@/api/comm_tube'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { reactive, ref } from 'vue'
 
@@ -133,6 +148,22 @@ const autoAutomaticReverseAtion = async (type, e) => {
   if (type === 3) subDic.auto_buy_purchase_ipo = e ? 1 : 0
   await updateAccount(props.account.id, subDic)
   Object.assign(props.account, subDic)
+}
+
+// 立即执行：国债逆回购 / 打新股 / 打新债
+const runNationalDebtNowAction = async () => {
+  if (!props.account?.id) return
+  await runNationalDebtNow(props.account.id)
+}
+
+const runNewStockNowAction = async () => {
+  if (!props.account?.id) return
+  await runNewStockNow(props.account.id)
+}
+
+const runNewBondNowAction = async () => {
+  if (!props.account?.id) return
+  await runNewBondNow(props.account.id)
 }
 
 const showWindowAction = async () => {
