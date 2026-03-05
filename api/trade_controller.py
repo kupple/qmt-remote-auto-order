@@ -13,7 +13,9 @@ from .trading_related.deal import (
     get_qmt_price_type,
 )
 from datetime import datetime
-from .trading_related.additional_data import stock_xgsglb_em_on_today, bond_zh_cov
+import urllib.request
+import urllib.error
+from api.tools.sys_config import ws_to_http
 from .trading_related.qmt_trading_simulator import (
     QmtTradingSimulator,
     OrderType,
@@ -62,6 +64,63 @@ class TradeController:
         self.consumer_thread = self.ths_queue.start_consumer(self.ths_deal_order)
         self.refresh_multe_trader_arr()
         # self.process_check_loop()
+
+    def _get_server_http_base(self) -> str:
+        """
+        从本地配置中获取服务端地址，并将 ws/wss 转为 http/https 的 base url
+        例如: ws://host:8080/ws -> http://host:8080
+        """
+        config = G.orm.get_setting_config()
+        server_url = (config or {}).get("server_url")
+        if not server_url:
+            return ""
+        return ws_to_http(server_url)
+
+    def _fetch_list_from_server(self, path: str, timeout: int = 12) -> list:
+        """
+        从 gin-qmt-auto-order-server 拉取 JSON 数据并返回 list
+        期望返回格式:
+        - { "code": 200, "message": "ok", "data": [...] }
+        或者
+        - 直接返回数组 [...]
+        """
+        base = self._get_server_http_base()
+        if not base:
+            G.logger.error(
+                "未配置服务端地址(server_url)，无法从服务端获取数据",
+                extra={"showMessage": True},
+            )
+            return []
+
+        url = f"{base}{path}"
+        try:
+            req = urllib.request.Request(
+                url,
+                headers={
+                    "User-Agent": "qmt-auto-order-client",
+                    "Accept": "application/json",
+                },
+                method="GET",
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                body = resp.read().decode("utf-8", errors="replace")
+            payload = json.loads(body)
+            data = payload.get("data") if isinstance(payload, dict) else payload
+            if not isinstance(data, list):
+                return []
+            return data
+        except (urllib.error.HTTPError, urllib.error.URLError) as e:
+            G.logger.error(
+                f"从服务端获取数据失败: {url}, err={e}",
+                extra={"showMessage": True},
+            )
+            return []
+        except Exception as e:
+            G.logger.error(
+                f"从服务端获取数据失败: {url}, err={e}",
+                extra={"showMessage": True},
+            )
+            return []
 
     def refresh_multe_trader_arr(self):
         with self.multiple_traders_lock:
@@ -259,12 +318,19 @@ class TradeController:
             f"正在执行自动打新, 账号: {trader_state.info.get('client_id')}",
             extra={"showMessage": True},
         )
-        df = stock_xgsglb_em_on_today()
-        selected_columns = ["申购代码", "申购上限", "发行价格"]
-        for _, row in df[selected_columns].iterrows():
-            code = row["申购代码"]
-            limit = row["申购上限"]
-            price = row["发行价格"]
+        rows = self._fetch_list_from_server("/api/v1/market/ipo/today")
+        if not rows:
+            G.logger.warning(
+                "服务端返回的新股申购数据为空，跳过本次自动打新",
+                extra={"showMessage": True},
+            )
+            return
+        for row in rows:
+            code = (row or {}).get("subscription_code")
+            limit = (row or {}).get("subscription_limit")
+            price = (row or {}).get("issue_price")
+            if code is None or limit is None or price is None:
+                continue
             G.logger.info(
                 "申购代码: {} 申购上限: {} 发行价格: {}".format(code, limit, price),
                 extra={"showMessage": True},
@@ -288,12 +354,19 @@ class TradeController:
             f"正在执行自动打债, 账号: {trader_state.info.get('client_id')}",
             extra={"showMessage": True},
         )
-        df = bond_zh_cov()
-        selected_columns = ["申购代码", "申购上限"]
+        rows = self._fetch_list_from_server("/api/v1/market/bonds/convertible/today")
+        if not rows:
+            G.logger.warning(
+                "服务端返回的可转债申购数据为空，跳过本次自动打债",
+                extra={"showMessage": True},
+            )
+            return
 
-        for _, row in df[selected_columns].iterrows():
-            code = row["申购代码"]
-            limit = row["申购上限"]
+        for row in rows:
+            code = (row or {}).get("subscription_code")
+            limit = (row or {}).get("subscription_limit")
+            if code is None or limit is None:
+                continue
             price = 100
             limit = limit * 10000
             codeSt = convert_stock_suffix(code)

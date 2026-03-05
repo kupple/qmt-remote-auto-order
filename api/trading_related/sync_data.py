@@ -16,38 +16,44 @@ def sync_data_stocks_data():
         time.sleep(8)
         TABLE_NAME_LIST = [{
             'table_name':'data_trade_date_hist',
-            'diff': 0,
+            'diff': 7,
         },{
             'table_name':'data_all_stocks',
-            'diff': 0,
+            'diff': 1,
         },{
             'table_name':'data_st_stocks',
-            'diff': 0,
+            'diff': 1,
         }]
         for item in TABLE_NAME_LIST:
             table_name = item['table_name']
-            diff = item['diff']
+            diff = item['diff']  # 间隔同步的天数
             record = G.orm.get_data_table_record(table_name)
-            if record and record['record_time']:
-                if type(record['record_time']) == float:
+            # print(record)
+
+            # 根据上次同步时间 + diff 天 来判断是否需要重新同步
+            if record and record.get('record_time'):
+                # 兼容异常 float 情况，直接视为未同步
+                if isinstance(record['record_time'], float):
                     record = None
                 else:
                     date_obj = datetime.strptime(record['record_time'], '%Y-%m-%d %H:%M:%S')
-                    if diff > 0:
-                        adjusted_date = date_obj - timedelta(days=int(diff))
-                    else:
-                        adjusted_date = date_obj
-
+                    last_sync_date = date_obj.date()
                     today = datetime.now().date()
-                    if adjusted_date.date() > today:
-                        record = None
-                
-            if record and record['record_time']:
-                G.logger.info(f"数据表: {table_name} 已同步",extra={
+
+                    # diff > 0: 间隔 diff 天同步一次；到达/超过下次同步日则需要重新同步
+                    if diff > 0:
+                        next_sync_date = last_sync_date + timedelta(days=int(diff))
+                        if today >= next_sync_date:
+                            # 需要重新同步，当作没有有效记录
+                            record = None
+                    # diff <= 0: 按照“永不过期”处理，不动 record
+
+            if record and record.get('record_time'):
+                G.logger.info(f"数据表: {table_name} 已同步", extra={
                     "showMessage": True
                 })
-            else:     
-                G.logger.info(f"正在同步数据表: {table_name}",extra={
+            else:
+                G.logger.info(f"正在同步数据表: {table_name}", extra={
                     "showMessage": True
                 })
                 is_success = False
@@ -55,17 +61,16 @@ def sync_data_stocks_data():
                     is_success = save_all_data()
                 elif table_name == 'data_st_stocks':
                     is_success = save_st_data()
-    
                 elif table_name == 'data_trade_date_hist':
                     is_success = save_trade_date_hist()
-                    
+
                 if is_success:
-                    G.logger.info(f"数据表: {table_name} 同步成功",extra={
+                    G.logger.info(f"数据表: {table_name} 同步成功", extra={
                         "showMessage": True
                     })
                     G.orm.add_data_table_record(table_name)
                 else:
-                    G.logger.error(f"数据表: {table_name} 同步失败",extra={
+                    G.logger.error(f"数据表: {table_name} 同步失败", extra={
                         "showMessage": True
                     })
         sync_data_to_global()        
