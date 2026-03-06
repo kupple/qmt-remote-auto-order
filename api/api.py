@@ -246,9 +246,8 @@ class API(System):
             path = directory[0] if directory else None
             if path != None:
                 if client_type == 2:
-                    dlls_path = os.path.join(path, "DLLs")
-                    data_path = os.path.join(path, "data")
-                    if os.path.exists(dlls_path) and os.path.exists(data_path):
+                    folder_name = os.path.basename(os.path.normpath(path))
+                    if folder_name == "userdata_mini":
                         return True, path
                     else:
                         return False, None

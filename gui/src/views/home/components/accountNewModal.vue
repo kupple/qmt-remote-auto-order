@@ -55,11 +55,8 @@ const editId = ref(undefined)
 
 const connectionAction = () => {
   // 按反斜杠拆分路径（注意转义）
-  const pathParts = params.mini_qmt_path.split("\\");
-  // 移除最后一个元素（bin.x64）
-  pathParts.pop();
-  // 添加新的路径名
-  pathParts.push("userdata_mini");
+  const pathParts = params.mini_qmt_path
+
   // 重新拼接成完整路径
   const str2 = pathParts.join("\\");
 
