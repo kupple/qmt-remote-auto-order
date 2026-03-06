@@ -299,3 +299,6 @@ class qmt_trader:
             )
             return False, text
 
+
+    def get_account_postion(self):
+        return self.xt_trader.query_stock_position(account=self.acc)
