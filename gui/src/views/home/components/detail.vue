@@ -78,9 +78,8 @@
         <div class="remote-position-container">
           <span class="section-title">远程持股</span>
           <el-table max-height="30vh" :data="remotePositionList" stripe style="width: 100%; margin-top: 10px" size="small">
-            <el-table-column prop="security_code" label="股票代码" />
-            <el-table-column prop="security_name" label="股票名称" />
-            <el-table-column prop="volume" label="数量" />
+            <el-table-column prop="security" label="股票代码" />
+            <el-table-column prop="total_amount" label="数量" />
           </el-table>
           <el-button style="margin-top: 10px" size="small" @click="resetRemotePositionAction" plain>一键重置持仓</el-button>
           <el-text style="font-size: 12px; display: block; margin-top: 10px">上一次更新: {{ taskDic['updated_at'] }}</el-text>
@@ -104,12 +103,12 @@
 </template>
 
 <script setup>
-import { deletePositionById, deleteTask, getPositionByTaskId, getTaskDetail, queryTradeToday, updatePosition, resetRemotePosition, clearAllStockByTaskId, syncPositionActionByTaskId } from '@/api/comm_tube'
+import { deletePositionById, deleteTask, getPositionByTaskId, getTaskDetail, queryTradeToday, updatePosition, clearAllStockByTaskId, syncPositionActionByTaskId } from '@/api/comm_tube'
 import { unbindStrategyKey } from '@/api/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { get as apiGet } from '@/utils/api'
+import { get as apiGet, del as apiDelete } from '@/utils/api'
 import AddPosition from './addPosition.vue'
 import AdjustmentModal from './adjustmentModal.vue'
 import ListModal from './listModal.vue'
@@ -142,7 +141,9 @@ const resetRemotePositionAction = async () => {
     type: 'warning'
   })
     .then(async () => {
-      await resetRemotePosition(taskDic.value.id)
+      await apiDelete('/api/v1/positions', {
+        strategy_code: taskDic.value.strategy_code
+      })
       ElMessage({
         type: 'success',
         message: '重置成功'

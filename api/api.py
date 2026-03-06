@@ -409,10 +409,16 @@ class API(System):
     # 一键清空持仓股票
     def clear_all_stock_by_task_id(self, task_id):
         try:
-            stock_list = G.orm.query_position_by_task_id(task_id)
             task_detail = G.orm.get_task_detail({"id": task_id})
+
+                        # 检查 QMT 连接状态
+            if not self.trade_controller.multiple_traders[task_detail['account_id']].acc_is_connect:
+                G.logger.error("QMT未连接，无法同步持仓", extra={"showMessage": True})
+                return False
+            stock_list = G.orm.query_position_by_task_id(task_id)
+
             # 获取全推行情
-            full_tick = self.trade_controller.qmt_trader.data.get_full_tick(
+            full_tick = self.trade_controller.multiple_traders[task_detail['account_id']].trader.data.get_full_tick(
                 [item["security_code"] for item in stock_list]
             )
 
@@ -442,9 +448,11 @@ class API(System):
                     price=full_tick[item["security_code"]]["lastPrice"],
                     is_buy=False,
                     order_time=None,
-                    task_id=task_id,
+                    task_id=str(task_id),
                     order_remark=orderId,
                     is_mock_state=0,
+                    open_mandatory_limit_order=task_detail['open_mandatory_limit_order'],
+                    account_id=task_detail['account_id']
                 )
             return True
         except Exception as e:
@@ -454,8 +462,10 @@ class API(System):
 
     def sync_position_action_by_task_id(self, task_id):
         try:
+            # 获取任务详情
+            task_detail = G.orm.get_task_detail({"id": task_id})
             # 检查 QMT 连接状态
-            if not self.trade_controller.acc_is_connect:
+            if not self.trade_controller.multiple_traders[task_detail['account_id']].acc_is_connect:
                 G.logger.error("QMT未连接，无法同步持仓", extra={"showMessage": True})
                 return False
 
@@ -463,11 +473,8 @@ class API(System):
             local_stock_list = G.orm.query_position_by_task_or_backtest_id(task_id=task_id)
             # 获取远程端股票列表
             remote_stock_list = G.orm.get_remote_position(task_id)
-            # 获取任务详情
-            task_detail = G.orm.get_task_detail({"id": task_id})
-            print(task_detail)
-
-            full_tick = self.trade_controller.qmt_trader.data.get_full_tick(
+            
+            full_tick = self.trade_controller.multiple_traders[task_detail['account_id']].trader.data.get_full_tick(
                 [item["security_code"] for item in remote_stock_list]
             )
 
@@ -517,7 +524,8 @@ class API(System):
                         task_id=str(task_detail["id"]),
                         order_remark=orderId,
                         is_mock_state=0,
-                        open_mandatory_limit_order=task_detail['open_mandatory_limit_order']
+                        open_mandatory_limit_order=task_detail['open_mandatory_limit_order'],
+                        account_id=task_detail['account_id']
                     )
             else:
                 # 获取全推行情

@@ -50,7 +50,6 @@ class TraderRuntimeState:
 
 class TradeController:
     def __init__(self):
-        # self.qmt_trader = qmt_trader()
         self.multiple_traders = {}
         self.multiple_traders_lock = threading.RLock()
         # 同花顺队列
@@ -248,17 +247,14 @@ class TradeController:
 
             self.multiple_traders[acc_id].trader.path = new_path
             self.multiple_traders[acc_id].trader.account = client_id
-            print(mini_qmt_path)
             # 连接QMT 传递回调
             is_connect = self.multiple_traders[acc_id].trader.connect(self.callback)
             self.multiple_traders[acc_id].acc_is_connect = is_connect
-            print(is_connect)
             if self.multiple_traders[acc_id].acc_is_connect:
                 message = "QMT连接成功"
             else:
                 message = "QMT连接失败"
 
-            print("zxczxc3")
             System.system_py2js(
                 self,
                 "remoteCallBack",
@@ -873,9 +869,10 @@ class TradeController:
 
                 # 保存持仓信息到数据库
                 G.orm.save_remote_positions(task["id"], positions_arr)
-
+                
+                
                 # 没有检测没有连接不往下执行
-                if self.acc_is_connect == False:
+                if self.multiple_traders[task["account_id"]].acc_is_connect == False:
                     G.logger.error("qmt 没有正常运行", extra={"showMessage": True})
                     return
                 # 创建空订单

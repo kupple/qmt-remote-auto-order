@@ -35,7 +35,7 @@
           </el-tooltip>
           <el-button size="small" type="primary" @click="runNewBondNowAction">立即</el-button>
         </el-form-item>
-        <el-button type="danger" size="small" style="width: 100%" @click="clearAllAction">一键清仓</el-button>
+        <!-- <el-button type="danger" size="small" style="width: 100%" @click="clearAllAction">一键清仓</el-button> -->
         <el-divider>辅助</el-divider>
         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
           <el-button size="small" @click="showWindowAction">显示窗口</el-button>
@@ -158,12 +158,34 @@ const runNationalDebtNowAction = async () => {
 
 const runNewStockNowAction = async () => {
   if (!props.account?.id) return
-  await runNewStockNow(props.account.id)
+  try {
+    await ElMessageBox.confirm('确认立即执行新股申购吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    await runNewStockNow(props.account.id)
+    ElMessage.success('已发起新股申购')
+  } catch (error) {
+    if (error === 'cancel' || error === 'close') return
+    ElMessage.error(error.message || '执行失败')
+  }
 }
 
 const runNewBondNowAction = async () => {
   if (!props.account?.id) return
-  await runNewBondNow(props.account.id)
+  try {
+    await ElMessageBox.confirm('确认立即执行新债申购吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    await runNewBondNow(props.account.id)
+    ElMessage.success('已发起新债申购')
+  } catch (error) {
+    if (error === 'cancel' || error === 'close') return
+    ElMessage.error(error.message || '执行失败')
+  }
 }
 
 const showWindowAction = async () => {
