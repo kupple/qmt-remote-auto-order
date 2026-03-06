@@ -313,6 +313,14 @@ class API(System):
         params["security_code"] = convert_stock_suffix(params["security_code"])
         return G.orm.add_position(params)
 
+    def batch_add_positions(self, params_list):
+        normalized_list = []
+        for params in params_list or []:
+            item = dict(params)
+            item["security_code"] = convert_stock_suffix(item["security_code"])
+            normalized_list.append(item)
+        return G.orm.batch_add_positions(normalized_list)
+
     def check_position_exists(self, security_code, task_id):
         return G.orm.check_position_exists(convert_stock_suffix(security_code), task_id)
 

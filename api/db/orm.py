@@ -750,6 +750,21 @@ class ORM:
             dbSession.add(position)
         dbSession.close()
         return True
+
+    def batch_add_positions(self, data_list):
+        """批量添加持仓信息"""
+        if not isinstance(data_list, list) or len(data_list) == 0:
+            return True
+        dbSession = DB.session()
+        with dbSession.begin():
+            for data in data_list:
+                position = Positions()
+                for key, value in data.items():
+                    if hasattr(position, key):
+                        setattr(position, key, value)
+                dbSession.add(position)
+        dbSession.close()
+        return True
     
     # 检测持仓是否已存在
     def check_position_exists(self, security_code, task_id):

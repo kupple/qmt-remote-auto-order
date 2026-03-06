@@ -1,27 +1,31 @@
 <template>
   <el-dialog v-model="dialogVisible" title="自动添加持仓" width="50vw" center>
     <el-button @click="getAccountPostionAction">获取账号持仓</el-button>
-    <el-form :model="form" label-width="140px">
-      <el-form-item label="股票代码" required>
-        <el-input v-model="form.security_code" placeholder="请输入股票代码" style="width: 200px" maxlength="6" />
-        <span style="color: red">* 不需要输入.SZ .SH 等后缀系统会自动添加</span>
-      </el-form-item>
-      <el-form-item label="数量" required>
-        <el-input-number step-strictly :step="100" v-model="form.volume" placeholder="请输入数量" type="number" :min="100" />
-      </el-form-item>
-      <!-- <el-form-item label="平均成本(仅显示)" required>
-          <el-input v-model="form.average_price" placeholder="请输入平均成本" type="number"  @input="handleAllocationAmountInput" style="width: 200px;"/>
-        </el-form-item> -->
-      <el-form-item>
-        <el-button type="primary" @click="handleSubmit">保存</el-button>
+
+    <div class="position-scroll-box" v-if="positionList.length">
+      <div class="position-row" v-for="item in positionList" :key="item.stock_code">
+        <span class="stock-code">{{ item.stock_code }}</span>
+        <el-input-number
+          v-model="selectedVolumeMap[item.stock_code]"
+          :min="0"
+          :max="item.volume"
+          controls-position="right"
+        />
+        <el-button type="warning" plain @click="resetVolume(item.stock_code)">归0</el-button>
+      </div>
+    </div>
+
+    <template #footer>
+      <div class="dialog-footer">
         <el-button @click="dialogVisible = false">取消</el-button>
-      </el-form-item>
-    </el-form>
+        <el-button type="primary" @click="handleSubmit">批量添加</el-button>
+      </div>
+    </template>
   </el-dialog>
 </template>
-  
-  <script setup>
-import { addPosition, checkPositionExists,getAccountPostion } from '@/api/comm_tube'
+
+<script setup>
+import { batchAddPositions, getAccountPostion } from '@/api/comm_tube'
 import { useCommonStore } from '@/store/common.js'
 import { ElMessage } from 'element-plus'
 import { computed, reactive, ref } from 'vue'
@@ -29,6 +33,9 @@ import { computed, reactive, ref } from 'vue'
 const emit = defineEmits(['callBack'])
 const taskList = computed(() => useCommonStore().taskList)
 const dialogVisible = ref(false)
+const positionList = ref([])
+const selectedVolumeMap = ref({})
+
 const form = reactive({
   volume: 0,
   security_code: '',
@@ -38,7 +45,18 @@ const editDic = ref({})
 
 const getAccountPostionAction = async () => {
   const res = await getAccountPostion(form.account_id)
-  console.log(res)
+  const list = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : []
+  positionList.value = list
+
+  const map = {}
+  list.forEach((item) => {
+    map[item.stock_code] = Number(item.volume) || 0
+  })
+  selectedVolumeMap.value = map
+}
+
+const resetVolume = (stockCode) => {
+  selectedVolumeMap.value[stockCode] = 0
 }
 
 const handleStrategyAmountInput = (value) => {
@@ -55,54 +73,53 @@ const handleAllocationAmountInput = (value) => {
   }
 }
 
-const showModal = ({account_id,task_id}) => {
+const showModal = ({ account_id, task_id }) => {
   dialogVisible.value = true
   form.volume = 0
   form.security_code = ''
   form.account_id = account_id
   form.task_id = task_id
   form.average_price = 0
+  positionList.value = []
+  selectedVolumeMap.value = {}
 }
+
 const handleSubmit = async () => {
-  if (!form.security_code) {
-    ElMessage.error('请输入股票代码')
+  if (!positionList.value.length) {
+    ElMessage.error('请先获取账号持仓')
     return
   }
-  if (form.security_code.length !== 6) {
-    ElMessage.error('股票代码长度必须为6')
+
+  const payload = positionList.value
+    .map((item) => {
+      const volume = Number(selectedVolumeMap.value[item.stock_code]) || 0
+      return {
+        security_code: item.stock_code,
+        volume,
+        task_id: form.task_id,
+        is_mock: 0,
+        average_price: Number(item.avg_price ?? item.open_price ?? 0)
+      }
+    })
+    .filter((item) => item.volume > 0)
+
+  if (!payload.length) {
+    ElMessage.error('请选择要添加的持仓数量')
     return
   }
-  if (form.volume <= 0) {
-    ElMessage.error('请输入数量')
-    return
-  }
-  // if (form.average_price <= 0) {
-  //   ElMessage.error('请输入平均成本')
-  //   return
-  // }
-  const exists = await checkPositionExists(form.security_code, form.task_id)
-  if (exists) {
-    ElMessage.error('该股票已存在')
-    return
-  }
-  await addPosition({
-    security_code: form.security_code,
-    volume: form.volume,
-    task_id: form.task_id,
-    is_mock: 0,
-    average_price: form.average_price
-  })
+
+  await batchAddPositions(payload)
   emit('callBack')
   dialogVisible.value = false
-  ElMessage.success('添加成功')
+  ElMessage.success('批量添加成功')
 }
 
 defineExpose({
   showModal
 })
 </script>
-  
-  <style scoped lang="less">
+
+<style scoped lang="less">
 .list-container-modal {
   padding: 20px;
   background: #fff;
@@ -116,5 +133,29 @@ defineExpose({
     flex-direction: column;
   }
 }
+
+.position-scroll-box {
+  margin-top: 12px;
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid #ebeef5;
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.position-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.stock-code {
+  width: 90px;
+  font-weight: 500;
+}
 </style>
-  

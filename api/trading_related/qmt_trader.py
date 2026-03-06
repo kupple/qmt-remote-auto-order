@@ -301,4 +301,18 @@ class qmt_trader:
 
 
     def get_account_postion(self):
-        return self.xt_trader.query_stock_position(account=self.acc)
+        positions = self.xt_trader.query_stock_positions(account=self.acc)
+        postion_list = []
+        for p in positions:
+            postion_list.append({
+                "stock_code": p.stock_code,            # 证券代码
+                "volume": p.volume,                    # 持仓数量
+                "can_use_volume": getattr(p, "can_use_volume", 0),  # 可用数量（兼容无该属性的情况）
+                "open_price": p.avg_price,         # 开仓价（与成本价一致）
+                "market_value": p.market_value,        # 市值
+                "frozen_volume": getattr(p, "frozen_volume", 0),    # 冻结数量
+                "on_road_volume": getattr(p, "on_road_volume", 0),  # 在途股份
+                "yesterday_volume": getattr(p, "yesterday_volume", 0),  # 昨夜拥股
+                "avg_price": p.avg_price           # 成本价
+            })
+        return postion_list

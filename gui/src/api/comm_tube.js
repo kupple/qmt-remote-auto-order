@@ -121,6 +121,11 @@ export const updatePosition = (id, params) => {
 export const addPosition = (params) => {
   return window.pywebview.api.add_position(params)
 }
+
+export const batchAddPositions = (paramsList) => {
+  return window.pywebview.api.batch_add_positions(paramsList)
+}
+
 export const checkPositionExists = (security_code, task_id) => {
   return window.pywebview.api.check_position_exists(security_code, task_id)
 }
