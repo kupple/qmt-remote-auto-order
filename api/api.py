@@ -405,6 +405,10 @@ class API(System):
     def reset_remote_position(self, task_id):
         return G.orm.reset_remote_position(task_id)
 
+
+    def get_account_postion(self,account_id):
+        return self.trade_controller.multiple_traders[account_id].trader.data.get_account_postion()
+
     # 一键清空持仓股票
     def clear_all_stock_by_task_id(self, task_id):
         try:

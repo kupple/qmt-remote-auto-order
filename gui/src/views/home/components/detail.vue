@@ -5,7 +5,10 @@
         <div class="cur-position">
           <div style="display: flex; flex-direction: row; align-items: center; justify-content: space-between">
             <span class="section-title">当前持仓</span>
-            <el-button  size="small" type="primary" @click="addPositionAction">手动添加</el-button>
+            <div>
+              <el-button size="small" type="primary" @click="autoPositionAction">自动添加</el-button>
+              <el-button size="small" type="primary" @click="addPositionAction">手动添加</el-button>
+            </div>
           </div>
           <el-table :data="currentPositionList" stripe style="width: 100%; margin-top: 10px" size="small" height="100%">
             <el-table-column align="center" label="股票代码" width="140">
@@ -98,6 +101,7 @@
     </div>
     <ListModal ref="listModalRef" @callBack="getTaskDetailAction" />
     <AddPosition ref="addPositionRef" @callBack="getCurrentPositionList" />
+    <AutoPostion ref="autoPositionRef" @callBack="getCurrentPositionList" />
     <AdjustmentModal ref="adjustmentModalRef" @callBack="getTaskDetailAction" />
   </div>
 </template>
@@ -110,6 +114,7 @@ import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { get as apiGet, del as apiDelete } from '@/utils/api'
 import AddPosition from './addPosition.vue'
+import AutoPostion from './autoPostion.vue'
 import AdjustmentModal from './adjustmentModal.vue'
 import ListModal from './listModal.vue'
 const router = useRouter()
@@ -122,6 +127,7 @@ const todayTradeList = ref([])
 // 当前持仓
 const currentPositionList = ref([])
 const addPositionRef = ref(null)
+const autoPositionRef = ref(null)
 const adjustmentModalRef = ref(null)
 const remotePositionList = ref([])
 
@@ -165,7 +171,6 @@ const openAdjustmentModal = () => {
 }
 
 const getTaskDetailAction = async () => {
-  const taskId = route.query.id
   const res = await getTaskDetail({ id: route.query.id })
   taskDic.value = res
 }
@@ -291,6 +296,12 @@ const savePosition = async (row) => {
   ElMessage({
     type: 'success',
     message: '保存成功'
+  })
+}
+const autoPositionAction = () => {
+  autoPositionRef.value.showModal({
+    account_id: taskDic.value.account_id,
+    task_id: taskDic.value.id
   })
 }
 const addPositionAction = () => {

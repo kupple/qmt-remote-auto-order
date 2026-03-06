@@ -211,3 +211,7 @@ export const runNewStockNow = (accountId) => {
 export const runNewBondNow = (accountId) => {
   return window.pywebview.api.run_new_bond_now(accountId)
 }
+
+export const getAccountPostion = (account_id) => {
+  return window.pywebview.api.get_account_postion(account_id)
+}
