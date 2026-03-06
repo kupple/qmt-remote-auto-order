@@ -57,10 +57,8 @@ const connectionAction = () => {
   // 按反斜杠拆分路径（注意转义）
   const pathParts = params.mini_qmt_path
 
-  // 重新拼接成完整路径
-  const str2 = pathParts.join("\\");
 
-  testConnect(str2, params.client_type).then((res) => {
+  testConnect(pathParts, params.client_type).then((res) => {
     if (res.is_connect) {
       accountArr.value = res.account_arr || []
       passStatus.value = 1
@@ -83,6 +81,7 @@ const chooseDirectoryAction = async () => {
     }
   }else {
     hasQmtBeenSelect.value = 0
+    ElMessage.error('请选择正确的QMT下的userdata_mini文件夹')
   }
 }
 

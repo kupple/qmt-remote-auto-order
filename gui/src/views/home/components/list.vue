@@ -199,15 +199,7 @@ const openAccountModal = (row) => {
 }
 
 const getTaskListAction = async () => {
-  let user_id
-  const config = await getSettingConfig()
-  if (config.run_model_type === 2) {
-    const userInfo = await getUserInfo()
-    user_id = userInfo.id
-  } else {
-    user_id = await getUniqueID()
-  }
-  const res = await getAccountTaskList({ user_id })
+  const res = await getAccountTaskList({})
   useCommonStore().setTaskList(res || [])
 }
 

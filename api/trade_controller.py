@@ -240,12 +240,8 @@ class TradeController:
                     },
                 )
                 return True
-            # 1. 拆分路径：获取父目录
-            parent_dir = os.path.dirname(mini_qmt_path)
-            # 2. 拼接新的最后一级目录
-            new_path = os.path.join(parent_dir, "userdata_mini")
 
-            self.multiple_traders[acc_id].trader.path = new_path
+            self.multiple_traders[acc_id].trader.path = mini_qmt_path
             self.multiple_traders[acc_id].trader.account = client_id
             # 连接QMT 传递回调
             is_connect = self.multiple_traders[acc_id].trader.connect(self.callback)
