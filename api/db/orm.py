@@ -189,8 +189,6 @@ class ORM:
             )
 
             task_exists = dbSession.execute(task_stmt).first()
-            print(task_exists)
-            print("task_stmt")
             if task_exists:
                 raise ValueError("该账号已关联任务，不能删除")
 
