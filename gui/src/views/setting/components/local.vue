@@ -51,6 +51,12 @@
       <el-button v-if="isWSConnectedState === 0" class="save-btn" @click="backAction">返回上一页</el-button>
       <el-button v-if="isWSConnectedState === 2" class="save-btn" @click="disconnectAction" type="danger" >取消</el-button>
     </div>
+    <div class="sync-actions">
+      <el-button class="sync-btn" :loading="isSyncingData" @click="resyncBaseDataAction" type="warning">
+        重新同步基础数据
+      </el-button>
+      <div class="sync-tip">同步范围: data_trade_date_hist、data_all_stocks、data_st_stocks</div>
+    </div>
   </div>
 </template>
 
@@ -60,7 +66,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRemoteStore } from '@/store/remote.js'
 import { useRoute, useRouter } from 'vue-router'
 const router = useRouter()
-import { getSettingConfig, saveConfig, connectWs, disconnect, getRemoteState, chooseDirectory, connectQMT } from '@/api/comm_tube'
+import { getSettingConfig, saveConfig, connectWs, disconnect, getRemoteState, chooseDirectory, connectQMT, resyncBaseData } from '@/api/comm_tube'
 import { QuestionFilled } from '@element-plus/icons-vue'
 import { useCommonStore } from '@/store/common.js'
 import { CircleCheckFilled, CircleCloseFilled } from '@element-plus/icons-vue'
@@ -121,6 +127,7 @@ const rules = {
 const accountArr = ref([])
 const hasBeenSelect = ref(false)
 const passStatus = ref(0)
+const isSyncingData = ref(false)
 
 const params = reactive({
   qmtPath: '',
@@ -213,6 +220,23 @@ const disconnectAction = () => {
     })
 }
 
+const resyncBaseDataAction = async () => {
+  if (isSyncingData.value) return
+  isSyncingData.value = true
+  try {
+    const ok = await resyncBaseData()
+    if (ok) {
+      ElMessage.success('基础数据重新同步成功')
+    } else {
+      ElMessage.error('基础数据重新同步失败')
+    }
+  } catch (error) {
+    ElMessage.error('基础数据重新同步失败')
+  } finally {
+    isSyncingData.value = false
+  }
+}
+
 onMounted(async () => {
   await getSetting()
   await getRemoteStateAction()
@@ -257,6 +281,25 @@ onMounted(async () => {
   margin-top: 10px;
   align-self: center;
   margin-left: 0px;
+}
+.sync-btn {
+  width: 60vw;
+  max-width: 720px;
+}
+.sync-actions {
+  width: 60vw;
+  max-width: 760px;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.sync-tip {
+  width: 100%;
+  margin-top: 8px;
+  color: #909399;
+  font-size: 12px;
+  text-align: center;
 }
 .tips-view {
   width: 100%;

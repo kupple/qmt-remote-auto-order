@@ -820,6 +820,84 @@ def query_all_stock_by_day(day: str = "") -> pd.DataFrame:
     finally:
         bs.logout()
 
+
+def query_st_stock_daily_by_day(day: str = "") -> pd.DataFrame:
+    """
+    使用 baostock 获取指定交易日的 ST 股票列表，并补充对应日线字段。
+    返回字段包含:
+    updateDate, date, code, code_name, open, high, low, close, preclose,
+    volume, amount, turn, pctChg, peTTM, pbMRQ, isST
+    """
+    from baostock.security.sectorinfo import query_st_stocks
+
+    lg = bs.login()
+    print("login respond error_code:" + lg.error_code)
+    print("login respond  error_msg:" + lg.error_msg)
+
+    try:
+        st_rs = query_st_stocks(date=day)
+        print("query_st_stocks respond error_code:" + st_rs.error_code)
+        print("query_st_stocks respond  error_msg:" + st_rs.error_msg)
+
+        st_rows = []
+        while (st_rs.error_code == "0") & st_rs.next():
+            st_rows.append(st_rs.get_row_data())
+        st_df = pd.DataFrame(st_rows, columns=st_rs.fields)
+        if st_df.empty:
+            return st_df
+
+        history_fields = (
+            "date,code,open,high,low,close,preclose,volume,amount,"
+            "turn,pctChg,peTTM,pbMRQ,isST"
+        )
+        result_rows = []
+        for _, st_row in st_df.iterrows():
+            code = st_row.get("code", "")
+            history_rs = bs.query_history_k_data_plus(
+                code,
+                history_fields,
+                start_date=day,
+                end_date=day,
+                frequency="d",
+                adjustflag="3",
+            )
+
+            history_rows = []
+            while (history_rs.error_code == "0") & history_rs.next():
+                history_rows.append(history_rs.get_row_data())
+
+            if history_rows:
+                history_df = pd.DataFrame(history_rows, columns=history_rs.fields)
+                history_item = history_df.iloc[0].to_dict()
+                history_item["updateDate"] = st_row.get("updateDate")
+                history_item["code_name"] = st_row.get("code_name")
+                result_rows.append(history_item)
+            else:
+                result_rows.append(
+                    {
+                        "updateDate": st_row.get("updateDate"),
+                        "date": day,
+                        "code": code,
+                        "code_name": st_row.get("code_name"),
+                        "open": None,
+                        "high": None,
+                        "low": None,
+                        "close": None,
+                        "preclose": None,
+                        "volume": None,
+                        "amount": None,
+                        "turn": None,
+                        "pctChg": None,
+                        "peTTM": None,
+                        "pbMRQ": None,
+                        "isST": "1",
+                    }
+                )
+
+        return pd.DataFrame(result_rows)
+    finally:
+        bs.logout()
+
 if __name__ == "__main__":
     stock_zh_a_spot_em_df = stock_zh_a_spot_em()
     print(stock_zh_a_spot_em_df)

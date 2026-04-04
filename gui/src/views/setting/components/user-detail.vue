@@ -10,6 +10,10 @@
         <span class="user-info-card-created-at">{{ dayjs(userInfo?.created_at).format('YYYY-MM-DD HH:mm:ss') }}</span>
       </div>
     </el-card>
+    <div class="sync-actions">
+      <el-button class="resync-btn" type="warning" :loading="isSyncingData" @click="resyncBaseDataAction">重新同步基础数据</el-button>
+      <span class="resync-tip">同步范围: data_trade_date_hist、data_all_stocks、data_st_stocks</span>
+    </div>
     <!-- <el-card class="edit-div">
       <template #header>
         <div class="card-header">
@@ -29,7 +33,7 @@
 
 <script setup>
 import { clearAuth, getUserInfo } from '@/api/auth'
-import { disconnect, getSettingConfig, saveConfig } from '@/api/comm_tube'
+import { disconnect, getSettingConfig, saveConfig, resyncBaseData } from '@/api/comm_tube'
 import dayjs from "dayjs"
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
@@ -38,6 +42,7 @@ import editConfigModal from './editConfigModal.vue'
 const router = useRouter()
 const userInfo = ref(null)
 const editConfigModalRef = ref(null)
+const isSyncingData = ref(false)
 const params = reactive({
   mini_qmt_path: '',
   client_id: '',
@@ -93,6 +98,23 @@ const handleLogout = () => {
     .catch(() => {
       // 用户点击取消，不做任何操作
     })
+}
+
+const resyncBaseDataAction = async () => {
+  if (isSyncingData.value) return
+  isSyncingData.value = true
+  try {
+    const ok = await resyncBaseData()
+    if (ok) {
+      ElMessage.success('基础数据重新同步成功')
+    } else {
+      ElMessage.error('基础数据重新同步失败')
+    }
+  } catch (error) {
+    ElMessage.error('基础数据重新同步失败')
+  } finally {
+    isSyncingData.value = false
+  }
 }
 </script>
 
@@ -159,6 +181,15 @@ const handleLogout = () => {
       width: 40vw;
     }
   }
+
+  .sync-actions {
+    width: 100%;
+    margin-top: auto;
+    padding: 16px 0 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
 }
 
 .card-header {
@@ -169,5 +200,15 @@ const handleLogout = () => {
     cursor: pointer;
     color: #409eff;
   }
+}
+
+.resync-btn {
+  width: min(420px, 100%);
+}
+
+.resync-tip {
+  font-size: 12px;
+  color: #999;
+  margin-top: 8px;
 }
 </style>

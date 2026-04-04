@@ -149,6 +149,10 @@ export const clearLog = () => {
   return window.pywebview.api.clear_log()
 }
 
+export const resyncBaseData = () => {
+  return window.pywebview.api.resync_base_data()
+}
+
 export const getUniqueID = () => {
   return window.pywebview.api.get_unique_id()
 }

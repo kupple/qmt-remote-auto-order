@@ -8,7 +8,7 @@ from api.db.models import (
     DATA_TRADE_DATE_HIST
 )
 from ..tools.common import sync_data_to_global,timestamp_to_date
-from api.trading_related.additional_data import stock_zh_a_spot_em, stock_zh_a_st_em, get_all_trade_day, query_all_stock_by_day
+from api.trading_related.additional_data import get_all_trade_day, query_all_stock_by_day, query_st_stock_daily_by_day
 
 
 def get_recent_trade_date_for_query_all_stock():
@@ -37,9 +37,10 @@ def get_recent_trade_date_for_query_all_stock():
     return min(date_objects).strftime("%Y-%m-%d")
 
 # 同步数据表
-def sync_data_stocks_data():
+def sync_data_stocks_data(force=False):
     try:
-        time.sleep(8)
+        if not force:
+            time.sleep(8)
         TABLE_NAME_LIST = [{
             'table_name':'data_trade_date_hist',
             'diff': 7,
@@ -57,7 +58,9 @@ def sync_data_stocks_data():
             # print(record)
 
             # 根据上次同步时间 + diff 天 来判断是否需要重新同步
-            if record and record.get('record_time'):
+            if force:
+                record = None
+            elif record and record.get('record_time'):
                 # 兼容异常 float 情况，直接视为未同步
                 if isinstance(record['record_time'], float):
                     record = None
@@ -115,59 +118,29 @@ def save_all_data():
             "showMessage": True
         })
 
-        stock_basic_data = query_all_stock_by_day(quote_day)
-        data = stock_zh_a_spot_em()
+        data = query_all_stock_by_day(quote_day)
         if isinstance(data, pd.DataFrame) and not data.empty:
-            # 确保列名与数据库模型匹配
+            data = data.copy()
+
             column_mapping = {
-                "日期":"date",
-                '代码': 'code',
-                '名称': 'name',
-                '最新价': 'latest_price',
-                '涨跌幅': 'change_rate',
-                '涨跌额': 'change_amount',
-                '成交量': 'volume',
-                '成交额': 'turnover',
-                '振幅': 'amplitude',
-                '最高': 'highest',
-                '最低': 'lowest',
-                '今开': 'open',
-                '昨收': 'close',
-                '量比': 'volume_ratio',
-                '换手率': 'turnover_ratio',
-                '市盈率-动态': 'pe_dynamic',
-                '市净率': 'pb',
-                '总市值': 'total_market_value',
-                '流通市值': 'circulating_market_value',
-                '涨速': 'rise_speed',
-                '5分钟涨跌': 'five_minute_change',
-                '60日涨跌幅': 'sixty_days_change',
-                '年初至今涨跌幅': 'year_to_date_change'
+                "code": "code",
+                "code_name": "name",
             }
-            
-            # 移除不需要的序号列
-            if '序号' in data.columns:
-                data = data.drop(columns=['序号'])
-            
-            # 重命名列以匹配数据库模型
             data = data.rename(columns=column_mapping)
 
-            if isinstance(stock_basic_data, pd.DataFrame) and not stock_basic_data.empty:
-                stock_basic_data = stock_basic_data.copy()
-                if "code" in stock_basic_data.columns:
-                    stock_basic_data["code"] = stock_basic_data["code"].astype(str).apply(
-                        lambda code: code.split(".", 1)[-1]
-                    )
-                stock_basic_data = stock_basic_data.rename(columns={"code_name": "name"})
-                stock_basic_data = stock_basic_data[["code", "name"]].drop_duplicates(subset=["code"])
+            if "code" in data.columns:
+                data["code"] = data["code"].astype(str).apply(
+                    lambda code: code.split(".", 1)[-1]
+                )
 
-                if "name" in data.columns:
-                    data = data.merge(stock_basic_data, on="code", how="left", suffixes=("_em", "_bs"))
-                    data["name"] = data["name_em"].fillna(data["name_bs"])
-                    data = data.drop(columns=["name_em", "name_bs"])
-                else:
-                    data = data.merge(stock_basic_data, on="code", how="left")
-            
+            # tradeStatus 当前无对应数据库字段，保留 code/name 即可
+            expected_columns = ["code", "name"]
+            available_columns = [
+                column for column in expected_columns if column in data.columns
+            ]
+            data = data[available_columns].drop_duplicates(subset=["code"])
+            data = data.sort_values(by="code").reset_index(drop=True)
+
             with DB.session() as dbSession:
                 try:
                     # 删除现有数据
@@ -236,34 +209,85 @@ def save_trade_date_hist():
 
 # 保存数据到数据库
 def save_st_data():
-    data = stock_zh_a_st_em()
+    try:
+        quote_day = get_recent_trade_date_for_query_all_stock()
+        G.logger.info(f"data_st_stocks 使用 baostock 日期: {quote_day}", extra={
+            "showMessage": True
+        })
+
+        data = query_st_stock_daily_by_day(quote_day)
+    except Exception as e:
+        print(f"Error in save_st_data: {str(e)}")
+        return False
+
     if isinstance(data, pd.DataFrame) and not data.empty:
-        # 确保列名与数据库模型匹配
-        column_mapping = {
-            '代码': 'code',
-            '名称': 'name',
-            '最新价': 'latest_price',
-            '涨跌幅': 'change_rate',
-            '涨跌额': 'change_amount',
-            '成交量': 'volume',
-            '成交额': 'turnover',
-            '振幅': 'amplitude',
-            '最高': 'highest',
-            '最低': 'lowest',
-            '今开': 'open',
-            '昨收': 'close',
-            '量比': 'volume_ratio',
-            '换手率': 'turnover_ratio',
-            '市盈率-动态': 'pe_dynamic',
-            '市净率': 'pb'
-        }
-        
-        # 移除不需要的序号列
-        if '序号' in data.columns:
-            data = data.drop(columns=['序号'])
-        
-        # 重命名列以匹配数据库模型
-        data = data.rename(columns=column_mapping)
+        data = data.copy()
+
+        numeric_columns = [
+            "open",
+            "high",
+            "low",
+            "close",
+            "preclose",
+            "volume",
+            "amount",
+            "turn",
+            "pctChg",
+            "peTTM",
+            "pbMRQ",
+        ]
+        for column in numeric_columns:
+            if column in data.columns:
+                data[column] = pd.to_numeric(data[column], errors="coerce")
+
+        if "isST" in data.columns:
+            data = data[data["isST"].astype(str) == "1"]
+
+        if "code" in data.columns:
+            data["code"] = data["code"].astype(str).apply(
+                lambda code: code.split(".", 1)[-1]
+            )
+
+        data["name"] = data.get("code_name")
+        data["latest_price"] = data.get("close")
+        data["change_rate"] = data.get("pctChg")
+        data["change_amount"] = data.get("close") - data.get("preclose")
+        data["turnover"] = data.get("amount")
+        data["highest"] = data.get("high")
+        data["lowest"] = data.get("low")
+        data["close"] = data.get("preclose")
+        data["turnover_ratio"] = data.get("turn")
+        data["pe_dynamic"] = data.get("peTTM")
+        data["pb"] = data.get("pbMRQ")
+        data["volume_ratio"] = None
+
+        if "preclose" in data.columns:
+            data["amplitude"] = (
+                (data.get("high") - data.get("low")) / data.get("preclose") * 100
+            )
+            data.loc[data["preclose"].isna() | (data["preclose"] == 0), "amplitude"] = None
+        else:
+            data["amplitude"] = None
+
+        expected_columns = [
+            "code",
+            "name",
+            "latest_price",
+            "change_rate",
+            "change_amount",
+            "volume",
+            "turnover",
+            "amplitude",
+            "highest",
+            "lowest",
+            "open",
+            "close",
+            "volume_ratio",
+            "turnover_ratio",
+            "pe_dynamic",
+            "pb",
+        ]
+        data = data[expected_columns].drop_duplicates(subset=["code"]).reset_index(drop=True)
         
         with DB.session() as dbSession:
             try:

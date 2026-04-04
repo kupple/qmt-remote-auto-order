@@ -336,6 +336,19 @@ class API(System):
     def clear_log(self):
         return G.orm.clear_log()
 
+    def resync_base_data(self):
+        try:
+            G.logger.info(
+                "开始强制同步基础数据: data_trade_date_hist, data_all_stocks, data_st_stocks",
+                extra={"showMessage": True},
+            )
+            sync_data_stocks_data(force=True)
+            G.logger.info("基础数据强制同步完成", extra={"showMessage": True})
+            return True
+        except Exception as e:
+            G.logger.error(f"基础数据强制同步失败: {str(e)}", extra={"showMessage": True})
+            return False
+
     def get_account_info(self, account_id=None):
         if account_id:
             account = G.orm.get_account_by_id(account_id)
