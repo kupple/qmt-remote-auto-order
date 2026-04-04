@@ -69,6 +69,30 @@ Body 请求体：
             <code> code: 200 </code>      
           </div>
         </el-collapse-item>
+        <el-collapse-item title="调整单个任务比例" name="4">
+          <div class="api-introduction">
+            <h4>请求：</h4>
+            <code>
+              <span style="color: purple">POST</span> <span style="color: #26a69a">{{ settindDic.host }}:{{ settindDic.port }}/api/task/position_ratio</span>
+              <br>Content-Type: application/json
+            </code>
+            <pre style="margin:0px">
+Body 请求体：
+{
+    "strategy_code": "123456",
+    "position_ratio": 1.5
+}</pre>
+            <h4>说明：</h4>
+            <code>
+              strategy_code: 策略唯一编号，与 task_id 二选一
+              <br>task_id: 本地任务ID，与 strategy_code 二选一
+              <br>position_ratio: 比例调整倍数，需大于等于 0
+              <br>仅支持 order_count_type = 1 的任务
+            </code>
+            <h4>返回：</h4>
+            <code> code: 200<br>data.task_id: 任务ID<br>data.strategy_code: 策略唯一编号<br>data.position_ratio: 最新比例调整倍数 </code>
+          </div>
+        </el-collapse-item>
         <!-- <el-collapse-item title="获取今日成交" name="3">
           <div>Simplify the process: keep operating process simple and intuitive;</div>
           <div>Definite and clear: enunciate your intentions clearly so that the users can quickly understand and make decisions;</div>

@@ -30,6 +30,29 @@ class APIService:
         handler.setLevel(logging.INFO)
         werkzeug_logger.addHandler(handler)
 
+    def _get_task_by_identifier(self, task_id=None, strategy_code=None):
+        if task_id not in (None, ""):
+            try:
+                task_id = int(task_id)
+            except (TypeError, ValueError):
+                return None, "task_id must be an integer", 400
+
+            task = G.orm.get_task_detail({"id": task_id})
+            if not task or task.get("delete_time"):
+                return None, "task not found", 404
+            return task, None, None
+
+        if isinstance(strategy_code, str):
+            strategy_code = strategy_code.strip()
+
+        if not strategy_code:
+            return None, "task_id or strategy_code is required", 400
+
+        task_list = G.orm.get_task_list({"strategy_code": strategy_code})
+        if not task_list:
+            return None, "task not found", 404
+        return task_list[0], None, None
+
     def _register_routes(self):
 
         # 示例路由：获取持仓
@@ -98,6 +121,45 @@ class APIService:
             return jsonify({
                 'code':200,
                 'data': "下单成功",
+            })
+
+        # 调整单个任务比例
+        @self.app.route('/api/task/position_ratio', methods=['POST', 'PUT'])
+        def update_task_position_ratio():
+            data = request.get_json(silent=True) or {}
+            task_id = data.get('task_id')
+            strategy_code = data.get('strategy_code')
+            position_ratio = data.get('position_ratio')
+
+            if position_ratio in (None, ''):
+                return jsonify({'error': 'position_ratio is required'}), 400
+
+            try:
+                position_ratio = float(position_ratio)
+            except (TypeError, ValueError):
+                return jsonify({'error': 'position_ratio must be a number'}), 400
+
+            if position_ratio < 0:
+                return jsonify({'error': 'position_ratio must be greater than or equal to 0'}), 400
+
+            task, error_message, status_code = self._get_task_by_identifier(task_id, strategy_code)
+            if error_message:
+                return jsonify({'error': error_message}), status_code
+
+            if task.get('order_count_type') != 1:
+                return jsonify({'error': 'only order_count_type=1 tasks support position_ratio adjustment'}), 400
+
+            ok = G.orm.update_task(task['id'], position_ratio=position_ratio)
+            if not ok:
+                return jsonify({'error': 'update task failed'}), 500
+
+            return jsonify({
+                'code': 200,
+                'data': {
+                    'task_id': task['id'],
+                    'strategy_code': task.get('strategy_code'),
+                    'position_ratio': position_ratio,
+                },
             })
 
         # 示例路由：获取特定资源
