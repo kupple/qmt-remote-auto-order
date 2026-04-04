@@ -1006,12 +1006,14 @@ class ORM:
     
     def get_shippings_on_api(self):
         with DB.session() as dbSession:
-            shippings = dbSession.query(TaskList).all()
+            shippings = dbSession.query(TaskList).where(TaskList.delete_time.is_(None)).all()
             return [shipping.toDict() for shipping in shippings]
     
     def get_positions_on_api(self, strategy_code):
         with DB.session() as dbSession:
-            trades = dbSession.query(TaskList).where(TaskList.strategy_code == strategy_code).first()
+            trades = dbSession.query(TaskList).where(TaskList.strategy_code == strategy_code).where(TaskList.delete_time.is_(None)).first()
+            if not trades:
+                return []
             positions = dbSession.query(Positions).where(Positions.task_id == trades.id).where(Positions.is_mock == 0).all()
             return [position.toDict() for position in positions]
         

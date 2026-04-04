@@ -8,7 +8,33 @@ from api.db.models import (
     DATA_TRADE_DATE_HIST
 )
 from ..tools.common import sync_data_to_global,timestamp_to_date
-from api.trading_related.additional_data import stock_zh_a_spot_em, stock_zh_a_st_em, get_all_trade_day
+from api.trading_related.additional_data import stock_zh_a_spot_em, stock_zh_a_st_em, get_all_trade_day, query_all_stock_by_day
+
+
+def get_recent_trade_date_for_query_all_stock():
+    """
+    从 data_trade_date_hist 中找出离今天最近且不晚于今天的交易日。
+    如果不存在，则回退到最早可用交易日；再不行则返回今天。
+    """
+    trade_date_list = G.orm.get_trade_date_list()
+    if not trade_date_list:
+        return datetime.now().strftime("%Y-%m-%d")
+
+    date_objects = []
+    for date_str in trade_date_list:
+        try:
+            date_objects.append(datetime.strptime(date_str, "%Y-%m-%d").date())
+        except Exception:
+            continue
+
+    if not date_objects:
+        return datetime.now().strftime("%Y-%m-%d")
+
+    today = datetime.now().date()
+    available_dates = [date_obj for date_obj in date_objects if date_obj <= today]
+    if available_dates:
+        return max(available_dates).strftime("%Y-%m-%d")
+    return min(date_objects).strftime("%Y-%m-%d")
 
 # 同步数据表
 def sync_data_stocks_data():
@@ -84,6 +110,12 @@ def sync_data_stocks_data():
 # 保存数据到数据库
 def save_all_data():
     try:
+        quote_day = get_recent_trade_date_for_query_all_stock()
+        G.logger.info(f"data_all_stocks 使用 query_all_stock 日期: {quote_day}", extra={
+            "showMessage": True
+        })
+
+        stock_basic_data = query_all_stock_by_day(quote_day)
         data = stock_zh_a_spot_em()
         if isinstance(data, pd.DataFrame) and not data.empty:
             # 确保列名与数据库模型匹配
@@ -119,6 +151,22 @@ def save_all_data():
             
             # 重命名列以匹配数据库模型
             data = data.rename(columns=column_mapping)
+
+            if isinstance(stock_basic_data, pd.DataFrame) and not stock_basic_data.empty:
+                stock_basic_data = stock_basic_data.copy()
+                if "code" in stock_basic_data.columns:
+                    stock_basic_data["code"] = stock_basic_data["code"].astype(str).apply(
+                        lambda code: code.split(".", 1)[-1]
+                    )
+                stock_basic_data = stock_basic_data.rename(columns={"code_name": "name"})
+                stock_basic_data = stock_basic_data[["code", "name"]].drop_duplicates(subset=["code"])
+
+                if "name" in data.columns:
+                    data = data.merge(stock_basic_data, on="code", how="left", suffixes=("_em", "_bs"))
+                    data["name"] = data["name_em"].fillna(data["name_bs"])
+                    data = data.drop(columns=["name_em", "name_bs"])
+                else:
+                    data = data.merge(stock_basic_data, on="code", how="left")
             
             with DB.session() as dbSession:
                 try:

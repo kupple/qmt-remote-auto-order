@@ -66,7 +66,7 @@ class API(System):
         """
         self.trade_controller = TradeController()
         self.remote = Remote(self.trade_controller)
-        self.http_service = APIService(self.trade_controller)
+        self.http_service = APIService(self.trade_controller, self)
 
         self.thread1 = None
 
@@ -337,8 +337,29 @@ class API(System):
         return G.orm.clear_log()
 
     def get_account_info(self, account_id=None):
-        account = G.orm.get_account_by_id(account_id) if account_id else None
-        return self.trade_controller.get_account_info(account)
+        if account_id:
+            account = G.orm.get_account_by_id(account_id)
+            if not account:
+                return {
+                    "cash": 0,
+                    "frozen_cash": 0,
+                    "market_value": 0,
+                    "total_asset": 0,
+                }
+            return self.trade_controller.get_account_info(account)
+
+        account_list = G.orm.get_account_list()
+        summary = {
+            "cash": 0.0,
+            "frozen_cash": 0.0,
+            "market_value": 0.0,
+            "total_asset": 0.0,
+        }
+        for account in account_list:
+            fund_info = self.trade_controller.get_account_info(account)
+            for key in summary:
+                summary[key] += float((fund_info or {}).get(key) or 0)
+        return summary
 
     def is_process_exist_action(self):
         return self.trade_controller.process_check_loop()
@@ -470,6 +491,7 @@ class API(System):
             G.logger.error("clear_all_stock_by_task_id 发生异常: " + str(e),extra={
             "showMessage": True
             })
+            return False
 
     def sync_position_action_by_task_id(self, task_id):
         try:
@@ -484,6 +506,9 @@ class API(System):
             local_stock_list = G.orm.query_position_by_task_or_backtest_id(task_id=task_id)
             # 获取远程端股票列表
             remote_stock_list = G.orm.get_remote_position(task_id)
+
+            if not remote_stock_list:
+                return True
             
             full_tick = self.trade_controller.multiple_traders[task_detail['account_id']].trader.data.get_full_tick(
                 [item["security_code"] for item in remote_stock_list]
@@ -576,6 +601,9 @@ class API(System):
                         is_buy = 0
                         final_amount = abs(local_stock_item - stock_volume)
 
+                    if final_amount == 0:
+                        continue
+
                     saveData = {
                         "security_code": item["security_code"],
                         "style": 1,
@@ -603,12 +631,15 @@ class API(System):
                         order_time=None,
                         task_id=str(task_detail["id"]),
                         order_remark=orderId,
-                        open_mandatory_limit_order=task_detail['open_mandatory_limit_order']
+                        open_mandatory_limit_order=task_detail['open_mandatory_limit_order'],
+                        account_id=task_detail['account_id']
                     )
 
+            return True
 
         except Exception as e:
             G.logger.error("sync_position_action_by_task_id 发生异常: " + str(e),extra={
             "showMessage": True
             })
+            return False
         

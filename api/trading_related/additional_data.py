@@ -9,6 +9,7 @@ import aiohttp
 
 
 def get_all_trade_day():
+    print("zxczx")
     lg = bs.login()
     # 显示登陆返回信息
     print('login respond error_code:'+lg.error_code)
@@ -796,6 +797,28 @@ async def stock_zh_a_spot_em_async() -> pd.DataFrame:
 
 def stock_zh_a_spot_em() -> pd.DataFrame:
     return asyncio.run(stock_zh_a_spot_em_async())
+
+
+def query_all_stock_by_day(day: str = "") -> pd.DataFrame:
+    """
+    使用 baostock 查询指定交易日的全部证券信息。
+    返回字段通常包含: code, tradeStatus, code_name
+    """
+    lg = bs.login()
+    print("login respond error_code:" + lg.error_code)
+    print("login respond  error_msg:" + lg.error_msg)
+
+    try:
+        rs = bs.query_all_stock(day=day)
+        print("query_all_stock respond error_code:" + rs.error_code)
+        print("query_all_stock respond  error_msg:" + rs.error_msg)
+
+        data_list = []
+        while (rs.error_code == "0") & rs.next():
+            data_list.append(rs.get_row_data())
+        return pd.DataFrame(data_list, columns=rs.fields)
+    finally:
+        bs.logout()
 
 if __name__ == "__main__":
     stock_zh_a_spot_em_df = stock_zh_a_spot_em()
